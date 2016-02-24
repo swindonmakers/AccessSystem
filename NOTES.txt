@@ -1,0 +1,5 @@
+
+bank ref "SW<membershipnum>"
+
+membership numbers for:
+Jess: 0001, James, 0002, Jamie, 0003, Damian, 0004, Steve W, 0005, Rob L, 0006
