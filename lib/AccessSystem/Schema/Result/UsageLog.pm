@@ -5,7 +5,7 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-__PACKAGE__->load_components('DateTime', 'TimeStamp');
+__PACKAGE__->load_components('InflateColumn::DateTime', 'TimeStamp');
 
 __PACKAGE__->table('usage_log');
 __PACKAGE__->add_columns(

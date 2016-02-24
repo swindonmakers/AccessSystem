@@ -5,7 +5,7 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-__PACKAGE__->load_components('DateTime');
+__PACKAGE__->load_components('InflateColumn::DateTime');
 
 __PACKAGE__->table('dues');
 __PACKAGE__->add_columns(
@@ -15,7 +15,7 @@ __PACKAGE__->add_columns(
     for_month => {
         data_type => 'integer',
         is_nullable => 0,
-    }
+    },
     is_paid => {
         data_type => 'boolean',
         default_value => \'false', #',

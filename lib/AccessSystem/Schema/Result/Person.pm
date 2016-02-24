@@ -5,7 +5,7 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-__PACKAGE__->load_components('DateTime', 'TimeStamp');
+__PACKAGE__->load_components('InflateColumn::DateTime', 'TimeStamp');
 
 __PACKAGE__->table('person');
 __PACKAGE__->add_columns(
@@ -38,6 +38,6 @@ __PACKAGE__->add_columns(
 );
 
 __PACKAGE__->set_primary_key('id');
-__PACKAGE__add_unique_constraint('email' => ['email']);
+__PACKAGE__->add_unique_constraint('email' => ['email']);
 
 1;
