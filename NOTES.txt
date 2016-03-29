@@ -1,5 +1,17 @@
 
-bank ref "SW<membershipnum>"
+bank ref "SM<membershipnum>"
 
 membership numbers for:
-Jess: 0001, James, 0002, Jamie, 0003, Damian, 0004, Steve W, 0005, Rob L, 0006
+Jess: 0001, James, 0002, Jamie, 0003, Damian, 0004, Steve W, 0005, Rob L, 0006, Steve N, 0007, Amy Axford 0008, James Pattinson, 0009
+
+
+* CatalystX::Controller::Auth ?
+
+
+* TODO:
+** non-auth form that new members can use to register
+*** Creates People entr(y|ies) - one for the main registrant, one for each dependent?
+*** Requires you to acknowledge the "responsibility waiver" with link to Guide
+*** Creates linked user entr(y|ies) - person has_a user?
+*** user_role == default (nonpaying member)
+*** collects email, name, date of birth

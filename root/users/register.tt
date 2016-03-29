@@ -1,0 +1,3 @@
+[%# WRAPPER templates/rapidapp/ext_page.tt %]
+[% form.render() %]
+[%# END %]

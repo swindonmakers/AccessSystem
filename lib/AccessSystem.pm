@@ -11,6 +11,10 @@ use Catalyst qw/
     RapidApp::AuthCore
     RapidApp::CoreSchemaAdmin
     RapidApp::NavCore
+
+    StatusMessage
+    Static::Simple
+
 /;
 
 extends 'Catalyst';
@@ -20,14 +24,32 @@ our $VERSION = '0.01';
 __PACKAGE__->config(
     name => 'AccessSystem',
 
+    # The general 'RapidApp' config controls aspects of the special components that
+    # are globally injected/mounted into the Catalyst application dispatcher:
+    'RapidApp' => {
+      ## To change the root RapidApp module to be mounted someplace other than
+      ## at the root (/) of the Catalyst app (default is '' which is the root)
+      module_root_namespace => 'admin',
+
+      ## To load additional, custom RapidApp modules (under the root module):
+      #load_modules => { somemodule => 'Some::RapidApp::Module::Class' }
+    },
+
     'Plugin::RapidApp::RapidDbic' => {
      dbic_models => ['AccessDB'],
       
      # All custom configs optional...
      configs => {
-       DB => {
-         grid_params => {
-           # ...
+         AccessDB => {
+             grid_params => {
+                 '*defaults' => { # Defaults for all Sources
+                     updatable_colspec => ['*','!id', '!person_id'],
+                     creatable_colspec => ['*','!id', '!person_id'],
+                     destroyable_relspec => ['*'],
+                 }, # ('*defaults')
+                 'AccessToken' => {
+                     creatable_colspec => ['*', '!person_id']
+                 },
          },
          TableSpecs => {
            # ...
@@ -49,16 +71,6 @@ __PACKAGE__->config(
       template_navtree_regex => '^site/'
     },
 
-    # The general 'RapidApp' config controls aspects of the special components that
-    # are globally injected/mounted into the Catalyst application dispatcher:
-    'RapidApp' => {
-      ## To change the root RapidApp module to be mounted someplace other than
-      ## at the root (/) of the Catalyst app (default is '' which is the root)
-      #module_root_namespace => 'adm',
-
-      ## To load additional, custom RapidApp modules (under the root module):
-      #load_modules => { somemodule => 'Some::RapidApp::Module::Class' }
-    },
 
     # Customize the behaviors of the built-in "Template Controller" which is used
     # to serve template files application-wide. Locally defined Templates, if present,
@@ -116,6 +128,52 @@ __PACKAGE__->config(
     'Plugin::RapidApp::NavCore' => {
       # 
     },
+
+    'View::TT' => {
+        INCLUDE_PATH =>  [ 
+            __PACKAGE__->path_to( 'root', 'users' ),
+            __PACKAGE__->path_to( 'root', 'src' ), 
+            ],
+#                          Path::Class::dir(RapidApp->share_dir)->stringify ],
+    },
+    'View::Email' => {
+        stash_key => 'email',
+        default => {
+            content_type => 'text/plain',
+            charset => 'utf-8',
+        },
+        sender => {
+            mailer => 'SMTP',
+            mailer_args => {
+                host => 'localhost',
+#                sasl_username => '',
+#                sasl_password => '',
+            },
+        },
+    },
+#     'Controller::Users' => {
+# #        form_handler => 'HTML::FormHandlerX::Form::Login',
+#         form_handler => 'AccessSystem::Form::Person',
+#         register_fields => ['email', 'name', 'dob', 'password', 'confirm_password' ],
+#         view => 'TT',
+#         model => 'RapidApp::CoreSchema::User',
+#         login_id_field => 'email',
+#         login_id_db_field => 'email',
+#         enable_register => 1,
+#         enable_sending_register_email => 1,
+
+#         register_template =>                   'register.tt',
+#         login_template    =>                   'users/login.tt',
+#         change_password_template =>            'users/change-password.tt',
+#         forgot_password_template =>            'users/forgot-password.tt',
+#         reset_password_template  =>            'users/reset-password.tt',
+
+        
+#         auto_login_after_register => 0,
+#         action_after_register => '/auth/login',
+#         action_after_login => '/admin/approot',
+#         action_after_change_password => '/admin/approot',
+#     },
 
 );
 

@@ -11,9 +11,20 @@ __PACKAGE__->table('usage_log');
 __PACKAGE__->add_columns(
     person_id => {
         data_type => 'integer',
+        is_nullable => 1,
     },
     accessible_thing_id => {
-        data_type => 'integer',
+        data_type => 'varchar',
+        size => 40,
+        is_nullable => 1,
+    },
+    token_id => {
+        data_type => 'varchar',
+        size => 255,
+    },
+    status => {
+        data_type => 'varchar',
+        size => 20,
     },
     accessed_date => {
         data_type => 'datetime',
@@ -21,8 +32,8 @@ __PACKAGE__->add_columns(
     },
 );
 
-__PACKAGE__->belongs_to('person', 'AccessSystem::Schema::Result::Person', 'person_id');
-__PACKAGE__->belongs_to('accessible_thing', 'AccessSystem::Schema::Result::AccessibleThing', 'accessible_thing_id');
+__PACKAGE__->belongs_to('person', 'AccessSystem::Schema::Result::Person', 'person_id', { join_type => 'left'});
+__PACKAGE__->belongs_to('accessible_thing', 'AccessSystem::Schema::Result::AccessibleThing', 'accessible_thing_id', { join_type => 'left'});
 
 1;
 
