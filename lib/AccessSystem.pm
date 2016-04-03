@@ -6,6 +6,7 @@ use RapidApp 1.1005;
 
 use Catalyst qw/
     -Debug
+    ConfigLoader
     RapidApp::RapidDbic
     RapidApp::TabGui
     RapidApp::AuthCore

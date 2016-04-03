@@ -6,11 +6,11 @@ use base 'Catalyst::Model::DBIC::Schema';
 __PACKAGE__->config(
     schema_class => 'AccessSystem::Schema',
     
-    connect_info => {
-        dsn => 'dbi:SQLite:db/test.db',
-        user => '',
-        password => '',
-    }
+    # connect_info => {
+    #     dsn => 'dbi:SQLite:db/test.db',
+    #     user => '',
+    #     password => '',
+    # }
 );
 
 =head1 NAME
