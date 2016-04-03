@@ -30,7 +30,8 @@ sub verify: Chained('/base') :PathPart('verify') :Args(0) {
         if($result && !$result->{error}) {
             $c->stash(
                 json => {
-                    person => { name => $result->{person}->name, trainer => $result->{person}->get_column('trainer') },
+                    person => { name => $result->{person}->name },
+                    trainer => $result->{person}->get_column('trainer'),
                     access => 1,
                 }
             );
