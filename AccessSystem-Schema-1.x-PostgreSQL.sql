@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::PostgreSQL
--- Created on Thu Mar 31 19:12:08 2016
+-- Created on Sun Apr  3 17:51:12 2016
 -- 
 --
 -- Table: accessible_things
@@ -53,6 +53,7 @@ CREATE TABLE dues (
   paid_on_date timestamp NOT NULL,
   expires_on_date timestamp NOT NULL,
   amount_p integer NOT NULL,
+  added_on timestamp NOT NULL,
   PRIMARY KEY (person_id, paid_on_date)
 );
 CREATE INDEX dues_idx_person_id on dues (person_id);
@@ -110,7 +111,7 @@ ALTER TABLE dues ADD CONSTRAINT dues_fk_person_id FOREIGN KEY (person_id)
   REFERENCES people (id) ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
 ALTER TABLE message_log ADD CONSTRAINT message_log_fk_accessible_thing_id FOREIGN KEY (accessible_thing_id)
-  REFERENCES accessible_things (id) DEFERRABLE;
+  REFERENCES accessible_things (id) ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
 ALTER TABLE allowed ADD CONSTRAINT allowed_fk_accessible_thing_id FOREIGN KEY (accessible_thing_id)
   REFERENCES accessible_things (id) ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;

@@ -26,7 +26,7 @@ See also L<AccessSystem::Schema::Result::Person/is_valid>.
 
 =cut
 
-__PACKAGE__->load_components('InflateColumn::DateTime');
+__PACKAGE__->load_components('InflateColumn::DateTime', 'TimeStamp');
 
 __PACKAGE__->table('dues');
 __PACKAGE__->add_columns(
@@ -42,6 +42,10 @@ __PACKAGE__->add_columns(
     amount_p => {
         data_type => 'integer',
     },
+    added_on => {
+        data_type => 'datetime',
+        set_on_create => 1,
+    }
 );
 
 __PACKAGE__->set_primary_key('person_id', 'paid_on_date');

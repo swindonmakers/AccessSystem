@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Thu Mar 31 19:12:08 2016
+-- Created on Sun Apr  3 17:51:12 2016
 -- 
 
 BEGIN TRANSACTION;
@@ -64,6 +64,7 @@ CREATE TABLE dues (
   paid_on_date datetime NOT NULL,
   expires_on_date datetime NOT NULL,
   amount_p integer NOT NULL,
+  added_on datetime NOT NULL,
   PRIMARY KEY (person_id, paid_on_date),
   FOREIGN KEY (person_id) REFERENCES people(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -80,7 +81,7 @@ CREATE TABLE message_log (
   message varchar(2048) NOT NULL,
   from_ip varchar(15) NOT NULL,
   written_date datetime NOT NULL,
-  FOREIGN KEY (accessible_thing_id) REFERENCES accessible_things(id)
+  FOREIGN KEY (accessible_thing_id) REFERENCES accessible_things(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE INDEX message_log_idx_accessible_thing_id ON message_log (accessible_thing_id);
