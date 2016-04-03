@@ -29,6 +29,7 @@ __PACKAGE__->set_primary_key('id');
 __PACKAGE__->add_unique_constraint('name' => ['name']);
 
 __PACKAGE__->has_many('allowed_people', 'AccessSystem::Schema::Result::Allowed', 'accessible_thing_id');
+__PACKAGE__->has_many('logs', 'AccessSystem::Schema::Result::MessageLog', 'accessible_thing_id');
 
 sub induct_student {
     my ($self, $admin_token, $student_token) = @_;

@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::MySQL
--- Created on Thu Mar 17 20:51:49 2016
+-- Created on Thu Mar 31 19:12:08 2016
 -- 
 SET foreign_key_checks=0;
 
@@ -66,6 +66,20 @@ CREATE TABLE dues (
   CONSTRAINT dues_fk_person_id FOREIGN KEY (person_id) REFERENCES people (id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+DROP TABLE IF EXISTS message_log;
+
+--
+-- Table: message_log
+--
+CREATE TABLE message_log (
+  accessible_thing_id varchar(40) NULL,
+  message text NOT NULL,
+  from_ip varchar(15) NOT NULL,
+  written_date datetime NOT NULL,
+  INDEX message_log_idx_accessible_thing_id (accessible_thing_id),
+  CONSTRAINT message_log_fk_accessible_thing_id FOREIGN KEY (accessible_thing_id) REFERENCES accessible_things (id)
+) ENGINE=InnoDB;
+
 DROP TABLE IF EXISTS allowed;
 
 --
@@ -78,7 +92,7 @@ CREATE TABLE allowed (
   INDEX allowed_idx_accessible_thing_id (accessible_thing_id),
   INDEX allowed_idx_person_id (person_id),
   PRIMARY KEY (person_id, accessible_thing_id),
-  CONSTRAINT allowed_fk_accessible_thing_id FOREIGN KEY (accessible_thing_id) REFERENCES accessible_things (id),
+  CONSTRAINT allowed_fk_accessible_thing_id FOREIGN KEY (accessible_thing_id) REFERENCES accessible_things (id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT allowed_fk_person_id FOREIGN KEY (person_id) REFERENCES people (id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 

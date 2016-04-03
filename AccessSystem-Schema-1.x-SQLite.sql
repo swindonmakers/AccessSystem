@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Thu Mar 17 20:51:49 2016
+-- Created on Thu Mar 31 19:12:08 2016
 -- 
 
 BEGIN TRANSACTION;
@@ -71,6 +71,21 @@ CREATE TABLE dues (
 CREATE INDEX dues_idx_person_id ON dues (person_id);
 
 --
+-- Table: message_log
+--
+DROP TABLE message_log;
+
+CREATE TABLE message_log (
+  accessible_thing_id varchar(40),
+  message varchar(2048) NOT NULL,
+  from_ip varchar(15) NOT NULL,
+  written_date datetime NOT NULL,
+  FOREIGN KEY (accessible_thing_id) REFERENCES accessible_things(id)
+);
+
+CREATE INDEX message_log_idx_accessible_thing_id ON message_log (accessible_thing_id);
+
+--
 -- Table: allowed
 --
 DROP TABLE allowed;
@@ -80,7 +95,7 @@ CREATE TABLE allowed (
   accessible_thing_id varchar(40) NOT NULL,
   is_admin boolean NOT NULL,
   PRIMARY KEY (person_id, accessible_thing_id),
-  FOREIGN KEY (accessible_thing_id) REFERENCES accessible_things(id),
+  FOREIGN KEY (accessible_thing_id) REFERENCES accessible_things(id) ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY (person_id) REFERENCES people(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 

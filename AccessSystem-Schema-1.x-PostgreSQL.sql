@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::PostgreSQL
--- Created on Thu Mar 17 20:51:49 2016
+-- Created on Thu Mar 31 19:12:08 2016
 -- 
 --
 -- Table: accessible_things
@@ -58,6 +58,18 @@ CREATE TABLE dues (
 CREATE INDEX dues_idx_person_id on dues (person_id);
 
 --
+-- Table: message_log
+--
+DROP TABLE message_log CASCADE;
+CREATE TABLE message_log (
+  accessible_thing_id character varying(40),
+  message character varying(2048) NOT NULL,
+  from_ip character varying(15) NOT NULL,
+  written_date timestamp NOT NULL
+);
+CREATE INDEX message_log_idx_accessible_thing_id on message_log (accessible_thing_id);
+
+--
 -- Table: allowed
 --
 DROP TABLE allowed CASCADE;
@@ -97,8 +109,11 @@ ALTER TABLE access_tokens ADD CONSTRAINT access_tokens_fk_person_id FOREIGN KEY 
 ALTER TABLE dues ADD CONSTRAINT dues_fk_person_id FOREIGN KEY (person_id)
   REFERENCES people (id) ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
-ALTER TABLE allowed ADD CONSTRAINT allowed_fk_accessible_thing_id FOREIGN KEY (accessible_thing_id)
+ALTER TABLE message_log ADD CONSTRAINT message_log_fk_accessible_thing_id FOREIGN KEY (accessible_thing_id)
   REFERENCES accessible_things (id) DEFERRABLE;
+
+ALTER TABLE allowed ADD CONSTRAINT allowed_fk_accessible_thing_id FOREIGN KEY (accessible_thing_id)
+  REFERENCES accessible_things (id) ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
 ALTER TABLE allowed ADD CONSTRAINT allowed_fk_person_id FOREIGN KEY (person_id)
   REFERENCES people (id) ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;

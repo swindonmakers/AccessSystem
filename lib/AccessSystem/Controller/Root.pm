@@ -74,6 +74,26 @@ sub verify: Chained('/base') :PathPart('verify') :Args(0) {
     
 }
 
+sub msg_log: Chained('/base'): PathPart('msglog'): Args() {
+    my ($self, $c) = @_;
+    
+    if($c->req->params->{thing} && $c->req->params->{msg}) {
+        my $thing = $c->model('AccessDB::AccessibleThing')->find({ id => $c->req->params->{thing} });
+        if($thing) {
+            $thing->create_related('logs',
+                                   { message => $c->req->params->{msg},
+                                     from_ip => $c->req->address });
+            $c->stash(json => { logged => 1 });
+        } else {
+            $c->stash(json => { logged => 0 });            
+        }        
+    } else {
+        $c->stash(json => { error => 'Missing thing or msg parameter' });
+    }
+    
+    $c->forward('View::RapidApp::JSON');
+}
+
 ## Thing X (from correct IP Y) says person T inducts person S to use it:
 
 sub induct: Chained('/base'): PathPart('induct'): Args() {
