@@ -13,3 +13,4 @@ requires 'Config::General';
 requires 'Catalyst::Plugin::StatusMessage';
 requires 'HTML::FormHandler::Model::DBIC';
 requires 'DBIx::Class::UUIDColumns';
+requires 'Template::Stash::XS';
