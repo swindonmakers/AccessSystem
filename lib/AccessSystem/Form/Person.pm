@@ -6,6 +6,7 @@ use warnings;
 use DateTime;
 
 use HTML::FormHandler::Moose;
+use HTML::FormHandlerX::Field::noCAPTCHA;
 extends 'HTML::FormHandler::Model::DBIC';
 with 'HTML::FormHandler::Widget::Theme::Bootstrap3';
 # has '+widget_wrapper' => ( default => 'Bootstrap3' );
@@ -134,6 +135,15 @@ has_field more_children => field_add_defaults {
     tags         => { no_errors => 1 },
     label => 'Add more named children to this account?',
     inactive => 1,
+};
+
+
+has_field capcha => => field_add_defaults {
+  type => 'noCAPTCHA',
+  required => 1,
+  help_string => 'Sorry, membership is only open to people capable of passing a Turing test',
+  wrapper_attr => { id => 'field-recapcha' },
+  label => "I am a person",
 };
 
 

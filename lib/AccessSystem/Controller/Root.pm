@@ -159,7 +159,7 @@ sub induct: Chained('/base'): PathPart('induct'): Args() {
 sub register: Chained('/base'): PathPath('register'): Args(0) {
     my ($self, $c) = @_;
 
-    my $form = AccessSystem::Form::Person->new();
+    my $form = AccessSystem::Form::Person->new({ctx => $c});
     my $new_person = $c->model('AccessDB::Person')->new_result({});
 
     if($form->process(
