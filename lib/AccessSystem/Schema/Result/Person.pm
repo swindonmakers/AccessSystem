@@ -91,7 +91,7 @@ sub bank_ref {
 }
 
 ## basic = 25/mo
-## devide by 2 for concessions (applies also to children!?)
+## divide by 2 for concessions (applies also to children!?)
 ## add 5 for each child beyond first one
 ## returns whole pence
 

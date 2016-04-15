@@ -345,6 +345,15 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 0
       Test::More 0.47
       perl 5.005
+  Captcha-reCAPTCHA-0.97
+    pathname: P/PH/PHRED/Captcha-reCAPTCHA-0.97.tar.gz
+    provides:
+      Captcha::reCAPTCHA 0.97
+    requirements:
+      ExtUtils::MakeMaker 0
+      HTML::Tiny 0.904
+      LWP::UserAgent 0
+      Test::More 0
   Capture-Tiny-0.36
     pathname: D/DA/DAGOLDEN/Capture-Tiny-0.36.tar.gz
     provides:
@@ -1162,6 +1171,19 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 0
       Pod::Text 2.08
       Pod::Usage 1.33
+  Crypt-Blowfish-2.14
+    pathname: D/DP/DPARIS/Crypt-Blowfish-2.14.tar.gz
+    provides:
+      Crypt::Blowfish 2.14
+    requirements:
+      ExtUtils::MakeMaker 0
+  Crypt-CBC-2.33
+    pathname: L/LD/LDS/Crypt-CBC-2.33.tar.gz
+    provides:
+      Crypt::CBC 2.33
+    requirements:
+      Digest::MD5 2.00
+      ExtUtils::MakeMaker 0
   Crypt-DES-2.07
     pathname: D/DP/DPARIS/Crypt-DES-2.07.tar.gz
     provides:
@@ -3363,6 +3385,19 @@ DISTRIBUTIONS
       HTML::FormHandler 0.40016
       Moose 2.0007
       namespace::autoclean 0.09
+  HTML-FormHandlerX-Field-reCAPTCHA-0.04
+    pathname: J/JJ/JJNAPIORK/HTML-FormHandlerX-Field-reCAPTCHA-0.04.tar.gz
+    provides:
+      HTML::FormHandlerX::Field::reCAPTCHA 0.04
+      HTML::FormHandlerX::Widget::Field::reCAPTCHA undef
+    requirements:
+      Captcha::reCAPTCHA 0.92
+      Crypt::Blowfish 2.10
+      Crypt::CBC 2.30
+      ExtUtils::MakeMaker 6.59
+      HTML::FormHandler 0.30002
+      Test::More 0.94
+      perl 5.008
   HTML-Parser-3.72
     pathname: G/GA/GAAS/HTML-Parser-3.72.tar.gz
     provides:
@@ -3384,6 +3419,13 @@ DISTRIBUTIONS
       HTML::Tagset 3.20
     requirements:
       ExtUtils::MakeMaker 0
+  HTML-Tiny-1.05
+    pathname: A/AN/ANDYA/HTML-Tiny-1.05.tar.gz
+    provides:
+      HTML::Tiny 1.05
+    requirements:
+      ExtUtils::MakeMaker 0
+      Test::More 0
   HTML-TokeParser-Simple-3.16
     pathname: O/OV/OVID/HTML-TokeParser-Simple-3.16.tar.gz
     provides:

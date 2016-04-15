@@ -86,7 +86,10 @@ sub msg_log: Chained('/base'): PathPart('msglog'): Args() {
                                      from_ip => $c->req->address });
             $c->stash(json => { logged => 1 });
         } else {
-            $c->stash(json => { logged => 0 });            
+            $c->stash(json => 
+                      { logged => 0,
+                        error => "No such thing!",
+                      });            
         }        
     } else {
         $c->stash(json => { error => 'Missing thing or msg parameter' });
@@ -102,8 +105,8 @@ sub induct: Chained('/base'): PathPart('induct'): Args() {
 
     if($c->req->params->{token_t} && $c->req->params->{token_s} && $c->req->params->{thing}) {
         my $thing = $c->model('AccessDB::AccessibleThing')->find({ id => $c->req->params->{thing} });
-        print STDERR "Thing IP: ", $thing->assigned_ip, "\n";
-        print STDERR "Req   IP: ", $c->req->address, "\n";
+#        print STDERR "Thing IP: ", $thing->assigned_ip, "\n";
+#        print STDERR "Req   IP: ", $c->req->address, "\n";
         if(!$thing) {
             $c->stash(
                 json => {
@@ -142,7 +145,7 @@ sub induct: Chained('/base'): PathPart('induct'): Args() {
     } else {
         $c->stash(
             json => {
-                access => 0,
+                allowed => 0,
                 error  => 'Missing token or thing parameter(s)',
             }
         );
@@ -156,7 +159,7 @@ sub induct: Chained('/base'): PathPart('induct'): Args() {
 sub register: Chained('/base'): PathPath('register'): Args(0) {
     my ($self, $c) = @_;
 
-    my $form = AccessSystem::Form::Person->new();
+    my $form = AccessSystem::Form::Person->new({ctx => $c});
     my $new_person = $c->model('AccessDB::Person')->new_result({});
 
     if($form->process(
