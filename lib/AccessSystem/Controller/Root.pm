@@ -237,6 +237,19 @@ sub add_child: Chained('/base') :PathPart('add_child') :Args(0) {
     }
 }
 
+sub resend_email: Chained('/base'): PathPart('resendemail'): Args(1) {
+    my ($self, $c, $id) = @_;
+    my $member = $c->model('AccessDB::Person')->find({ id => $id });
+    if($member) {
+	$c->stash(member => $member);
+	$c->forward('send_membership_email');
+	$c->stash(json => { message => "Attempted to send email" });
+    } else {
+	$c->stash(json => { message => "Can't find member $id" });
+    }
+    $c->forward('View::RapidApp::JSON');
+}
+
 sub send_membership_email: Private {
     my ($self, $c) = @_;
 
