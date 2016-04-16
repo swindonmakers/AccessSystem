@@ -345,6 +345,18 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 0
       Test::More 0.47
       perl 5.005
+  Captcha-noCAPTCHA-0.12
+    pathname: C/CL/CLARSON/Captcha-noCAPTCHA-0.12.tar.gz
+    provides:
+      Captcha::noCAPTCHA 0.12
+    requirements:
+      ExtUtils::MakeMaker 0
+      HTTP::Tiny 0
+      IO::Socket::SSL 1.56
+      JSON::PP 0
+      Net::SSLeay 1.49
+      strict 0
+      warnings 0
   Captcha-reCAPTCHA-0.97
     pathname: P/PH/PHRED/Captcha-reCAPTCHA-0.97.tar.gz
     provides:
@@ -3385,6 +3397,19 @@ DISTRIBUTIONS
       HTML::FormHandler 0.40016
       Moose 2.0007
       namespace::autoclean 0.09
+  HTML-FormHandlerX-Field-noCAPTCHA-0.08
+    pathname: C/CL/CLARSON/HTML-FormHandlerX-Field-noCAPTCHA-0.08.tar.gz
+    provides:
+      HTML::FormHandlerX::Field::noCAPTCHA 0.08
+      HTML::FormHandlerX::Widget::Field::noCAPTCHA 0.08
+    requirements:
+      Captcha::noCAPTCHA 0.12
+      ExtUtils::MakeMaker 0
+      HTML::FormHandler::Field 0
+      Moose 0
+      Moose::Role 0
+      Moose::Util::TypeConstraints 0
+      namespace::autoclean 0
   HTML-FormHandlerX-Field-reCAPTCHA-0.04
     pathname: J/JJ/JJNAPIORK/HTML-FormHandlerX-Field-reCAPTCHA-0.04.tar.gz
     provides:
@@ -3692,6 +3717,22 @@ DISTRIBUTIONS
       IO::Socket 0
       Socket 1.97
       Test::More 0.88
+  IO-Socket-SSL-2.025
+    pathname: S/SU/SULLR/IO-Socket-SSL-2.025.tar.gz
+    provides:
+      IO::Socket::SSL 2.025
+      IO::Socket::SSL::Intercept 2.014
+      IO::Socket::SSL::OCSP_Cache 2.025
+      IO::Socket::SSL::OCSP_Resolver 2.025
+      IO::Socket::SSL::PublicSuffix undef
+      IO::Socket::SSL::SSL_Context 2.025
+      IO::Socket::SSL::SSL_HANDLE 2.025
+      IO::Socket::SSL::Session_Cache 2.025
+      IO::Socket::SSL::Utils 2.014
+    requirements:
+      ExtUtils::MakeMaker 0
+      Net::SSLeay 1.46
+      Scalar::Util 0
   IO-stringy-2.111
     pathname: D/DS/DSKOLL/IO-stringy-2.111.tar.gz
     provides:
@@ -5140,6 +5181,16 @@ DISTRIBUTIONS
       IO::Uncompress::Gunzip 0
       URI 0
       perl 5.006002
+  Net-SSLeay-1.74
+    pathname: M/MI/MIKEM/Net-SSLeay-1.74.tar.gz
+    provides:
+      Net::SSLeay 1.74
+      Net::SSLeay::Handle 0.61
+    requirements:
+      ExtUtils::MakeMaker 6.36
+      MIME::Base64 0
+      Test::More 0.60_01
+      perl 5.005
   Net-Server-2.008
     pathname: R/RH/RHANDOM/Net-Server-2.008.tar.gz
     provides:
