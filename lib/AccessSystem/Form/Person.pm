@@ -12,7 +12,6 @@ with 'HTML::FormHandler::Widget::Theme::Bootstrap3';
 # has '+widget_wrapper' => ( default => 'Bootstrap3' );
 # with 'HTML::FormHandler::Widget::Theme::BootstrapFormMessages';
 has '+item_class' => ( default => 'Person' );
-
 #sub build_form_element_attr {
 #    return { class => 'form-horizontal' };
 #}

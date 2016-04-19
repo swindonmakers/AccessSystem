@@ -86,10 +86,10 @@ sub msg_log: Chained('/base'): PathPart('msglog'): Args() {
                                      from_ip => $c->req->address });
             $c->stash(json => { logged => 1 });
         } else {
-            $c->stash(json => 
+            $c->stash(json =>
                       { logged => 0,
                         error => "No such thing!",
-                      });            
+                      });
         }        
     } else {
         $c->stash(json => { error => 'Missing thing or msg parameter' });
