@@ -14,8 +14,8 @@ exit Daemon::Control->new(
     path        => "$path/script/accesssystem_daemon.pl",
     directory   => "$path",
 #    init_config => "$path etc/environment",
-    user        => 'castaway',
-    group       => 'castaway',
+    user        => 'pi',
+    group       => 'pi',
     program     => "carton exec $path/script/accesssystem_server.pl",
  
     pid_file    => '/tmp/accesssystem_crud.pid',
