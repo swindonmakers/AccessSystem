@@ -1711,6 +1711,19 @@ DISTRIBUTIONS
       DBIx::Class 0.07005
       ExtUtils::MakeMaker 6.42
       perl 5.008001
+  Daemon-Control-0.001008
+    pathname: S/SY/SYMKAT/Daemon-Control-0.001008.tar.gz
+    provides:
+      Daemon::Control 0.001008
+    requirements:
+      Cwd 0
+      ExtUtils::MakeMaker 6.59
+      File::Path 2.08
+      File::Spec 0
+      File::Temp 0.14
+      POSIX 0
+      Test::More 0.88
+      perl 5.008001
   Data-Clone-0.004
     pathname: G/GF/GFUJI/Data-Clone-0.004.tar.gz
     provides:

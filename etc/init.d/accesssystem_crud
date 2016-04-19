@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Generated at Tue Apr 19 20:52:15 2016 with Daemon::Control 0.001008
+
+### BEGIN INIT INFO
+# Provides:          AccessSystem CRUD
+# Required-Start:    $syslog $remote_fs
+# Required-Stop:     $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: AccessSystem CRUD
+# Description:       AccessSystem CRUD controls the AccessSystem CRUD daemon.
+### END INIT INFO`
+
+
+
+
+
+if [ -x /home/pi/AccessSystem/script/accesssystem_daemon.pl ];
+then
+    /home/pi/AccessSystem/script/accesssystem_daemon.pl $1
+else
+    echo "Required program /home/pi/AccessSystem/script/accesssystem_daemon.pl not found!"
+    exit 1;
+fi
