@@ -146,9 +146,8 @@ __PACKAGE__->config(
         sender => {
             mailer => 'SMTP',
             mailer_args => {
-                host => 'localhost',
-#                sasl_username => '',
-#                sasl_password => '',
+                host => 'localhost', 
+		debug => 1,
             },
         },
     },
