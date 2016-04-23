@@ -8,6 +8,10 @@ use lib "$ENV{CATALYST_HOME}/lib";
 use AccessSystem::Schema;
 use OFX::Parse;
 
+if(!$ENV{CATALYST_HOME}) {
+    die "Please set the CATALYST_HOME environment variable and try again\n";
+}
+
 # Read config to get db connection info:
 my %config = Config::General->new("$ENV{CATALYST_HOME}/accesssystem.conf")->getall;
 my $schema = AccessSystem::Schema->connect(
@@ -19,7 +23,8 @@ my $schema = AccessSystem::Schema->connect(
 my $latest_payment_rs = $schema->resultset('Dues')->search(
     {},
     {
-        columns => [ { max_added => { max => 'added_on' } }, 'added_on' ],
+        rows => 1,
+	order_by => [{ '-desc' => 'added_on'}],
     }
     );
 
@@ -99,6 +104,7 @@ sub import_payments {
             warn "Can't work out how many months to pay for SM$id, with $trn->{trnamt}\n";
             next;
         }
+	warn "About to create add payment on: $trn->{dtposted} for " . $member->name, "\n";
         $member->create_related('payments',
                                 {
                                     paid_on_date => $trn->{dtposted},

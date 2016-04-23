@@ -76,7 +76,7 @@ sub read_ofx {
 
     # Ignore oldfileuid / newfileuid for now.
 
-    p $ofxheader;
+#    p $ofxheader;
 
     ### FUCK IT, OPENCODING A SGML PARSER.
 
@@ -194,7 +194,7 @@ sub read_ofx {
         $t->{dtposted} = $dt_parser->parse_datetime($t->{dtposted});
         $t->{trntype} = lc $t->{trntype};
     }
-    p $list;
+#    p $list;
     return $list;
 }
 
