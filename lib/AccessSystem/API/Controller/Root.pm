@@ -281,7 +281,7 @@ sub send_membership_email: Private {
     my $member = $c->stash->{member};
     $c->stash->{email} = {
             to => $member->email,
-#           cc => 'info@swindon-makerspace.org',
+            cc => 'info@swindon-makerspace.org',
             from => 'info@swindon-makerspace.org',
             subject => 'Swindon Makerspace membership info',
             body => "
