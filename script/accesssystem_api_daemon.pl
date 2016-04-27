@@ -6,11 +6,11 @@ use Daemon::Control;
 my $path = "/home/pi/AccessSystem";
 
 exit Daemon::Control->new(
-    name        => "AccessSystem CRUD",
+    name        => "AccessSystem API",
     lsb_start   => '$syslog $remote_fs',
     lsb_stop    => '$syslog',
-    lsb_sdesc   => 'AccessSystem CRUD',
-    lsb_desc    => 'AccessSystem CRUD controls the AccessSystem CRUD daemon.',
+    lsb_sdesc   => 'AccessSystem API',
+    lsb_desc    => 'AccessSystem API controls the AccessSystem API daemon.',
     path        => "$path/script/accesssystem_api_daemon.pl",
     directory   => "$path",
 #    init_config => "$path etc/environment",

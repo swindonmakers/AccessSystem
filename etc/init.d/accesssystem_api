@@ -1,15 +1,15 @@
 #!/bin/sh
 
-# Generated at Tue Apr 26 23:58:10 2016 with Daemon::Control 0.001008
+# Generated at Wed Apr 27 21:18:51 2016 with Daemon::Control 0.001008
 
 ### BEGIN INIT INFO
-# Provides:          AccessSystem CRUD
+# Provides:          AccessSystem API
 # Required-Start:    $syslog $remote_fs
 # Required-Stop:     $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: AccessSystem CRUD
-# Description:       AccessSystem CRUD controls the AccessSystem CRUD daemon.
+# Short-Description: AccessSystem API
+# Description:       AccessSystem API controls the AccessSystem API daemon.
 ### END INIT INFO`
 
 
