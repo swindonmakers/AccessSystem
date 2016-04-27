@@ -6,7 +6,7 @@ use Daemon::Control;
 my $path = "/usr/src/extern/hackspace/AccessSystem";
 
 exit Daemon::Control->new(
-    name        => "AccessSystem API",
+    name        => "AccessSystem-API",
     lsb_start   => '$syslog $remote_fs',
     lsb_stop    => '$syslog',
     lsb_sdesc   => 'AccessSystem API',

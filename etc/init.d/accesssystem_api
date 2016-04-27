@@ -1,9 +1,9 @@
 #!/bin/sh
 
-# Generated at Wed Apr 27 21:18:51 2016 with Daemon::Control 0.001008
+# Generated at Wed Apr 27 21:22:00 2016 with Daemon::Control 0.001008
 
 ### BEGIN INIT INFO
-# Provides:          AccessSystem API
+# Provides:          AccessSystem-API
 # Required-Start:    $syslog $remote_fs
 # Required-Stop:     $syslog
 # Default-Start:     2 3 4 5

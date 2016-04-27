@@ -6,7 +6,7 @@ use Daemon::Control;
 my $path = "/home/pi/AccessSystem";
 
 exit Daemon::Control->new(
-    name        => "AccessSystem CRUD",
+    name        => "AccessSystem-CRUD",
     lsb_start   => '$syslog $remote_fs',
     lsb_stop    => '$syslog',
     lsb_sdesc   => 'AccessSystem CRUD',

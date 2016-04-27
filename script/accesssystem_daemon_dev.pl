@@ -6,7 +6,7 @@ use local::lib '/usr/src/perl/libs/access_system/perl5/';
 my $path = "$ENV{PWD}";
 
 exit Daemon::Control->new(
-    name        => "AccessSystem CRUD",
+    name        => "AccessSystem-CRUD",
     lsb_start   => '$syslog $remote_fs',
     lsb_stop    => '$syslog',
     lsb_sdesc   => 'AccessSystem CRUD',
