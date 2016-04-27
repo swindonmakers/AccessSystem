@@ -1,4 +1,4 @@
-package AccessSystem::View::Email;
+package AccessSystem::API::View::Email;
 
 use strict;
 use base 'Catalyst::View::Email';
