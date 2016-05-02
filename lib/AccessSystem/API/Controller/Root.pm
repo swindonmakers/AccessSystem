@@ -2,6 +2,7 @@ package AccessSystem::API::Controller::Root;
 use Moose;
 use namespace::autoclean;
 use AccessSystem::Form::Person;
+use Data::Dumper;
 
 BEGIN { extends 'Catalyst::Controller' }
 
@@ -104,6 +105,7 @@ sub verify: Chained('/base') :PathPart('verify') :Args(0) {
         );
     }
 
+    print STDERR "VERIFY: ", Dumper($c->stash->{json});
     ## can't fwd to our own View::JSON, this one somehow takes over
     ## and fucks it up!
     $c->forward('View::JSON');
