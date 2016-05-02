@@ -300,6 +300,7 @@ sub resend_email: Chained('/base'): PathPart('resendemail'): Args(1) {
     } else {
         $c->stash(json => { message => "Can't find member $id" });
     }
+    delete $c->stash->{member};
     $c->forward('View::JSON');
 }
 
