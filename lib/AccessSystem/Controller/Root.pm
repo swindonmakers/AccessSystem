@@ -241,51 +241,6 @@ sub add_child: Chained('/base') :PathPart('add_child') :Args(0) {
     }
 }
 
-sub resend_email: Chained('/base'): PathPart('resendemail'): Args(1) {
-    my ($self, $c, $id) = @_;
-    my $member = $c->model('AccessDB::Person')->find({ id => $id });
-    if($member) {
-	$c->stash(member => $member);
-	$c->forward('send_membership_email');
-	$c->stash(json => { message => "Attempted to send email" });
-    } else {
-	$c->stash(json => { message => "Can't find member $id" });
-    }
-    $c->forward('View::RapidApp::JSON');
-}
-
-sub send_membership_email: Private {
-    my ($self, $c) = @_;
-
-    my $member = $c->stash->{member};
-    $c->stash->{email} = {
-            to => $member->email,
-#           cc => 'info@swindon-makerspace.org',
-            from => 'info@swindon-makerspace.org',
-            subject => 'Swindon Makerspace membership info',
-            body => "
-Dear " . $member->name . ",
-
-Thank you for signing up for membership of the Swindon Makerspace. To activate your 24x7 access and ability to use the regulated equipment, please set up a Standing Order with your bank using the following details:
-
-Monthly fee: £" . sprintf("%0.2f", $member->dues/100)  . "/month
-To: Swindon Makerspace
-Bank: Barclays
-Sort Code: 20-84-58
-Account: 83789160
-Ref: " . $member->bank_ref . "
-
-So that you don't have to wait for bank transfers to get started with the Makerspace tools, your account will be activated for the first 3 days.
-
-Regards,
-
-Swindon Makerspace
-",
-        };
-        $c->forward($c->view('Email'));
-    
-}
-
 sub end : ActionClass('RenderView') {
     my ($self, $c) = @_;
 
