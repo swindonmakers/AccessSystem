@@ -300,7 +300,7 @@ sub resend_email: Chained('/base'): PathPart('resendemail'): Args(1) {
     } else {
         $c->stash(json => { message => "Can't find member $id" });
     }
-    $c->forward('View::RapidApp::JSON');
+    $c->forward('View::JSON');
 }
 
 sub send_membership_email: Private {
