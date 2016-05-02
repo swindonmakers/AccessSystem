@@ -275,6 +275,34 @@ sub add_child: Chained('/base') :PathPart('add_child') :Args(0) {
     }
 }
 
+sub finish_new_member: Private {
+    my ($self, $c) = @_;
+
+    # Allow member + all children to access door!
+    $c->stash->{member}->create_related(
+        'allowed',
+        { accessible_thing_id => '1A9E3D66-E90F-11E5-83C1-1E346D398B53' });
+    $_->create_related(
+        'allowed',
+        { accessible_thing_id => '1A9E3D66-E90F-11E5-83C1-1E346D398B53' })
+        for $c->stash->{member}->children;
+    $c->forward('send_membership_email');   
+}
+    
+
+sub resend_email: Chained('/base'): PathPart('resendemail'): Args(1) {
+    my ($self, $c, $id) = @_;
+    my $member = $c->model('AccessDB::Person')->find({ id => $id });
+    if($member) {
+        $c->stash(member => $member);
+        $c->forward('send_membership_email');
+        $c->stash(json => { message => "Attempted to send email" });
+    } else {
+        $c->stash(json => { message => "Can't find member $id" });
+    }
+    $c->forward('View::RapidApp::JSON');
+}
+
 sub send_membership_email: Private {
     my ($self, $c) = @_;
 
@@ -303,8 +331,7 @@ Regards,
 Swindon Makerspace
 ",
         };
-        $c->forward($c->view('Email'));
-    
+        $c->forward($c->view('Email'));   
 }
 
 =head2 end
