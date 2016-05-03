@@ -104,7 +104,9 @@ sub import_payments {
             warn "Can't work out how many months to pay for SM$id, with $trn->{trnamt}\n";
             next;
         }
-	warn "About to create add payment on: $trn->{dtposted} for " . $member->name, "\n";
+        ## Add leeway for next standing order slot being on a sunday or bank holiday:
+        $expires_on->add(days => 3);
+        warn "About to create add payment on: $trn->{dtposted} for " . $member->name, "\n";
         $member->create_related('payments',
                                 {
                                     paid_on_date => $trn->{dtposted},
