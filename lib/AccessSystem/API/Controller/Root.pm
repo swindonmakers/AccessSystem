@@ -213,7 +213,7 @@ sub register: Chained('/base'): PathPath('register'): Args(0) {
 
         ## Email new member their payment details!
         $c->stash->{member} = $new_person;
-        $c->forward('send_membership_email');
+        $c->forward('finish_new_member');
 
         ## Then, display details just in case:
         $c->stash( template => 'member_created.tt');
@@ -265,7 +265,7 @@ sub add_child: Chained('/base') :PathPart('add_child') :Args(0) {
 
         ## Email new member their payment details!
         $c->stash->{member} = $parent;
-        $c->forward('send_membership_email');
+        $c->forward('finish_new_member');
 
         ## Then, display details just in case:
         $c->stash( template => 'member_created.tt');
@@ -283,10 +283,10 @@ sub finish_new_member: Private {
     # Allow member + all children to access door!
     $c->stash->{member}->create_related(
         'allowed',
-        { accessible_thing_id => '1A9E3D66-E90F-11E5-83C1-1E346D398B53' });
+        { accessible_thing_id => '1A9E3D66-E90F-11E5-83C1-1E346D398B53', is_admin => 0 });
     $_->create_related(
         'allowed',
-        { accessible_thing_id => '1A9E3D66-E90F-11E5-83C1-1E346D398B53' })
+        { accessible_thing_id => '1A9E3D66-E90F-11E5-83C1-1E346D398B53', is_admin => 0 })
         for $c->stash->{member}->children;
     $c->forward('send_membership_email');   
 }
@@ -302,6 +302,7 @@ sub resend_email: Chained('/base'): PathPart('resendemail'): Args(1) {
     } else {
         $c->stash(json => { message => "Can't find member $id" });
     }
+    delete $c->stash->{member};
     $c->forward('View::JSON');
 }
 

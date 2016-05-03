@@ -44,8 +44,8 @@ __PACKAGE__->config(
          AccessDB => {
              grid_params => {
                  '*defaults' => { # Defaults for all Sources
-                     updatable_colspec => ['*','!id', '!person_id'],
-                     creatable_colspec => ['*','!id', '!person_id'],
+                     updatable_colspec => ['*','!id', '!person_id', '!accessible_thing_id',],
+                     creatable_colspec => ['*','!id', '!person_id', '!accessible_thing_id',],
                      destroyable_relspec => ['*'],
                  }, # ('*defaults')
                  'AccessToken' => {
