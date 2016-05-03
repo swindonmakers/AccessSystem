@@ -62,7 +62,9 @@ __PACKAGE__->config(
             },
         },
     },
-
+    'View::JSON' => {
+        expose_stash => 'json',
+    },
 );
 
 # Start the application
