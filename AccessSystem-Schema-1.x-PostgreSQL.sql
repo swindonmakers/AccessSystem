@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::PostgreSQL
--- Created on Sun Apr  3 17:51:12 2016
+-- Created on Sun May  8 22:06:45 2016
 -- 
 --
 -- Table: accessible_things
@@ -23,8 +23,10 @@ CREATE TABLE people (
   parent_id integer,
   name character varying(255) NOT NULL,
   email character varying(255),
+  opt_in boolean DEFAULT '0' NOT NULL,
   dob timestamp NOT NULL,
   address character varying(1024) NOT NULL,
+  github_user character varying(255),
   concessionary_rate boolean DEFAULT '0' NOT NULL,
   created_date timestamp NOT NULL,
   end_date timestamp,

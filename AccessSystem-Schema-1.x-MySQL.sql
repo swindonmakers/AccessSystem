@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::MySQL
--- Created on Sun Apr  3 17:51:12 2016
+-- Created on Sun May  8 22:06:45 2016
 -- 
 SET foreign_key_checks=0;
 
@@ -27,8 +27,10 @@ CREATE TABLE people (
   parent_id integer NULL,
   name varchar(255) NOT NULL,
   email varchar(255) NULL,
+  opt_in enum('0','1') NOT NULL DEFAULT '0',
   dob datetime NOT NULL,
   address text NOT NULL,
+  github_user varchar(255) NULL,
   concessionary_rate enum('0','1') NOT NULL DEFAULT '0',
   created_date datetime NOT NULL,
   end_date datetime NULL,

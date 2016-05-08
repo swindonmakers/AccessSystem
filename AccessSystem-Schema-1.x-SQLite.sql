@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Sun Apr  3 17:51:12 2016
+-- Created on Sun May  8 22:06:45 2016
 -- 
 
 BEGIN TRANSACTION;
@@ -29,8 +29,10 @@ CREATE TABLE people (
   parent_id integer,
   name varchar(255) NOT NULL,
   email varchar(255),
+  opt_in boolean NOT NULL DEFAULT 0,
   dob datetime NOT NULL,
   address varchar(1024) NOT NULL,
+  github_user varchar(255),
   concessionary_rate boolean NOT NULL DEFAULT 0,
   created_date datetime NOT NULL,
   end_date datetime,
