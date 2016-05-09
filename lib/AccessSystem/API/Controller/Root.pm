@@ -325,7 +325,7 @@ Sort Code: 20-84-58
 Account: 83789160
 Ref: " . $member->bank_ref . "
 
-So that you don't have to wait for bank transfers to get started with the Makerspace tools, your account will be activated for the first 3 days.
+To get access to the Makerspace, please visit on an open evening (Wednesday evenings), and bring (or buy for £1 from the space) a suitable token.
 
 Regards,
 
