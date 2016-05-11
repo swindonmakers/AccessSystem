@@ -22,5 +22,7 @@ This includes <strong>[% member.children_rs.count %]</strong> children.
 [% END %]
 <ul>
 </p>
-
+<p>
+To get access to the Makerspace, please visit on an open evening (Wednesday evenings), and bring (or buy for £1 from the space) a suitable token.
+</p>
 [% END %]

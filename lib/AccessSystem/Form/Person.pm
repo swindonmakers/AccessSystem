@@ -75,6 +75,17 @@ has_field email => field_add_defaults {
     },
 };
 
+has_field opt_in => field_add_defaults {
+    type => 'Checkbox',
+    label => 'Add me to the mailing list (infrequent makerspace information)',
+    wrapper_attr => { id => 'field-mailing-list-opt-in', },
+    tags         => { no_errors => 1 },
+    messages => {
+#       required => 'Please read and agree to the Membership Guide',
+    },
+    help_string => 'Free puppies and kittens! Occassionally we send out updates about thngs happening at the Makerspace. To join the busy mailing list, visit <a target="_blank" href="https://groups.google.com/forum/#!forum/swindon-makerspace">our Google Groups list</a>'
+};
+    
 ## Child members only?
 has_field dob => field_add_defaults {
     type => 'Date',
@@ -101,6 +112,18 @@ has_field address => field_add_defaults {
         required => 'Please enter your full street address, this is necessary for our insurance',
     },
     help_string => 'As it would appear on an envelope, for insurance purposes',
+};
+
+has_field github_user => field_add_defaults {
+    type => 'Text',
+    required => 0,
+    maxlength => 255,
+    wrapper_attr => { id => 'field-github-user', },
+    tags         => { no_errors => 1 },
+    messages => {
+        required => 'Please enter a github username',
+    },
+    help_string => 'A github username, this will allow us to give you access to our code repositories and wiki. It will also be used to login and edit this data later.'
 };
 
 ## required checks if this is true as well as set, defaults to 0/1

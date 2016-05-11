@@ -29,6 +29,11 @@ __PACKAGE__->add_columns(
         size => 255,
         is_nullable => 1,
     },
+    opt_in => {
+        data_type => 'boolean',
+        default_value => 0,
+        is_nullable => 0,
+    },
     dob => {
         data_type => 'datetime',
         is_nullable => 0,
@@ -37,6 +42,11 @@ __PACKAGE__->add_columns(
         data_type => 'varchar',
         size => 1024,
         is_nullable => 0,
+    },
+    github_user => {
+        data_type => 'varchar',
+        size => 255,
+        is_nullable => 1,
     },
     concessionary_rate => {
         data_type => 'boolean',
