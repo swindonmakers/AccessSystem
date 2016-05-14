@@ -12,7 +12,6 @@ __PACKAGE__->add_columns(
     accessible_thing_id => {
         data_type => 'varchar',
         size => 40,
-        is_nullable => 1,
     },
     message => {
         data_type => 'varchar',
@@ -28,6 +27,7 @@ __PACKAGE__->add_columns(
     },
 );
 
+__PACKAGE__->set_primary_key('accessible_thing_id', 'written_date');
 __PACKAGE__->belongs_to('accessible_thing', 'AccessSystem::Schema::Result::AccessibleThing', 'accessible_thing_id');
 
 1;
