@@ -49,18 +49,42 @@ __PACKAGE__->config(
                      destroyable_relspec => ['*'],
                  }, # ('*defaults')
                  'AccessToken' => {
-                     creatable_colspec => ['*', '!person_id']
+                     creatable_colspec => ['*', '!person_id'],
                  },
-         },
-         TableSpecs => {
+                 'Person' => {
+                     include_colspec => ['*', 'payments.expiry_date'],
+                 },
+             },
+             TableSpecs => {
+                 'Person' => {
+                     display_column => 'name',
+                 },
+                 'AccessibleThing' => {
+                     display_column => 'name',
+                 },
+             },
+             virtual_columns => {
+                 'Person' => {
+                     'valid_until' => {
+                         data_type => 'datetime',
+                         is_nullable => 1,
+                         sql => 'SELECT max(dues.expires_on_date) FROM dues WHERE dues.person_id = self.id',
+                     },
+                     is_valid => {
+                         data_type => 'boolean',
+                         is_nullable => 0,
+                         sql => 'SELECT CASE WHEN max_valid >= CURRENT_TIMESTAMP THEN 1 ELSE 0 END FROM (SELECT max(dues.expires_on_date) as max_valid FROM dues WHERE dues.person_id=self.id)',
+                     },
+                         
+                 },
+             }
            # ...
          }
        },
        OtherModel => {
          # ...
        }
-     }
-   },
+    },
     # The TabGui plugin mounts the standard ExtJS explorer interface as the 
     # RapidApp root module (which is at the root '/' of the app by default)
     'Plugin::RapidApp::TabGui' => {
