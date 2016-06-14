@@ -127,7 +127,7 @@ sub valid_until {
     my $valid_until = $self->payments_rs->search(
         {},
         {
-            columns => [ 'valid_until' => { 'max' => 'expires_on_date' }],
+            columns => [ { 'valid_until' => { 'max' => 'expires_on_date' } }],
             group_by => ['person_id'],
         })->first->get_column('valid_until');
     if($valid_until) {
