@@ -120,4 +120,21 @@ sub dues {
     return $dues;
 }
 
+sub valid_until {
+    my ($self) = @_;
+
+    my $dtf = $self->result_source->schema->storage->datetime_parser;
+    my $valid_until = $self->payments_rs->search(
+        {},
+        {
+            columns => [ 'valid_until' => { 'max' => 'expires_on_date' }],
+            group_by => ['person_id'],
+        })->first->get_column('valid_until');
+    if($valid_until) {
+        return $dtf->parse_datetime($valid_until);
+    }
+
+    return undef;
+}
+
 1;
