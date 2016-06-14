@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::PostgreSQL
--- Created on Sun May  8 22:06:45 2016
+-- Created on Tue Jun 14 14:13:01 2016
 -- 
 --
 -- Table: accessible_things
@@ -28,6 +28,7 @@ CREATE TABLE people (
   address character varying(1024) NOT NULL,
   github_user character varying(255),
   concessionary_rate boolean DEFAULT '0' NOT NULL,
+  member_of_other_hackspace boolean DEFAULT '0' NOT NULL,
   created_date timestamp NOT NULL,
   end_date timestamp,
   PRIMARY KEY (id)
@@ -65,10 +66,11 @@ CREATE INDEX dues_idx_person_id on dues (person_id);
 --
 DROP TABLE message_log CASCADE;
 CREATE TABLE message_log (
-  accessible_thing_id character varying(40),
+  accessible_thing_id character varying(40) NOT NULL,
   message character varying(2048) NOT NULL,
   from_ip character varying(15) NOT NULL,
-  written_date timestamp NOT NULL
+  written_date timestamp NOT NULL,
+  PRIMARY KEY (accessible_thing_id, written_date)
 );
 CREATE INDEX message_log_idx_accessible_thing_id on message_log (accessible_thing_id);
 
@@ -91,10 +93,11 @@ CREATE INDEX allowed_idx_person_id on allowed (person_id);
 DROP TABLE usage_log CASCADE;
 CREATE TABLE usage_log (
   person_id integer,
-  accessible_thing_id character varying(40),
+  accessible_thing_id character varying(40) NOT NULL,
   token_id character varying(255) NOT NULL,
   status character varying(20) NOT NULL,
-  accessed_date timestamp NOT NULL
+  accessed_date timestamp NOT NULL,
+  PRIMARY KEY (accessible_thing_id, accessed_date)
 );
 CREATE INDEX usage_log_idx_accessible_thing_id on usage_log (accessible_thing_id);
 CREATE INDEX usage_log_idx_person_id on usage_log (person_id);

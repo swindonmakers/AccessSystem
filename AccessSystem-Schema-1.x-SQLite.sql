@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Sun May  8 22:06:45 2016
+-- Created on Tue Jun 14 14:13:01 2016
 -- 
 
 BEGIN TRANSACTION;
@@ -34,6 +34,7 @@ CREATE TABLE people (
   address varchar(1024) NOT NULL,
   github_user varchar(255),
   concessionary_rate boolean NOT NULL DEFAULT 0,
+  member_of_other_hackspace boolean NOT NULL DEFAULT 0,
   created_date datetime NOT NULL,
   end_date datetime,
   FOREIGN KEY (parent_id) REFERENCES people(id) ON DELETE CASCADE ON UPDATE CASCADE
@@ -79,10 +80,11 @@ CREATE INDEX dues_idx_person_id ON dues (person_id);
 DROP TABLE message_log;
 
 CREATE TABLE message_log (
-  accessible_thing_id varchar(40),
+  accessible_thing_id varchar(40) NOT NULL,
   message varchar(2048) NOT NULL,
   from_ip varchar(15) NOT NULL,
   written_date datetime NOT NULL,
+  PRIMARY KEY (accessible_thing_id, written_date),
   FOREIGN KEY (accessible_thing_id) REFERENCES accessible_things(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -113,10 +115,11 @@ DROP TABLE usage_log;
 
 CREATE TABLE usage_log (
   person_id integer,
-  accessible_thing_id varchar(40),
+  accessible_thing_id varchar(40) NOT NULL,
   token_id varchar(255) NOT NULL,
   status varchar(20) NOT NULL,
   accessed_date datetime NOT NULL,
+  PRIMARY KEY (accessible_thing_id, accessed_date),
   FOREIGN KEY (accessible_thing_id) REFERENCES accessible_things(id),
   FOREIGN KEY (person_id) REFERENCES people(id)
 );

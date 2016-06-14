@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::MySQL
--- Created on Sun May  8 22:06:45 2016
+-- Created on Tue Jun 14 14:13:01 2016
 -- 
 SET foreign_key_checks=0;
 
@@ -32,6 +32,7 @@ CREATE TABLE people (
   address text NOT NULL,
   github_user varchar(255) NULL,
   concessionary_rate enum('0','1') NOT NULL DEFAULT '0',
+  member_of_other_hackspace enum('0','1') NOT NULL DEFAULT '0',
   created_date datetime NOT NULL,
   end_date datetime NULL,
   INDEX people_idx_parent_id (parent_id),
@@ -75,11 +76,12 @@ DROP TABLE IF EXISTS message_log;
 -- Table: message_log
 --
 CREATE TABLE message_log (
-  accessible_thing_id varchar(40) NULL,
+  accessible_thing_id varchar(40) NOT NULL,
   message text NOT NULL,
   from_ip varchar(15) NOT NULL,
   written_date datetime NOT NULL,
   INDEX message_log_idx_accessible_thing_id (accessible_thing_id),
+  PRIMARY KEY (accessible_thing_id, written_date),
   CONSTRAINT message_log_fk_accessible_thing_id FOREIGN KEY (accessible_thing_id) REFERENCES accessible_things (id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
@@ -106,12 +108,13 @@ DROP TABLE IF EXISTS usage_log;
 --
 CREATE TABLE usage_log (
   person_id integer NULL,
-  accessible_thing_id varchar(40) NULL,
+  accessible_thing_id varchar(40) NOT NULL,
   token_id varchar(255) NOT NULL,
   status varchar(20) NOT NULL,
   accessed_date datetime NOT NULL,
   INDEX usage_log_idx_accessible_thing_id (accessible_thing_id),
   INDEX usage_log_idx_person_id (person_id),
+  PRIMARY KEY (accessible_thing_id, accessed_date),
   CONSTRAINT usage_log_fk_accessible_thing_id FOREIGN KEY (accessible_thing_id) REFERENCES accessible_things (id),
   CONSTRAINT usage_log_fk_person_id FOREIGN KEY (person_id) REFERENCES people (id)
 ) ENGINE=InnoDB;

@@ -53,6 +53,11 @@ __PACKAGE__->add_columns(
         default_value => 0,
         is_nullable => 0,
     },
+    member_of_other_hackspace => {
+        data_type => 'boolean',
+        default_value => 0,
+        is_nullable => 0,
+    },
     created_date => {
         data_type => 'datetime',
         set_on_create => 1,
@@ -101,14 +106,18 @@ sub bank_ref {
 }
 
 ## basic = 25/mo
-## divide by 2 for concessions (applies also to children!?)
+## reduced to 5/mo if member is marked as a member of another hack/makerspace
 ## add 5 for each child beyond first one
+## divide by 2 for concessions (applies also to children!?)
 ## returns whole pence
 
 sub dues {
     my ($self) = @_;
 
     my $dues = 2500;
+    if($self->member_of_other_hackspace) {
+        $dues = 500;
+    }
     if($self->children_rs->count > 1) {
         $dues += 500 * $self->children_rs->count-1;
     }
