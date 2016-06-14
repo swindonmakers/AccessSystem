@@ -113,7 +113,7 @@ sub fiddle_payment {
     } elsif($trans->{fitid} eq '+201603080000002') {
         $trans->{name} = 'NETTING S SM0012 BGC';
     } elsif($trans->{name} =~ /O FUNNELL SM0026 STO/) {
-        return 1;
+        $trans->{name} = 'O FUNNELL SM0020 STO';
     }
     return 0;
 }
