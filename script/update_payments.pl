@@ -114,6 +114,8 @@ sub fiddle_payment {
         $trans->{name} = 'NETTING S SM0012 BGC';
     } elsif($trans->{name} =~ /O FUNNELL SM0026 STO/) {
         $trans->{name} = 'O FUNNELL SM0020 STO';
+    } elsif($trans->{name} =~ /BRIDGE PS ABC SM0029 FT/) {
+        $trans->{name} = 'BRIDGE PS ABC SM0027 FT';
     }
     return 0;
 }
@@ -134,7 +136,7 @@ sub import_payments {
         my $id = $1;
         my $member = $schema->resultset('Person')->find({ id => $id+0 });
         if(!$member) {
-            warn "SM$id isn't a known membership id\n";
+            warn "SM$id isn't a known membership id ($trn->{name})\n";
             next;
         }
 
