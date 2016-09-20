@@ -1,3 +1,5 @@
+requires 'Catalyst::Plugin::Session';
+requires 'Catalyst::Plugin::Session::Store::FastMmap';
 requires 'RapidApp', '1.1005';
 requires 'Catalyst::View::TT', '';
 requires 'Catalyst::Plugin::ConfigLoader';

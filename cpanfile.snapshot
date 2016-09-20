@@ -345,6 +345,14 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 0
       Test::More 0.47
       perl 5.005
+  Cache-FastMmap-1.44
+    pathname: R/RO/ROBM/Cache-FastMmap-1.44.tar.gz
+    provides:
+      Cache::FastMmap 1.44
+      Cache::FastMmap::OnLeave 1.44
+    requirements:
+      ExtUtils::MakeMaker 0
+      Storable 0
   Captcha-noCAPTCHA-0.12
     pathname: C/CL/CLARSON/Captcha-noCAPTCHA-0.12.tar.gz
     provides:
@@ -357,15 +365,6 @@ DISTRIBUTIONS
       Net::SSLeay 1.49
       strict 0
       warnings 0
-  Captcha-reCAPTCHA-0.97
-    pathname: P/PH/PHRED/Captcha-reCAPTCHA-0.97.tar.gz
-    provides:
-      Captcha::reCAPTCHA 0.97
-    requirements:
-      ExtUtils::MakeMaker 0
-      HTML::Tiny 0.904
-      LWP::UserAgent 0
-      Test::More 0
   Capture-Tiny-0.36
     pathname: D/DA/DAGOLDEN/Capture-Tiny-0.36.tar.gz
     provides:
@@ -654,32 +653,6 @@ DISTRIBUTIONS
       Path::Class 0
       Test::More 0
       perl 5.008
-  Catalyst-Plugin-Session-0.40
-    pathname: J/JJ/JJNAPIORK/Catalyst-Plugin-Session-0.40.tar.gz
-    provides:
-      Catalyst::Plugin::Session 0.40
-      Catalyst::Plugin::Session::State undef
-      Catalyst::Plugin::Session::Store undef
-      Catalyst::Plugin::Session::Store::Dummy undef
-      Catalyst::Plugin::Session::Test::Store 123
-    requirements:
-      Catalyst::Runtime 5.71001
-      Digest 0
-      ExtUtils::MakeMaker 6.59
-      File::Spec 0
-      File::Temp 0
-      List::Util 0
-      MRO::Compat 0
-      Moose 0.76
-      MooseX::Emulate::Class::Accessor::Fast 0.00801
-      Object::Signature 0
-      Test::Deep 0
-      Test::Exception 0
-      Test::More 0.88
-      Test::WWW::Mechanize::PSGI 0
-      Tie::RefHash 1.34
-      namespace::clean 0.10
-      perl 5.008
   Catalyst-Plugin-Session-State-Cookie-0.17
     pathname: M/MS/MSTROUT/Catalyst-Plugin-Session-State-Cookie-0.17.tar.gz
     provides:
@@ -725,6 +698,21 @@ DISTRIBUTIONS
       Test::More 0
       Test::use::ok 0
       namespace::clean 0
+  Catalyst-Plugin-Session-Store-FastMmap-0.16
+    pathname: B/BO/BOBTFISH/Catalyst-Plugin-Session-Store-FastMmap-0.16.tar.gz
+    provides:
+      Catalyst::Plugin::Session::Store::FastMmap 0.16
+    requirements:
+      Cache::FastMmap 1.29
+      Catalyst::ClassData 0
+      Catalyst::Plugin::Session 0.27
+      Catalyst::Runtime 5.8
+      ExtUtils::MakeMaker 0
+      File::Spec 0
+      File::Temp 0
+      MRO::Compat 0
+      MooseX::Emulate::Class::Accessor::Fast 0
+      Path::Class 0
   Catalyst-Plugin-Static-Simple-0.33
     pathname: J/JJ/JJNAPIORK/Catalyst-Plugin-Static-Simple-0.33.tar.gz
     provides:
@@ -1196,19 +1184,6 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 0
       Pod::Text 2.08
       Pod::Usage 1.33
-  Crypt-Blowfish-2.14
-    pathname: D/DP/DPARIS/Crypt-Blowfish-2.14.tar.gz
-    provides:
-      Crypt::Blowfish 2.14
-    requirements:
-      ExtUtils::MakeMaker 0
-  Crypt-CBC-2.33
-    pathname: L/LD/LDS/Crypt-CBC-2.33.tar.gz
-    provides:
-      Crypt::CBC 2.33
-    requirements:
-      Digest::MD5 2.00
-      ExtUtils::MakeMaker 0
   Crypt-DES-2.07
     pathname: D/DP/DPARIS/Crypt-DES-2.07.tar.gz
     provides:
@@ -1722,6 +1697,7 @@ DISTRIBUTIONS
       Class::Accessor::Grouped 0
       DBD::SQLite 1.11
       DBIx::Class 0.07005
+      Data::UUID 0
       ExtUtils::MakeMaker 6.42
       perl 5.008001
   Daemon-Control-0.001008
@@ -2016,7 +1992,6 @@ DISTRIBUTIONS
       DateTime 0.1
       DateTime::Format::Builder 0.6
       ExtUtils::MakeMaker 0
-      perl 5.003
   DateTime-Format-Strptime-1.67
     pathname: D/DR/DROLSKY/DateTime-Format-Strptime-1.67.tar.gz
     provides:
@@ -3173,7 +3148,6 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 0
       Fcntl 0
       POSIX 0
-      perl 5.004
   File-Which-1.21
     pathname: P/PL/PLICEASE/File-Which-1.21.tar.gz
     provides:
@@ -3436,19 +3410,6 @@ DISTRIBUTIONS
       Moose::Role 0
       Moose::Util::TypeConstraints 0
       namespace::autoclean 0
-  HTML-FormHandlerX-Field-reCAPTCHA-0.04
-    pathname: J/JJ/JJNAPIORK/HTML-FormHandlerX-Field-reCAPTCHA-0.04.tar.gz
-    provides:
-      HTML::FormHandlerX::Field::reCAPTCHA 0.04
-      HTML::FormHandlerX::Widget::Field::reCAPTCHA undef
-    requirements:
-      Captcha::reCAPTCHA 0.92
-      Crypt::Blowfish 2.10
-      Crypt::CBC 2.30
-      ExtUtils::MakeMaker 6.59
-      HTML::FormHandler 0.30002
-      Test::More 0.94
-      perl 5.008
   HTML-Parser-3.72
     pathname: G/GA/GAAS/HTML-Parser-3.72.tar.gz
     provides:
@@ -3470,13 +3431,6 @@ DISTRIBUTIONS
       HTML::Tagset 3.20
     requirements:
       ExtUtils::MakeMaker 0
-  HTML-Tiny-1.05
-    pathname: A/AN/ANDYA/HTML-Tiny-1.05.tar.gz
-    provides:
-      HTML::Tiny 1.05
-    requirements:
-      ExtUtils::MakeMaker 0
-      Test::More 0
   HTML-TokeParser-Simple-3.16
     pathname: O/OV/OVID/HTML-TokeParser-Simple-3.16.tar.gz
     provides:
@@ -5089,6 +5043,14 @@ DISTRIBUTIONS
       perl 5.006
       strict 0
       warnings 0
+  Mozilla-CA-20160104
+    pathname: A/AB/ABH/Mozilla-CA-20160104.tar.gz
+    provides:
+      Mozilla::CA 20160104
+    requirements:
+      ExtUtils::MakeMaker 0
+      Test 0
+      perl 5.006
   Net-DNS-1.05
     pathname: N/NL/NLNETLABS/Net-DNS-1.05.tar.gz
     provides:
@@ -6333,15 +6295,6 @@ DISTRIBUTIONS
       Scalar::Util 1.14
       Test::More 0.42
       perl 5.005
-  Template-Timer-1.00
-    pathname: P/PE/PETDANCE/Template-Timer-1.00.tar.gz
-    provides:
-      Template::Timer 1.00
-    requirements:
-      ExtUtils::MakeMaker 0
-      Template 0
-      Test::More 0
-      Time::HiRes 0
   Template-Toolkit-2.26
     pathname: A/AB/ABW/Template-Toolkit-2.26.tar.gz
     provides:
@@ -6734,7 +6687,6 @@ DISTRIBUTIONS
     requirements:
       ExtUtils::MakeMaker 0
       Test::More 0
-      perl 5.008001
   Text-SimpleTable-AutoWidth-0.09
     pathname: C/CU/CUB/Text-SimpleTable-AutoWidth-0.09.tar.gz
     provides:
