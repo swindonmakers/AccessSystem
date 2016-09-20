@@ -119,7 +119,7 @@ sub dues {
         $dues = 500;
     }
     if($self->children_rs->count > 1) {
-        $dues += 500 * $self->children_rs->count-1;
+        $dues += 500 * ($self->children_rs->count-1);
     }
 
     if($self->concessionary_rate) {
