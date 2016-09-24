@@ -310,6 +310,7 @@ sub send_membership_email: Private {
     my ($self, $c) = @_;
 
     my $member = $c->stash->{member};
+    my $dues_nice = sprintf("%0.2f", $member->dues/100);
     $c->stash->{email} = {
             to => $member->email,
             cc => 'info@swindon-makerspace.org',
@@ -320,7 +321,7 @@ Dear " . $member->name . ",
 
 Thank you for signing up for membership of the Swindon Makerspace. To activate your 24x7 access and ability to use the regulated equipment, please set up a Standing Order with your bank using the following details:
 
-Monthly fee: £" . sprintf("%0.2f", $member->dues/100)  . "/month
+Monthly fee: £${dues_nice}/month
 To: Swindon Makerspace
 Bank: Barclays
 Sort Code: 20-84-58
@@ -328,6 +329,11 @@ Account: 83789160
 Ref: " . $member->bank_ref . "
 
 To get access to the Makerspace, please visit on an open evening (Wednesday evenings), and bring (or buy for £1 from the space) a suitable token.
+If you haven't yet done so, *please* read the Member's Guide at https://docs.google.com/document/d/1ruqYeKe7kMMnNzKh_LLo2aeoFufMfQsdX987iU6zgCI/edit#heading=h.a7vgchnwk02g.
+You are also encouraged to join our Telegram group to chat with us, at https://telegram.me/joinchat/A5XbrgE7ib7FNS-23KQKEQ.  (But be warned, we do chat rather a lot -- you may want to turn off notifications.)
+There's a calendar of events at http://www.swindon-makerspace.org/calendar/.  Please remember that some of these events may make your normal use of the space difficult or at least awkward -- bookings may want quiet, or take up a lot of space.
+
+
 
 Regards,
 
