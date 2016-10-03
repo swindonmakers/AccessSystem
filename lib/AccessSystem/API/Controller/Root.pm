@@ -241,6 +241,7 @@ sub add_child: Chained('/base') :PathPart('add_child') :Args(0) {
     ## email address, not sure that's good anyway.
     
     my $form = AccessSystem::Form::Person->new(
+        ctx => $c,
         active => ['more_children'], 
         inactive => ['has_children', 'membership_guide', 'address']
     );
