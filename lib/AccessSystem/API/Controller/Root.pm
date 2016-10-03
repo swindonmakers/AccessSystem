@@ -329,11 +329,18 @@ Account: 83789160
 Ref: " . $member->bank_ref . "
 
 To get access to the Makerspace, please visit on an open evening (Wednesday evenings), and bring (or buy for £1 from the space) a suitable token.
-If you haven't yet done so, *please* read the Member's Guide at https://docs.google.com/document/d/1ruqYeKe7kMMnNzKh_LLo2aeoFufMfQsdX987iU6zgCI/edit#heading=h.a7vgchnwk02g.
-You are also encouraged to join our Telegram group to chat with us, at https://telegram.me/joinchat/A5XbrgE7ib7FNS-23KQKEQ.  (But be warned, we do chat rather a lot -- you may want to turn off notifications.)
-There's a calendar of events at http://www.swindon-makerspace.org/calendar/.  Please remember that some of these events may make your normal use of the space difficult or at least awkward -- bookings may want quiet, or take up a lot of space.
 
+Please do make sure you have read the Member's Guide (which you just agreed to!) as this details how the space works
+- if you missed it, here is the link again: https://docs.google.com/document/d/1ruqYeKe7kMMnNzKh_LLo2aeoFufMfQsdX987iU6zgCI/edit#heading=h.a7vgchnwk02g
 
+For live chat with other members, you are encouraged to join our Telegram group: https://telegram.me/joinchat/A5XbrgE7ib7FNS-23KQKEQ.
+This is useful for seeing if anyone is in the space, getting help/ideas on projects etc.
+
+For more drawn out discussions (that you can read back on), we use Google Groups: https://groups.google.com/forum/#!forum/swindon-makerspace
+and store the results in Google Drive, to view these please reply with your google login details.
+
+Please also keep an eye on our calendar at http://www.swindon-makerspace.org/calendar/, sometimes the space is \"booked\" (see Guide!)
+ you may still use the space, but please be courteous and avoid using loud machinery during bookings.
 
 Regards,
 
