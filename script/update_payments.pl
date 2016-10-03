@@ -116,6 +116,8 @@ sub fiddle_payment {
         $trans->{name} = 'O FUNNELL SM0020 STO';
     } elsif($trans->{name} =~ /BRIDGE PS ABC SM0029 FT/) {
         $trans->{name} = 'BRIDGE PS ABC SM0027 FT';
+    } elsif($trans->{fitid} eq '+201609150000002') {
+        $trans->{name} = "$trans->{name} SM0039";
     }
     return 0;
 }
