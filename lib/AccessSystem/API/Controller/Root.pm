@@ -334,7 +334,7 @@ To get access to the Makerspace, please visit on an open evening (Wednesday even
 Please do make sure you have read the Member's Guide (which you just agreed to!) as this details how the space works
 - if you missed it, here is the link again: https://docs.google.com/document/d/1ruqYeKe7kMMnNzKh_LLo2aeoFufMfQsdX987iU6zgCI/edit#heading=h.a7vgchnwk02g
 
-For live chat with other members, you are encouraged to join our Telegram group: https://telegram.me/joinchat/A5XbrgE7ib7FNS-23KQKEQ.
+For live chat with other members, you are encouraged to join our Telegram group: https://telegram.me/joinchat/A5Xbrj7rku3FJlueOPF8vg.
 This is useful for seeing if anyone is in the space, getting help/ideas on projects etc.
 
 For more drawn out discussions (that you can read back on), we use Google Groups: https://groups.google.com/forum/#!forum/swindon-makerspace
@@ -342,6 +342,11 @@ and store the results in Google Drive, to view these please reply with your goog
 
 Please also keep an eye on our calendar at http://www.swindon-makerspace.org/calendar/, sometimes the space is \"booked\" (see Guide!)
  you may still use the space, but please be courteous and avoid using loud machinery during bookings.
+
+One last thing, please do try and help out, we have a number of small and large infrastructure tasks that need doing, as well as regular
+maintenance (bins emptying!), if you see such a task and have 5 mins to do it, please don't leave it for the next member.
+
+Thanks for reading this far! See you in the space!
 
 Regards,
 
