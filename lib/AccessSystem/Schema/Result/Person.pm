@@ -118,7 +118,7 @@ sub dues {
     if($self->member_of_other_hackspace) {
         $dues = 500;
     }
-    if($self->children_rs->count > 1) {
+    if($self->children_rs->search({ end_date => { '!=' => undef } })->count > 1) {
         $dues += 500 * ($self->children_rs->count-1);
     }
 
