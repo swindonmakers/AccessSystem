@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::MySQL
--- Created on Tue Jun 14 14:13:01 2016
+-- Created on Thu Nov  3 19:50:01 2016
 -- 
 SET foreign_key_checks=0;
 
@@ -52,6 +52,21 @@ CREATE TABLE access_tokens (
   INDEX access_tokens_idx_person_id (person_id),
   PRIMARY KEY (person_id, id),
   CONSTRAINT access_tokens_fk_person_id FOREIGN KEY (person_id) REFERENCES people (id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS communications;
+
+--
+-- Table: communications
+--
+CREATE TABLE communications (
+  person_id integer NOT NULL auto_increment,
+  sent_on datetime NOT NULL,
+  type varchar(50) NOT NULL,
+  content text NOT NULL,
+  INDEX communications_idx_person_id (person_id),
+  PRIMARY KEY (person_id, sent_on),
+  CONSTRAINT communications_fk_person_id FOREIGN KEY (person_id) REFERENCES people (id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS dues;

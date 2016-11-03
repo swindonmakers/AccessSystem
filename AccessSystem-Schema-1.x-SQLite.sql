@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Tue Jun 14 14:13:01 2016
+-- Created on Thu Nov  3 19:50:01 2016
 -- 
 
 BEGIN TRANSACTION;
@@ -56,6 +56,22 @@ CREATE TABLE access_tokens (
 );
 
 CREATE INDEX access_tokens_idx_person_id ON access_tokens (person_id);
+
+--
+-- Table: communications
+--
+DROP TABLE communications;
+
+CREATE TABLE communications (
+  person_id integer NOT NULL,
+  sent_on datetime NOT NULL,
+  type varchar(50) NOT NULL,
+  content varchar(10240) NOT NULL,
+  PRIMARY KEY (person_id, sent_on),
+  FOREIGN KEY (person_id) REFERENCES people(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX communications_idx_person_id ON communications (person_id);
 
 --
 -- Table: dues

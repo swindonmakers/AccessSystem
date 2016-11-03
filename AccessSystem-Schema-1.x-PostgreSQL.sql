@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::PostgreSQL
--- Created on Tue Jun 14 14:13:01 2016
+-- Created on Thu Nov  3 19:50:01 2016
 -- 
 --
 -- Table: accessible_things
@@ -46,6 +46,19 @@ CREATE TABLE access_tokens (
   PRIMARY KEY (person_id, id)
 );
 CREATE INDEX access_tokens_idx_person_id on access_tokens (person_id);
+
+--
+-- Table: communications
+--
+DROP TABLE communications CASCADE;
+CREATE TABLE communications (
+  person_id serial NOT NULL,
+  sent_on timestamp NOT NULL,
+  type character varying(50) NOT NULL,
+  content character varying(10240) NOT NULL,
+  PRIMARY KEY (person_id, sent_on)
+);
+CREATE INDEX communications_idx_person_id on communications (person_id);
 
 --
 -- Table: dues
@@ -110,6 +123,9 @@ ALTER TABLE people ADD CONSTRAINT people_fk_parent_id FOREIGN KEY (parent_id)
   REFERENCES people (id) ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
 ALTER TABLE access_tokens ADD CONSTRAINT access_tokens_fk_person_id FOREIGN KEY (person_id)
+  REFERENCES people (id) ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
+
+ALTER TABLE communications ADD CONSTRAINT communications_fk_person_id FOREIGN KEY (person_id)
   REFERENCES people (id) ON DELETE CASCADE ON UPDATE CASCADE DEFERRABLE;
 
 ALTER TABLE dues ADD CONSTRAINT dues_fk_person_id FOREIGN KEY (person_id)

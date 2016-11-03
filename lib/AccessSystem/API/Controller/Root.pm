@@ -299,7 +299,7 @@ sub resend_email: Chained('/base'): PathPart('resendemail'): Args(1) {
     if($member) {
         $c->stash(member => $member);
         $c->forward('send_membership_email');
-        $c->stash(json => { message => "Attempted to send email" });
+        $c->stash(json => { message => "Attempted to send membership email" });
     } else {
         $c->stash(json => { message => "Can't find member $id" });
     }
@@ -344,7 +344,7 @@ Please also keep an eye on our calendar at http://www.swindon-makerspace.org/cal
  you may still use the space, but please be courteous and avoid using loud machinery during bookings.
 
 One last thing, please do try and help out, we have a number of small and large infrastructure tasks that need doing, as well as regular
-maintenance (bins emptying!), if you see such a task and have 5 mins to do it, please don't leave it for the next member.
+maintenance (eg bins emptying!), if you see such a task and have 5 mins to do it, please don't leave it for the next member.
 
 Thanks for reading this far! See you in the space!
 
@@ -352,8 +352,71 @@ Regards,
 
 Swindon Makerspace
 ",
-        };
-        $c->forward($c->view('Email'));   
+    };
+
+    ## Store the comms:
+    $member->communications_rs->create({
+        type => 'membership_email',
+        content => $c->stash->{email}{body},
+    });
+    $c->forward($c->view('Email'));   
+}
+
+sub nudge_member: Chained('/base'): PathPart('nudge_member'): Args(1) {
+    my ($self, $c, $id) = @_;
+    my $member = $c->model('AccessDB::Person')->find({ id => $id });
+    if($member && !$member->is_valid && !$member->end_date) {
+        $c->stash(member => $member);
+        $c->forward('send_reminder_email');
+        $c->stash(json => { message => "Attempted to send reminder email" });
+    } else {
+        $c->stash(json => { message => "Can't find member $id" });
+    }
+    delete $c->stash->{member};
+    $c->forward('View::JSON');
+}
+
+sub send_reminder_email: Private {
+    my ($self, $c) = @_;
+
+    my $member = $c->stash->{member};
+    my $last = $member->last_payment;
+    my $paid_date = sprintf("%s, %d %s %d",
+                            $last->paid_on_date->day_abbr,
+                            $last->paid_on_date->day,
+                            $last->paid_on_date->month_name,
+                            $last->paid_on_date->year);
+    my $expires_date = sprintf("%s, %d %s %d",
+                            $last->expires_on_date->day_abbr,
+                            $last->expires_on_date->day,
+                            $last->expires_on_date->month_name,
+                            $last->expires_on_date->year);
+    $c->stash->{email} = {
+            to => $member->email,
+            cc => 'info@swindon-makerspace.org',
+            from => 'info@swindon-makerspace.org',
+            subject => 'Swindon Makerspace membership check',
+            body => "
+Dear " . $member->name . ",
+
+We've noticed that you haven't paid any Makerspace membership dues recently, your last payment was on " . $paid_date .", and your membership has been expired since " . $expires_date . ". If you intended to let your membership lapse, would you mind confirming by replying to this email and letting us know?
+
+If you'd like to resume your membership, we'd love to see you! Just make another payment and your membership will resume.
+
+This is the only reminder email we'll send you.
+
+Regards,
+
+Swindon Makerspace
+",
+    };
+
+    ## Store the comms:
+    $member->communications_rs->create({
+        type => 'reminder_email',
+        content => $c->stash->{email}{body},
+    });
+    $c->forward($c->view('Email'));   
 }
 
 =head2 end

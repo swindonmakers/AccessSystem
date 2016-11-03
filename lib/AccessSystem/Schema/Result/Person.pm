@@ -72,6 +72,7 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('id');
 # __PACKAGE__->add_unique_constraint('email' => ['email']);
 
+__PACKAGE__->has_many('communications', 'AccessSystem::Schema::Result::Communication', 'person_id');
 __PACKAGE__->has_many('payments', 'AccessSystem::Schema::Result::Dues', 'person_id');
 __PACKAGE__->has_many('allowed', 'AccessSystem::Schema::Result::Allowed', 'person_id');
 __PACKAGE__->has_many('tokens', 'AccessSystem::Schema::Result::AccessToken', 'person_id');
@@ -97,6 +98,20 @@ sub is_valid {
     }
 
     return $is_paid > 0;
+}
+
+sub last_payment {
+    my ($self) = @_;
+
+    ## Fail if there are none at all?
+    my $last = $self->payments_rs->search(
+        {},
+        {
+            order_by => [{ '-desc' => 'paid_on_date' }],
+            rows => 1,
+        })->single;
+
+    return $last;
 }
 
 sub bank_ref {
