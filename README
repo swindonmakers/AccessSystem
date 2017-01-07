@@ -1,1 +1,12 @@
 Run script/accesssystem_api_server.pl to test the application.
+
+Database updates
+----------------
+
+Currently there is no database update magic, easy to add, but.. lazy. To produce new .sql files run:
+
+    perl -Ilib -Mlocal::lib=/usr/src/perl/libs/access_system/perl5/ -MAccessSystem::Schema -le 'AccessSystem::Schema->connect("dbi:SQLite:test.db")->create_ddl_dir'
+
+Then dig out the new/changed bits of table/SQL, and apply them. Make sure to copy over any data if renaming fields!
+
+
