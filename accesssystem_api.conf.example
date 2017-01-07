@@ -1,0 +1,11 @@
+<Model::AccessDB>
+  <connect_info>
+    dsn dbi:SQLite:db/test.db
+  </connect_info>
+</Model::AccessDB>
+<HTML::FormHandlerX::Field::noCAPTCHA>
+  site_key 6LdHZx0TAAAAAMuUdG-NScgCCbJ_HMyL1bdeM9vp
+  secret_key 6LdHZx0TAAAAAEAnQyttqqhDkEVXfUcsnDLPGmvi
+</HTML::FormHandlerX::Field::noCAPTCHA>
+
+
