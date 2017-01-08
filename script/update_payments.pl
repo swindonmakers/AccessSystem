@@ -71,9 +71,9 @@ if(!$ENV{CATALYST_HOME}) {
 # Read config to get db connection info:
 my %config = Config::General->new("$ENV{CATALYST_HOME}/accesssystem.conf")->getall;
 my $schema = AccessSystem::Schema->connect(
-    $config{Model::AccessDB}{connect_info}{dsn},
-    $config{Model::AccessDB}{connect_info}{user},
-    $config{Model::AccessDB}{connect_info}{password},
+    $config{'Model::AccessDB'}{connect_info}{dsn},
+    $config{'Model::AccessDB'}{connect_info}{user},
+    $config{'Model::AccessDB'}{connect_info}{password},
     );
 # Find date of most recently imported payments
 my $latest_payment_rs = $schema->resultset('Dues')->search(

@@ -164,5 +164,5 @@ sub end : ActionClass('RenderView') {
  
 no Moose;
 __PACKAGE__->meta->make_immutable;
-1;
+
 1;

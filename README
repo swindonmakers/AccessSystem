@@ -1,1 +1,3 @@
 Run script/accesssystem_api_server.pl to test the application.
+
+Schema change: If your person table has a concessionary_rate column, then add a new person.concessionary_rate_override as a varchar.  Set it to "legacy" if concessionary_rate is true, then remove the concessionary_rate column.

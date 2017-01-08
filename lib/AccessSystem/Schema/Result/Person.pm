@@ -48,10 +48,11 @@ __PACKAGE__->add_columns(
         size => 255,
         is_nullable => 1,
     },
-    concessionary_rate => {
-        data_type => 'boolean',
-        default_value => 0,
-        is_nullable => 0,
+    concessionary_rate_override => {
+        data_type => 'varchar',
+        size => 255,
+        default_value => '',
+        is_nullable => 1,
     },
     member_of_other_hackspace => {
         data_type => 'boolean',
@@ -159,6 +160,41 @@ sub valid_until {
     }
 
     return undef;
+}
+
+sub concessionary_rate {
+    my ($self) = @_;
+
+    if ($self->concessionary_rate_override) {
+        return 1;
+    }
+
+    # FIXME: This is a bit iffy, since it checks your current age, and not the age when the payment was made, or ... something.
+    # $age is a DateTime::Duration
+    my $age = DateTime->now - $self->dob;
+
+    # It's a nice round number, anyway.
+    if ($age->years >= 65) {
+        return 1;
+    }
+
+    # Children don't actually pay dues, they increase the dues of
+    # their parents.  Because of that, and because we are nice like
+    # that, we give anybody who has at least one concessionary child a
+    # concession, which lowers their rate, including what they pay for that child (if anything).
+#    if($self->children_rs->search({
+#                                   end_date => { '!=' => undef },
+#                                   concessionary_rate_override => { '!=' => undef },
+    #                                  })->count) {
+    my $children = $self->children_rs;
+    while (my $child = $children->next) {
+        if ($child->concessionary_rate) {
+            print "concession child\n";
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 1;
