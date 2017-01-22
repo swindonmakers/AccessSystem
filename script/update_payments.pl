@@ -38,7 +38,7 @@ Possible types of dues row/imported payments:
 
 =item First member payment
 
-is valid from its paid-on date and expires Amount/Monthly months + 3
+is valid from its paid-on date and expires Amount/Monthly months + $OVERLAP_DAYS
 days later.
 
 =item Extending payment
@@ -49,11 +49,11 @@ Amount/Monthly months later.
 =item Renewal payment
 
 is paid when the member has expired (due to non payment), begins on
-paid-on date, expires Amount/Monthly months + 3 days later.
+paid-on date, expires Amount/Monthly months + $OVERLAP_DAYS days later.
 
 =back
 
-NB: The "3 days" is to allow for underlapping Standing Order payments,
+NB: The "Overlap days" is to allow for underlapping Standing Order payments,
 which may be slightly over a month apart due to not happening on
 weekends.
 
@@ -68,12 +68,14 @@ if(!$ENV{CATALYST_HOME}) {
     die "Please set the CATALYST_HOME environment variable and try again\n";
 }
 
+my $OVERLAP_DAYS = 14;
+
 # Read config to get db connection info:
 my %config = Config::General->new("$ENV{CATALYST_HOME}/accesssystem.conf")->getall;
 my $schema = AccessSystem::Schema->connect(
-    $config{Model::AccessDB}{connect_info}{dsn},
-    $config{Model::AccessDB}{connect_info}{user},
-    $config{Model::AccessDB}{connect_info}{password},
+    $config{'Model::AccessDB'}{connect_info}{dsn},
+    $config{'Model::AccessDB'}{connect_info}{user},
+    $config{'Model::AccessDB'}{connect_info}{password},
     );
 # Find date of most recently imported payments
 my $latest_payment_rs = $schema->resultset('Dues')->search(
@@ -164,7 +166,7 @@ sub import_payments {
         my %extra_days = ();
         if(!$valid_until) {
             $valid_until ||= $trn->{dtposted};
-            %extra_days = ( days => 3 );
+            %extra_days = ( days => $OVERLAP_DAYS );
         }
         
         # Calculate expiration date for this payment
