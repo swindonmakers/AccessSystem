@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::MySQL
--- Created on Thu Nov  3 19:50:01 2016
+-- Created on Sat Jan  7 23:57:14 2017
 -- 
 SET foreign_key_checks=0;
 
@@ -31,7 +31,7 @@ CREATE TABLE people (
   dob datetime NOT NULL,
   address text NOT NULL,
   github_user varchar(255) NULL,
-  concessionary_rate enum('0','1') NOT NULL DEFAULT '0',
+  concessionary_rate_override varchar(255) NULL DEFAULT '',
   member_of_other_hackspace enum('0','1') NOT NULL DEFAULT '0',
   created_date datetime NOT NULL,
   end_date datetime NULL,
