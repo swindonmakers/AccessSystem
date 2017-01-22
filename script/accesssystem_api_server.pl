@@ -3,6 +3,7 @@
 BEGIN {
     $ENV{CATALYST_SCRIPT_GEN} = 40;
 }
+$|=1;
 
 use Catalyst::ScriptRunner;
 Catalyst::ScriptRunner->run('AccessSystem::API', 'Server');
