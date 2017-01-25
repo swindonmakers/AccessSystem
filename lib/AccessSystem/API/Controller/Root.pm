@@ -2,6 +2,7 @@ package AccessSystem::API::Controller::Root;
 use Moose;
 use namespace::autoclean;
 use AccessSystem::Form::Person;
+use DateTime;
 use Data::Dumper;
 
 BEGIN { extends 'Catalyst::Controller' }
@@ -417,6 +418,94 @@ Swindon Makerspace
         content => $c->stash->{email}{body},
     });
     $c->forward($c->view('Email'));   
+}
+
+=head2 membership_status_update
+
+Collect and send out details about current membership to
+info@swindon-makerspace.org. No display!
+
+=cut
+
+sub membership_status_update : Chained('base') :PathPart('membership_status_update') {
+    my ($self, $c) = @_;
+
+    # Number of current / active members
+    # Number of recent "leavers" / out of date members
+
+    my $people = $c->model('AccessDB::Person');
+    my %data = ();
+
+    my $income;
+    my $now = DateTime->now()->subtract(days => 1);
+    my $four_weeks = $now->clone->subtract('days' => 27);
+    
+    while (my $member = $people->next() ) {
+        my @flags = ();
+        push @flags, 'concession' if $member->concessionary_rate;
+        push @flags, 'otherspace' if $member->member_of_other_hackspace;
+        push @flags, 'full' if !$member->member_of_other_hackspace && ! $member->concessionary_rate;
+
+        push @flags, 'valid_members' if $member->is_valid;
+        push @flags, 'ex_members' if $member->end_date && !$member->is_valid;
+        push @flags, 'overdue_members' if !$member->end_date && !$member->is_valid;
+
+        push @flags, 'child' if $member->parent;
+        push @flags, 'adult' if !$member->parent;
+        push @flags, 'count';
+
+        my $v_until = $member->valid_until;
+        push @flags, 'recent_expired' if !$member->end_date && $v_until && $v_until < $now && $v_until >= $four_weeks;
+        
+        $income += $member->dues;
+
+        for my $f (@flags) {
+            if($f eq 'recent_expired') {
+                push @{ $data{$f}{people} }, { $member->get_columns, concessionary_rate => $member->concessionary_rate, valid_until => $v_until->ymd };
+            }
+            for my $g (@flags) {
+                $data{$f}{$g}++;
+            }
+        }
+    }
+
+    use Data::Dumper;
+    $c->log->debug(Dumper(\%data));
+    $c->stash->{email} = {
+#            to => 'jess@jandj.me.uk', #'info@swindon-makerspace.org',
+            to => 'info@swindon-makerspace.org',
+            from => 'info@swindon-makerspace.org',
+            subject => 'Swindon Makerspace membership status',
+            body => "
+Dear Directors,
+
+Current members: " . $data{valid_members}{count} . " - (" . join(', ', map { "$_: " . ($data{valid_members}{$_} || 0) } (qw/full concession otherspace adult child/)) . "), 
+Ex members: " . ($data{ex_members}{count} || 0) . " - (" . join(', ', map { "$_: " . ($data{ex_members}{$_} || 0) } (qw/full concession otherspace adult child/)) . "), 
+Overdue members: " . $data{overdue_members}{count} ." - (" . join(', ', map { "$_: " . ($data{overdue_members}{$_} || 0) } (qw/full concession otherspace adult child/)) . "), 
+Recently: 
+" . join("\n", map { sprintf("%03d: %40s: %20s: %s", 
+                                   $_->{id},
+                                   $_->{name},
+                                   ($_->{concessionary_rate}
+                                    ? 'concession' 
+                                    : ( $_->{member_of_other_hackspace}
+                                        ? 'otherspace' 
+                                        : 'full' )
+                                   ),
+                                   $_->{valid_until}) } (@{ $data{recent_expired}{people} }) ) .",
+
+Income expected: £" . sprintf("%0.2f", $income/100) . "
+
+Regards,
+
+The Access System.
+",
+    };
+
+    $c->forward($c->view('Email'));   
+    $c->stash->{json} = \%data;
+    $c->forward('View::JSON');
+
 }
 
 =head2 end

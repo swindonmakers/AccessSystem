@@ -130,6 +130,8 @@ sub bank_ref {
 sub dues {
     my ($self) = @_;
 
+    return 0 if $self->parent;
+
     my $dues = 2500;
     if($self->member_of_other_hackspace) {
         $dues = 500;
