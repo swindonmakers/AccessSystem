@@ -457,7 +457,7 @@ sub membership_status_update : Chained('base') :PathPart('membership_status_upda
         my $v_until = $member->valid_until;
         push @flags, 'recent_expired' if !$member->end_date && $v_until && $v_until < $now && $v_until >= $four_weeks;
         
-        $income += $member->dues;
+        $income += $member->dues if $member->is_valid;
 
         for my $f (@flags) {
             if($f eq 'recent_expired') {
