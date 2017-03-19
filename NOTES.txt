@@ -1,4 +1,8 @@
 
+ssh pi@inside.swindon-makerspace.org -L 0.0.0.0:3001:localhost:3000 -L 0.0.0.0:3002:localhost:3001 -L 8080:192.168.1.1:80
+
+
+
 bank ref "SM<membershipnum>"
 
 membership numbers for:
@@ -15,3 +19,6 @@ Jess: 0001, James, 0002, Jamie, 0003, Damian, 0004, Steve W, 0005, Rob L, 0006, 
 *** Creates linked user entr(y|ies) - person has_a user?
 *** user_role == default (nonpaying member)
 *** collects email, name, date of birth
+
+select written_date, substr(message, 24) as token, people.name from message_log join access_tokens on access_tokens.id = token join people on people.id = access_tokens.person_id where accessible_thing_id='1A9E3D66-E90F-11E5-83C1-1E346D398B53' and message like 'Permission granted to: %' order by written_date;
+

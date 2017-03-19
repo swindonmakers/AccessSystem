@@ -19,3 +19,4 @@ requires 'Template::Stash::XS';
 requires 'HTML::FormHandlerX::Field::noCAPTCHA';
 requires 'Daemon::Control';
 requires 'Catalyst::View::JSON';
+requires 'Daemon::Control';
