@@ -4,6 +4,9 @@ use namespace::autoclean;
 use AccessSystem::Form::Person;
 use DateTime;
 use Data::Dumper;
+use LWP::UserAgent;
+use MIME::Base64;
+use JSON;
 
 BEGIN { extends 'Catalyst::Controller' }
 
@@ -48,6 +51,61 @@ sub default :Path {
     my ( $self, $c ) = @_;
     $c->response->body( 'Page not found' );
     $c->response->status(404);
+}
+
+# insert into accessible_things (id, name, assigned_ip) values ('D1CAE50C-0C2C-11E7-84F0-84242E34E104', 'oneall_login_callback', '192.168.1.70');
+
+sub oneall_login_callback : Path('/oneall_login_callback') {
+    my ($self, $c) = @_;
+
+    my $conn_token = $c->req->body_params->{connection_token};
+    if($conn_token) {
+        $c->log->debug("oneall token: $conn_token");
+        my $res = $self->verify_token($conn_token, $c->config->{OneAll});
+        if(!$res) {
+            return $c->res->redirect($c->uri_for('/login'));
+        }
+        my $user_token = $res->{user}{user_token};
+        my @emails = map { $_->{value} } @{ $res->{user}{identity}{emails} };
+
+        my $person = $c->model('AccessDB::Person')->search(
+            [
+             'login_tokens.login_token' => $user_token,
+             'me.email' => { '-in' => \@emails },
+            ],
+            {
+                prefetch => 'login_tokens',
+            }
+        );
+        if(!$person->count || $person->count > 1) {
+            $c->session->{message} = "Failed to match login against existing Makerspace member, ask an admin to check the message log if this is incorrect";
+
+            $c->model('AccessDB::MessageLog')->create({
+                accessible_thing_id => 'D1CAE50C-0C2C-11E7-84F0-84242E34E104',
+                message => "Login attempt failed from $emails[0] ($res->{user}{identity}{accounts}[0]{username})",
+                from_ip => '192.168.1.70',
+            });
+        }
+        $person = $person->first;
+        if(!$person->login_tokens->count) {
+            $person->login_tokens->create({ login_token => $user_token });
+        }
+        $c->model('AccessDB::MessageLog')->create({
+            accessible_thing_id => 'D1CAE50C-0C2C-11E7-84F0-84242E34E104',
+            message => "Login attempt succeeded from $emails[0] ($res->{user}{identity}{accounts}[0]{username})",
+            from_ip => '192.168.1.70',
+        });
+        $c->set_authen_cookie( value => { person_id => $person->id },
+                               expires => '+3w'
+        );
+        $c->res->redirect($c->uri_for('/profile'));
+    }
+}
+
+sub login : Path('/login') {
+    my ($self, $c) = @_;
+
+    $c->stash(template => 'login.tt');
 }
 
 sub base :Chained('/') :PathPart('') :CaptureArgs(0) {
@@ -507,6 +565,33 @@ The Access System.
     $c->forward('View::JSON');
 
 }
+
+sub verify_token {
+    my ($self, $conn_token, $conf) = @_;
+
+    my $user_token_uri = 'https://'
+        . $conf->{domain} . "/connections/${conn_token}.json\n" ;
+    my $ua = LWP::UserAgent->new();
+    print STDERR "OneAll verify $user_token_uri";
+    my $resp = $ua->get($user_token_uri,
+                        'Authorization' => 'Basic ' . encode_base64($conf->{public_key} . ':' . $conf->{private_key}));
+    if(!$resp->is_success) {
+        return 0;
+    }
+    my $ut_json = $resp->decoded_content;
+    
+    my $ut_result = JSON::decode_json($ut_json) if $ut_json;
+    print STDERR Dumper($ut_result || '');
+    if($ut_json && $ut_result->{response}{result}{status}{flag} ne 'error') {
+        ## should be "social_login" as its the result of a login call? always?
+#                my $trans_type = $ut_result->{response}{result}{data}{plugin}{key};
+        return $ut_result->{response}{result}{data};
+    } else {
+        return 0;
+    }
+    
+}
+
 
 =head2 end
 

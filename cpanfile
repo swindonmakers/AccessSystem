@@ -19,3 +19,7 @@ requires 'Template::Stash::XS';
 requires 'HTML::FormHandlerX::Field::noCAPTCHA';
 requires 'Daemon::Control';
 requires 'Catalyst::View::JSON';
+requires 'LWP::UserAgent';
+requires 'JSON';
+requires 'MIME::Base64';
+requires 'CatalystX::AuthenCookie';
