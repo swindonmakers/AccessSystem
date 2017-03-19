@@ -15,10 +15,8 @@ We also include, via running RapidApp, a UI for admins to manually
 edit the database, to assign tokens to members and trouble shoot
 issues.
 
-Details
--------
-
-### Technologies
+Technologies
+------------
 
 * Perl 
 
@@ -72,8 +70,66 @@ Which will start a service on http://localhost:3000/
 
 NB: There is no index page on the API server, see below for details
 
-Database updates
-----------------
+API/UI
+------
+
+The custom parts of the API half of the system are explained here.
+
+### New members
+
+The /register endpoint displays a form to collect data about new members. Included in the form is a checkbox for "add children", if checked on submit the /add_child endpoint is shown - this is the same person details form. Successive children can be added until the "more children" checkbox is not selected.
+
+Each Person row is created as the form is submitted, each child row points back to the parent row with a parent_id.
+
+After all new people have been added, access is added for each new person, to the Door "AccessibleThing".
+
+Finally an email is sent to the new member containing a confirmation and their payment information, the same details are then displayed.
+
+### Verifying members
+
+The /verify endpoint is for access nodes/things, for example the door, to query the status of an access token that was presented to it. Given a token id, and a thing id, we first match the token to its member, then check if a) the members payments are uptodate, b) the member is allowed to access the thing.
+
+The result is a chunk of JSON that contains the person's name, their status as a trainer of the thing, and a key "access" with 1 for yes and 0 for no.
+
+If the result is no, a key "error" with a text message is also included.
+
+### Storing messages
+
+The /msg_log endpoint can be used (by any thing). Given a message and a thing id, the message is stored in the log table.
+
+### Induction
+
+The /induct endpoint allows a thing to store details about a member's induction to itself, by a trainer.
+
+JSON is returned containing either "allowed":1 and the students name, or "allowed":0 and the reason in the "error" key.
+
+### Resending member emails
+
+The /resendemail endpoint sends the given member their confirmation/bank details email again. This is used for sending updated details after changing concessionary status etc.
+
+JSON is returned indicating whether the given member id exists, or that an attempt was made to send an email.
+
+### Reminding expired members
+
+The /nudge_member endpoint is used to email a member asking if/why their payment status isn't valid.
+
+### Membership status review
+
+The /membership_status_update endpoint gathers data about numbers of members, paying, expired, ex, children, concessions etc that exist. The result is emailed to the Makerspace directors, and displayed as JSON.
+
+### Logins
+
+The /login endpoint is under development.
+
+Security
+--------
+
+Development/operation
+---------------------
+
+### Payment imports
+
+### Database updates
 
 The database schema layout is maintained in the (https://metacpan.org/pod/DBIx::Class)[DBIx::Class] files, under AccessSystem/Schema/Result/*.pm (one per table). To change the database, edit these files (or add new), increment the VERSION in AccessSystem/Schema.pm then:
 
