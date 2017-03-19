@@ -442,18 +442,20 @@ sub membership_status_update : Chained('base') :PathPart('membership_status_upda
     
     while (my $member = $people->next() ) {
         my @flags = ();
-        push @flags, 'concession' if $member->concessionary_rate;
-        push @flags, 'otherspace' if $member->member_of_other_hackspace;
-        push @flags, 'full' if !$member->member_of_other_hackspace && ! $member->concessionary_rate;
-
         push @flags, 'valid_members' if $member->is_valid;
-        push @flags, 'ex_members' if $member->end_date && !$member->is_valid;
-        push @flags, 'overdue_members' if !$member->end_date && !$member->is_valid;
-
         push @flags, 'child' if $member->parent;
-        push @flags, 'adult' if !$member->parent;
-        push @flags, 'count';
 
+        if(!$member->parent) {
+            push @flags, 'concession' if $member->concessionary_rate;
+            push @flags, 'otherspace' if $member->member_of_other_hackspace;
+            push @flags, 'full' if !$member->member_of_other_hackspace && ! $member->concessionary_rate;
+
+            push @flags, 'ex_members' if $member->end_date && !$member->is_valid;
+            push @flags, 'overdue_members' if !$member->end_date && !$member->is_valid;
+
+            push @flags, 'adult';
+            push @flags, 'count';
+        }
         my $v_until = $member->valid_until;
         push @flags, 'recent_expired' if !$member->end_date && $v_until && $v_until < $now && $v_until >= $four_weeks;
         
@@ -461,7 +463,8 @@ sub membership_status_update : Chained('base') :PathPart('membership_status_upda
 
         for my $f (@flags) {
             if($f eq 'recent_expired') {
-                push @{ $data{$f}{people} }, { $member->get_columns, concessionary_rate => $member->concessionary_rate, valid_until => $v_until->ymd };
+                my %cols = $member->get_columns;
+                push @{ $data{$f}{people} }, { %cols{qw/id parent_id name member_of_other_hackspace created_date end_date/}, concessionary_rate => $member->concessionary_rate, valid_until => $v_until->ymd };
             }
             for my $g (@flags) {
                 $data{$f}{$g}++;
@@ -480,8 +483,8 @@ sub membership_status_update : Chained('base') :PathPart('membership_status_upda
 Dear Directors,
 
 Current members: " . $data{valid_members}{count} . " - (" . join(', ', map { "$_: " . ($data{valid_members}{$_} || 0) } (qw/full concession otherspace adult child/)) . "), 
-Ex members: " . ($data{ex_members}{count} || 0) . " - (" . join(', ', map { "$_: " . ($data{ex_members}{$_} || 0) } (qw/full concession otherspace adult child/)) . "), 
-Overdue members: " . $data{overdue_members}{count} ." - (" . join(', ', map { "$_: " . ($data{overdue_members}{$_} || 0) } (qw/full concession otherspace adult child/)) . "), 
+Ex members: " . ($data{ex_members}{count} || 0) . " - (" . join(', ', map { "$_: " . ($data{ex_members}{$_} || 0) } (qw/full concession otherspace/)) . "), 
+Overdue members: " . $data{overdue_members}{count} ." - (" . join(', ', map { "$_: " . ($data{overdue_members}{$_} || 0) } (qw/full concession otherspac/)) . "), 
 Recently: 
 " . join("\n", map { sprintf("%03d: %40s: %20s: %s", 
                                    $_->{id},
