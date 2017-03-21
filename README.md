@@ -8,11 +8,12 @@ Overview
 A (semi-) automated access system for registering new members and
 giving them access to the physical space. It provides a registration
 form for new members to sign up, the ability to match RFID tokens to
-members, and an API for the door controller to verify if an RFID token
-is valid (including whether the owner is uptodate with payments).
+members, and an API for the controllers (eg the Door) to verify if an
+RFID token is valid (including whether the owner is uptodate with
+payments).
 
 We also include, via running RapidApp, a UI for admins to manually
-edit the database, to assign tokens to members and trouble shoot
+edit the database, to assign tokens to members and troubleshoot
 issues.
 
 Technologies
@@ -30,13 +31,15 @@ Technologies
 
 * Template Toolkit - Perl templating (in this case for HTML)
 
-* Daemon::Control - init.d style stuff
+* Daemon::Control - init.d style stuff (live system)
 
 * JSON - API data send/receive
 
-* SendInBlue - SMTP email sending service - free to low volume
+* SendInBlue - SMTP email sending service - free to low volume (live system)
 
 * OneAll.com - social logins
+
+* Barclayscrape - Pull current transactions from a Barclays bank account
 
 INSTALL
 -------
@@ -121,13 +124,47 @@ The /membership_status_update endpoint gathers data about numbers of members, pa
 
 The /login endpoint is under development.
 
-Security
---------
+Security & DPA
+--------------
+
+### Personal data
+
+The RapidApp part of the system allows access to all the data,
+including personal data. It is protected by a login system. All
+default views in RapidApp are altered so that any admins using it do
+not see any personal data other than names, without expressly asking
+for it.
+
+### Mis-use of /verify, /induct etc
+
+The database stores an expected IP for each Thing controller, these
+are assigned as fixed IPs to the controllers by the main network
+router. The API verifies that the IP of an incoming request matches
+the expected IP for the claimed thing controller id.
+
+### Personal logins (under development)
+
+Cookies for personal logins will be hashed to guard against content
+guessing (entire cookie stealing is not prevented). Members will have
+access only to their own data, and some shared items such as the door
+codes.
 
 Development/operation
 ---------------------
 
-### Payment imports
+### Payment management
+
+Each member is considered valid if they have a matching payment row in
+the database that covers the current date. Payment rows have an added
+date and an expiry date.
+
+Member payments are preferred to be via Standing Order, and contain a
+reference built from the member's id, eg member #1 will have to send a
+ref of SM0001 in their payment.
+
+Transactions are read regularly (nightly) from barclays bank using (https://github.com/russss/barclayscrape)[barclayscrape]. Any transaction matching SM\d+ is taken to be a payment for that member. A new payment row is added - if the member is currently valid, the new row's expiry date is extended from their current expiry date. If they are invalid, the new row expires ($amount_paid / $amount_due) months from the current date. (This has to be a whole number, else the entire payment is rejected).
+
+To allow for bank oddities and other mishaps, an overlap of 14 days is allowed between payments.
 
 ### Database updates
 
@@ -140,3 +177,7 @@ This will create a set of AccessSystem-Schema-$OLDVER-$NEWVER-$DATABASE.sql. Use
 Schema change: If your person table has a concessionary_rate column, then add a new person.concessionary_rate_override as a varchar.  Set it to "legacy" if concessionary_rate is true, then remove the concessionary_rate column.
 
 
+Assigning access tokens etc
+---------------------------
+
+Please see the Makerspace "Operating Procedures" document.
