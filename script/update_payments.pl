@@ -157,14 +157,14 @@ sub import_payments {
         # Figure out what sort of payment this is, if valid_until is
         # empty, then its a first payment or renewal payment - use the
         # payment date.
-        # Else use the valid_until date
+        # Else use the valid_until date, unless member had already expired!
 
-        # Only add 3 extra days if a first or renewal payment - these
+        # Only add $OVERLAP  extra days if a first or renewal payment - these
         # ensure member remains valid if standing order is not an
         # exact month due to weekends and bank holidays
         my $valid_until = $member->valid_until;
         my %extra_days = ();
-        if(!$valid_until) {
+        if(!$valid_until || $valid_until < DateTime->now ) {
             $valid_until ||= $trn->{dtposted};
             %extra_days = ( days => $OVERLAP_DAYS );
         }
