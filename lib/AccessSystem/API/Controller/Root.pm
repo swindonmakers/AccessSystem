@@ -371,7 +371,7 @@ sub nudge_member: Chained('/base'): PathPart('nudge_member'): Args(1) {
         $c->forward('send_reminder_email');
         $c->stash(json => { message => "Attempted to send reminder email" });
     } else {
-        $c->stash(json => { message => "Can't find member $id" });
+        $c->stash(json => { message => "Can't find member $id or member is still valid!" });
     }
     delete $c->stash->{member};
     $c->forward('View::JSON');
