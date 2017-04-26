@@ -72,6 +72,7 @@ sub oneall_login_callback : Path('/oneall_login_callback') {
             [
              'login_tokens.login_token' => $user_token,
              'me.email' => { '-in' => \@emails },
+             'end_date' => undef,
             ],
             {
                 prefetch => 'login_tokens',
@@ -109,6 +110,36 @@ sub login : Path('/login') {
 }
 
 sub base :Chained('/') :PathPart('') :CaptureArgs(0) {
+}
+
+=head2 logged_in
+
+Base path for all pages requiring a member to be logged in. Members
+with an end_date set are confirmed as being no longer members and
+therefore will not be allowed to use the system.
+
+Expired/Invalid members should be allowed to look at their payment
+data pages, and nothing else?
+
+=cut
+
+sub logged_in: Chained('base') :PathPart(''): CaptureArgs(0) {
+    my ($self, $c) = @_;
+
+    if(!$c->authen_cookie_value()) {
+        return $c->res->redirect($c->uri_for('/login'));
+    }
+    $c->stash->{person_id} = $c->authen_cookie_value->{person_id};
+
+    my $person = $c->model('AccessDB::Person')->find({
+        id => $c->stash->{person_id},
+        end_date => undef,
+    });
+    if(!$person) {
+        $c->log->debug("User was logged in, but has since had an end_date set?");
+        return $c->res->redirect($c->uri_for('/login'));
+    }
+    $c->stash->{person} = $person;
 }
 
 ## Given an access token, eg RFID id or similar, and a "thing" guid,
