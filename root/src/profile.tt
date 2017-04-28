@@ -1,0 +1,8 @@
+[% WRAPPER wrapper.tt %]
+<div class="col-md-12">Hey [% person.name %]</div>
+<div class="col-md-12">Your membership:</div>
+<div class="col-md-10 col-md-offset-2"> Your Reference: <strong>[% person.bank_ref() %]</strong></div>
+<div class="col-md-10 col-md-offset-2"> Last payment: <strong>[% person.last_payment.paid_on_date.ymd() %]</strong></div>
+<div class="col-md-10 col-md-offset-2"> Valid until: <strong>[% person.real_expiry(c.config.payments.OVERLAP).ymd() %]</strong></div>
+<div class="col-md-10 col-md-offset-2"> Status: <strong [% IF person.is_valid(); 'style="color:green;"'; ELSE; 'style="color: red;"'; END %]>[% IF person.is_valid(); 'Valid'; ELSE; 'Invalid'; END %]</strong></div>
+[% END %]

@@ -72,20 +72,21 @@ sub oneall_login_callback : Path('/oneall_login_callback') {
             [
              'login_tokens.login_token' => $user_token,
              'me.email' => { '-in' => \@emails },
-             'end_date' => undef,
             ],
             {
                 prefetch => 'login_tokens',
             }
         );
         if(!$person->count || $person->count > 1) {
-            $c->session->{message} = "Failed to match login against existing Makerspace member, ask an admin to check the message log if this is incorrect";
+            $c->session->{message} = "Failed to match login against existing Makerspace member, ask an admin to check the message log if this is incorrect (tried to match email: $emails[0] )";
 
             $c->model('AccessDB::MessageLog')->create({
                 accessible_thing_id => 'D1CAE50C-0C2C-11E7-84F0-84242E34E104',
                 message => "Login attempt failed from $emails[0] ($res->{user}{identity}{accounts}[0]{username})",
                 from_ip => '192.168.1.70',
-            });
+                                                      });
+            $c->stash->{template} = 'login_fail.tt';
+            return;
         }
         $person = $person->first;
         if(!$person->login_tokens->count) {
@@ -97,7 +98,7 @@ sub oneall_login_callback : Path('/oneall_login_callback') {
             from_ip => '192.168.1.70',
         });
         $c->set_authen_cookie( value => { person_id => $person->id },
-                               expires => '+3w'
+                               expires => '+3M'
         );
         $c->res->redirect($c->uri_for('/profile'));
     }
@@ -141,6 +142,13 @@ sub logged_in: Chained('base') :PathPart(''): CaptureArgs(0) {
     }
     $c->stash->{person} = $person;
 }
+
+sub profile : Chained('logged_in') :PathPart('profile'): Args(0) {
+    my ($self, $c) = @_;
+
+    $c->stash->{template} = 'profile.tt';
+}
+
 
 ## Given an access token, eg RFID id or similar, and a "thing" guid,
 ## eg "the Main Door", check whether they both exist as ids, and

@@ -148,6 +148,12 @@ sub dues {
     return $dues;
 }
 
+=head2 valid_until
+
+Returns the expiry_date of the most recent payment made by/for this member.
+
+=cut
+
 sub valid_until {
     my ($self) = @_;
 
@@ -163,6 +169,19 @@ sub valid_until {
     }
 
     return undef;
+}
+
+=head2 real_expiry
+
+Returns the actual expiry date - the valid_until date minus $OVERLAP days.
+
+=cut
+
+sub real_expiry {
+    my ($self, $overlap) = @_;
+
+    my $valid_until = $self->valid_until;
+    return $valid_until->subtract(days => $overlap);
 }
 
 sub concessionary_rate {

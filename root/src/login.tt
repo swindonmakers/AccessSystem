@@ -11,17 +11,20 @@
     var s = document.getElementsByTagName('script')[0];
     s.parentNode.insertBefore(oa, s);
 </script>
-
+<h2>Click here to login to your Makerspace account</h2>
+<p>
+This magic only works if the email you gave us on registration matches the one in the account login type you choose below.
+</p>
 <div id="oa_social_login_container"></div>
  
 <script type="text/javascript"> 
 
   /* Replace #your_callback_uri# with the url to your own callback script */
-  var your_callback_script = 'http://insel.local:3000/oneall_login_callback';
+  var your_callback_script = 'http://desert-island.me.uk/accesssystem/oneall_login_callback';
 
   /* Embeds the buttons into the container oa_social_login_container */
   var _oneall = _oneall || [];
-  _oneall.push(['social_login', 'set_providers', ['github']]);
+  _oneall.push(['social_login', 'set_providers', ['github','google']]);
   _oneall.push(['social_login', 'set_callback_uri', your_callback_script]);
   _oneall.push(['social_login', 'do_render_ui', 'oa_social_login_container']);
 
