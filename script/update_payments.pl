@@ -120,6 +120,8 @@ sub fiddle_payment {
         $trans->{name} = 'BRIDGE PS ABC SM0027 FT';
     } elsif($trans->{fitid} eq '+201609150000002') {
         $trans->{name} = "$trans->{name} SM0039";
+    } elsif($trans->{fitid} eq '+201705020000006') {
+        $trans->{name} = "$trans->{name} SM0068";
     }
     return 0;
 }
