@@ -63,7 +63,7 @@ sub oneall_login_callback : Path('/oneall_login_callback') {
         $c->log->debug("oneall token: $conn_token");
         my $res = $self->verify_token($conn_token, $c->config->{OneAll});
         if(!$res) {
-            return $c->res->redirect($c->uri_for('/login'));
+            return $c->res->redirect($c->uri_for('login'));
         }
         my $user_token = $res->{user}{user_token};
         my @emails = map { $_->{value} } @{ $res->{user}{identity}{emails} };
@@ -100,7 +100,8 @@ sub oneall_login_callback : Path('/oneall_login_callback') {
         $c->set_authen_cookie( value => { person_id => $person->id },
                                expires => '+3M'
         );
-        $c->res->redirect($c->uri_for('/profile'));
+
+        $c->res->redirect($c->uri_for('profile'));
     }
 }
 
@@ -128,7 +129,8 @@ sub logged_in: Chained('base') :PathPart(''): CaptureArgs(0) {
     my ($self, $c) = @_;
 
     if(!$c->authen_cookie_value()) {
-        return $c->res->redirect($c->uri_for('/login'));
+        $c->log->debug("no cookie, login");
+        return $c->res->redirect($c->uri_for('login'));
     }
     $c->stash->{person_id} = $c->authen_cookie_value->{person_id};
 
@@ -138,23 +140,52 @@ sub logged_in: Chained('base') :PathPart(''): CaptureArgs(0) {
     });
     if(!$person) {
         $c->log->debug("User was logged in, but has since had an end_date set?");
-        return $c->res->redirect($c->uri_for('/login'));
+        return $c->res->redirect($c->uri_for('login'));
     }
     $c->stash->{person} = $person;
 }
 
 sub profile : Chained('logged_in') :PathPart('profile'): Args(0) {
     my ($self, $c) = @_;
-
+          
     $c->stash->{template} = 'profile.tt';
 }
 
+sub editme : Chained('logged_in') :PathPart('editme'): Args(0) {
+    my ($self, $c) = @_;
+
+    my $form = AccessSystem::Form::Person->new({ctx => $c});
+    if($form->process(
+           item => $c->stash->{person},
+           params => $c->req->parameters,
+           inactive => ['dob','membership_guide','has_children','more_children','capcha', 'submit'],
+           active => ['submit_edit'],
+       )) {
+        $c->res->redirect($c->uri_for('profile'));
+    } else {
+        $c->stash(form => $form,
+                    template => 'forms/editme.tt');
+    }
+}
+
+
+sub who : Chained('base') : PathPart('who') : Args(0)  {
+    my ($self, $c) = @_;
+
+    $c->res->content_type('text/plain');
+    $c->res->body('<No token id>'), return if !$c->req->params->{token};
+
+    my $token = $c->model('AccessDB::AccessToken')->find({ id => $c->req->params->{token} }, { prefetch => 'person' });
+    $c->res->body('<No such person>'), return if !$token;
+
+    $c->res->body($token->person->name);
+}
 
 ## Given an access token, eg RFID id or similar, and a "thing" guid,
 ## eg "the Main Door", check whether they both exist as ids, and
 ## whether a person owning said token is allowed to access said thing.
 
-sub verify: Chained('/base') :PathPart('verify') :Args(0) {
+sub verify: Chained('base') :PathPart('verify') :Args(0) {
     my ($self, $c) = @_;
 
     if($c->req->params->{token} && $c->req->params->{thing}) {
@@ -210,7 +241,7 @@ sub verify: Chained('/base') :PathPart('verify') :Args(0) {
     
 }
 
-sub msg_log: Chained('/base'): PathPart('msglog'): Args() {
+sub msg_log: Chained('base'): PathPart('msglog'): Args() {
     my ($self, $c) = @_;
     
     if($c->req->params->{thing} && $c->req->params->{msg}) {
@@ -235,7 +266,7 @@ sub msg_log: Chained('/base'): PathPart('msglog'): Args() {
 
 ## Thing X (from correct IP Y) says person T inducts person S to use it:
 
-sub induct: Chained('/base'): PathPart('induct'): Args() {
+sub induct: Chained('base'): PathPart('induct'): Args() {
     my ($self, $c) = @_;
 
     if($c->req->params->{token_t} && $c->req->params->{token_s} && $c->req->params->{thing}) {
@@ -291,7 +322,7 @@ sub induct: Chained('/base'): PathPart('induct'): Args() {
     $c->forward('View::JSON');
 }
 
-sub register: Chained('/base'): PathPath('register'): Args(0) {
+sub register: Chained('base'): PathPath('register'): Args(0) {
     my ($self, $c) = @_;
 
     my $form = AccessSystem::Form::Person->new({ctx => $c});
@@ -321,7 +352,7 @@ sub register: Chained('/base'): PathPath('register'): Args(0) {
     }
 }
 
-sub add_child: Chained('/base') :PathPart('add_child') :Args(0) {
+sub add_child: Chained('base') :PathPart('add_child') :Args(0) {
     my ($self, $c) = @_;
 
     my $parent_id = $c->session->{parent_id} || $c->req->params->{parent_id};
@@ -391,7 +422,7 @@ sub finish_new_member: Private {
 }
     
 
-sub resend_email: Chained('/base'): PathPart('resendemail'): Args(1) {
+sub resend_email: Chained('base'): PathPart('resendemail'): Args(1) {
     my ($self, $c, $id) = @_;
     my $member = $c->model('AccessDB::Person')->find({ id => $id });
     if($member) {
@@ -460,7 +491,7 @@ Swindon Makerspace
     $c->forward($c->view('Email'));   
 }
 
-sub nudge_member: Chained('/base'): PathPart('nudge_member'): Args(1) {
+sub nudge_member: Chained('base'): PathPart('nudge_member'): Args(1) {
     my ($self, $c, $id) = @_;
     my $member = $c->model('AccessDB::Person')->find({ id => $id });
     if($member && !$member->is_valid && !$member->end_date) {
