@@ -18,6 +18,14 @@
   <link rel="stylesheet" href="[% c.uri_for('assets/css/main.css') %]">
   </head>
   <body>
+    <nav>
+      <ul class="nav nav-pills">
+        [% IF person %]
+        <li role="presentation" [% IF current_page == 'profile' %];'class="active"';[% END %]><a href="profile">Profile</a></li>
+        <li role="presentation" ><a href="logout#">Logout</a></li>
+        [% END %]
+      </ul>
+    </nav>
     <div class="container">
       [% content %]
     </div>

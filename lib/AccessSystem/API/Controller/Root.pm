@@ -76,7 +76,10 @@ sub oneall_login_callback : Path('/oneall_login_callback') {
             {
                 prefetch => 'login_tokens',
             }
-        );
+            );
+        if($person->count > 1) {
+            $person = $person->search({ parent_id => undef });
+        }
         if(!$person->count || $person->count > 1) {
             $c->session->{message} = "Failed to match login against existing Makerspace member, ask an admin to check the message log if this is incorrect (tried to match email: $emails[0] )";
 
@@ -109,6 +112,14 @@ sub login : Path('/login') {
     my ($self, $c) = @_;
 
     $c->stash(template => 'login.tt');
+}
+
+sub logout : Path('/logout') {
+    my ($self, $c) = @_;
+
+    $c->unset_authen_cookie();
+
+    return $c->res->redirect($c->uri_for('login'));
 }
 
 sub base :Chained('/') :PathPart('') :CaptureArgs(0) {
@@ -147,7 +158,8 @@ sub logged_in: Chained('base') :PathPart(''): CaptureArgs(0) {
 
 sub profile : Chained('logged_in') :PathPart('profile'): Args(0) {
     my ($self, $c) = @_;
-          
+
+    $c->stash->{current_page} = 'profile';
     $c->stash->{template} = 'profile.tt';
 }
 
@@ -164,6 +176,7 @@ sub editme : Chained('logged_in') :PathPart('editme'): Args(0) {
         $c->res->redirect($c->uri_for('profile'));
     } else {
         $c->stash(form => $form,
+                  current_page => 'profile',
                     template => 'forms/editme.tt');
     }
 }
