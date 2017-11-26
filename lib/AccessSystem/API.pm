@@ -26,6 +26,7 @@ use Catalyst qw/
 /;
 
 extends 'Catalyst';
+with 'CatalystX::AuthenCookie';
 
 our $VERSION = '0.01';
 

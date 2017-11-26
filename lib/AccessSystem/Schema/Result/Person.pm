@@ -77,6 +77,7 @@ __PACKAGE__->has_many('communications', 'AccessSystem::Schema::Result::Communica
 __PACKAGE__->has_many('payments', 'AccessSystem::Schema::Result::Dues', 'person_id');
 __PACKAGE__->has_many('allowed', 'AccessSystem::Schema::Result::Allowed', 'person_id');
 __PACKAGE__->has_many('tokens', 'AccessSystem::Schema::Result::AccessToken', 'person_id');
+__PACKAGE__->has_many('login_tokens', 'AccessSystem::Schema::Result::PersonLoginTokens', 'person_id');
 __PACKAGE__->has_many('children', 'AccessSystem::Schema::Result::Person', 'parent_id');
 __PACKAGE__->belongs_to('parent', 'AccessSystem::Schema::Result::Person', 'parent_id', { 'join_type' => 'left'} );
 
@@ -147,6 +148,12 @@ sub dues {
     return $dues;
 }
 
+=head2 valid_until
+
+Returns the expiry_date of the most recent payment made by/for this member.
+
+=cut
+
 sub valid_until {
     my ($self) = @_;
 
@@ -162,6 +169,19 @@ sub valid_until {
     }
 
     return undef;
+}
+
+=head2 real_expiry
+
+Returns the actual expiry date - the valid_until date minus $OVERLAP days.
+
+=cut
+
+sub real_expiry {
+    my ($self, $overlap) = @_;
+
+    my $valid_until = $self->valid_until;
+    return $valid_until->subtract(days => $overlap);
 }
 
 sub concessionary_rate {

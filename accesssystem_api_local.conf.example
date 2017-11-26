@@ -1,0 +1,12 @@
+# Secrit stuff, do not commmit the _local.conf!
+<OneAll>
+  subdomain swindon-makerspace
+  domain swindon-makerspace.api.oneall.com
+  public_key <look this up>
+  private_key <look this up>
+</OneAll>
+<authen_cookie>
+  name access_system
+  mac_secret <any old crap, I generated a guid>
+</authen_cookie>
+

@@ -1,0 +1,3 @@
+[% WRAPPER wrapper.tt %]
+<div>Oops, something went wrong: [% c.session.message %]</div>
+[% END %]

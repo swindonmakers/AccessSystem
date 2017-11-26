@@ -4,6 +4,9 @@ use namespace::autoclean;
 use AccessSystem::Form::Person;
 use DateTime;
 use Data::Dumper;
+use LWP::UserAgent;
+use MIME::Base64;
+use JSON;
 
 BEGIN { extends 'Catalyst::Controller' }
 
@@ -50,14 +53,152 @@ sub default :Path {
     $c->response->status(404);
 }
 
+# insert into accessible_things (id, name, assigned_ip) values ('D1CAE50C-0C2C-11E7-84F0-84242E34E104', 'oneall_login_callback', '192.168.1.70');
+
+sub oneall_login_callback : Path('/oneall_login_callback') {
+    my ($self, $c) = @_;
+
+    my $conn_token = $c->req->body_params->{connection_token};
+    if($conn_token) {
+        $c->log->debug("oneall token: $conn_token");
+        my $res = $self->verify_token($conn_token, $c->config->{OneAll});
+        if(!$res) {
+            return $c->res->redirect($c->uri_for('login'));
+        }
+        my $user_token = $res->{user}{user_token};
+        my @emails = map { $_->{value} } @{ $res->{user}{identity}{emails} };
+
+        my $person = $c->model('AccessDB::Person')->search(
+            [
+             'login_tokens.login_token' => $user_token,
+             'me.email' => { '-in' => \@emails },
+            ],
+            {
+                prefetch => 'login_tokens',
+            }
+            );
+        if($person->count > 1) {
+            $person = $person->search({ parent_id => undef });
+        }
+        if(!$person->count || $person->count > 1) {
+            $c->session->{message} = "Failed to match login against existing Makerspace member, ask an admin to check the message log if this is incorrect (tried to match email: $emails[0] )";
+
+            $c->model('AccessDB::MessageLog')->create({
+                accessible_thing_id => 'D1CAE50C-0C2C-11E7-84F0-84242E34E104',
+                message => "Login attempt failed from $emails[0] ($res->{user}{identity}{accounts}[0]{username})",
+                from_ip => '192.168.1.70',
+                                                      });
+            $c->stash->{template} = 'login_fail.tt';
+            return;
+        }
+        $person = $person->first;
+        if(!$person->login_tokens->count) {
+            $person->login_tokens->create({ login_token => $user_token });
+        }
+        $c->model('AccessDB::MessageLog')->create({
+            accessible_thing_id => 'D1CAE50C-0C2C-11E7-84F0-84242E34E104',
+            message => "Login attempt succeeded from $emails[0] ($res->{user}{identity}{accounts}[0]{username})",
+            from_ip => '192.168.1.70',
+        });
+        $c->set_authen_cookie( value => { person_id => $person->id },
+                               expires => '+3M'
+        );
+
+        $c->res->redirect($c->uri_for('profile'));
+    }
+}
+
+sub login : Path('/login') {
+    my ($self, $c) = @_;
+
+    $c->stash(template => 'login.tt');
+}
+
+sub logout : Path('/logout') {
+    my ($self, $c) = @_;
+
+    $c->unset_authen_cookie();
+
+    return $c->res->redirect($c->uri_for('login'));
+}
+
 sub base :Chained('/') :PathPart('') :CaptureArgs(0) {
+}
+
+=head2 logged_in
+
+Base path for all pages requiring a member to be logged in. Members
+with an end_date set are confirmed as being no longer members and
+therefore will not be allowed to use the system.
+
+Expired/Invalid members should be allowed to look at their payment
+data pages, and nothing else?
+
+=cut
+
+sub logged_in: Chained('base') :PathPart(''): CaptureArgs(0) {
+    my ($self, $c) = @_;
+
+    if(!$c->authen_cookie_value()) {
+        $c->log->debug("no cookie, login");
+        return $c->res->redirect($c->uri_for('login'));
+    }
+    $c->stash->{person_id} = $c->authen_cookie_value->{person_id};
+
+    my $person = $c->model('AccessDB::Person')->find({
+        id => $c->stash->{person_id},
+        end_date => undef,
+    });
+    if(!$person) {
+        $c->log->debug("User was logged in, but has since had an end_date set?");
+        return $c->res->redirect($c->uri_for('login'));
+    }
+    $c->stash->{person} = $person;
+}
+
+sub profile : Chained('logged_in') :PathPart('profile'): Args(0) {
+    my ($self, $c) = @_;
+
+    $c->stash->{current_page} = 'profile';
+    $c->stash->{template} = 'profile.tt';
+}
+
+sub editme : Chained('logged_in') :PathPart('editme'): Args(0) {
+    my ($self, $c) = @_;
+
+    my $form = AccessSystem::Form::Person->new({ctx => $c});
+    if($form->process(
+           item => $c->stash->{person},
+           params => $c->req->parameters,
+           inactive => ['dob','membership_guide','has_children','more_children','capcha', 'submit'],
+           active => ['submit_edit'],
+       )) {
+        $c->res->redirect($c->uri_for('profile'));
+    } else {
+        $c->stash(form => $form,
+                  current_page => 'profile',
+                    template => 'forms/editme.tt');
+    }
+}
+
+
+sub who : Chained('base') : PathPart('who') : Args(0)  {
+    my ($self, $c) = @_;
+
+    $c->res->content_type('text/plain');
+    $c->res->body('<No token id>'), return if !$c->req->params->{token};
+
+    my $token = $c->model('AccessDB::AccessToken')->find({ id => $c->req->params->{token} }, { prefetch => 'person' });
+    $c->res->body('<No such person>'), return if !$token;
+
+    $c->res->body($token->person->name);
 }
 
 ## Given an access token, eg RFID id or similar, and a "thing" guid,
 ## eg "the Main Door", check whether they both exist as ids, and
 ## whether a person owning said token is allowed to access said thing.
 
-sub verify: Chained('/base') :PathPart('verify') :Args(0) {
+sub verify: Chained('base') :PathPart('verify') :Args(0) {
     my ($self, $c) = @_;
 
     if($c->req->params->{token} && $c->req->params->{thing}) {
@@ -113,7 +254,7 @@ sub verify: Chained('/base') :PathPart('verify') :Args(0) {
     
 }
 
-sub msg_log: Chained('/base'): PathPart('msglog'): Args() {
+sub msg_log: Chained('base'): PathPart('msglog'): Args() {
     my ($self, $c) = @_;
     
     if($c->req->params->{thing} && $c->req->params->{msg}) {
@@ -138,7 +279,7 @@ sub msg_log: Chained('/base'): PathPart('msglog'): Args() {
 
 ## Thing X (from correct IP Y) says person T inducts person S to use it:
 
-sub induct: Chained('/base'): PathPart('induct'): Args() {
+sub induct: Chained('base'): PathPart('induct'): Args() {
     my ($self, $c) = @_;
 
     if($c->req->params->{token_t} && $c->req->params->{token_s} && $c->req->params->{thing}) {
@@ -194,7 +335,7 @@ sub induct: Chained('/base'): PathPart('induct'): Args() {
     $c->forward('View::JSON');
 }
 
-sub register: Chained('/base'): PathPath('register'): Args(0) {
+sub register: Chained('base'): PathPath('register'): Args(0) {
     my ($self, $c) = @_;
 
     my $form = AccessSystem::Form::Person->new({ctx => $c});
@@ -224,7 +365,7 @@ sub register: Chained('/base'): PathPath('register'): Args(0) {
     }
 }
 
-sub add_child: Chained('/base') :PathPart('add_child') :Args(0) {
+sub add_child: Chained('base') :PathPart('add_child') :Args(0) {
     my ($self, $c) = @_;
 
     my $parent_id = $c->session->{parent_id} || $c->req->params->{parent_id};
@@ -294,7 +435,7 @@ sub finish_new_member: Private {
 }
     
 
-sub resend_email: Chained('/base'): PathPart('resendemail'): Args(1) {
+sub resend_email: Chained('base'): PathPart('resendemail'): Args(1) {
     my ($self, $c, $id) = @_;
     my $member = $c->model('AccessDB::Person')->find({ id => $id });
     if($member) {
@@ -363,7 +504,7 @@ Swindon Makerspace
     $c->forward($c->view('Email'));   
 }
 
-sub nudge_member: Chained('/base'): PathPart('nudge_member'): Args(1) {
+sub nudge_member: Chained('base'): PathPart('nudge_member'): Args(1) {
     my ($self, $c, $id) = @_;
     my $member = $c->model('AccessDB::Person')->find({ id => $id });
     if($member && !$member->is_valid && !$member->end_date) {
@@ -512,6 +653,33 @@ The Access System.
     $c->forward('View::JSON');
 
 }
+
+sub verify_token {
+    my ($self, $conn_token, $conf) = @_;
+
+    my $user_token_uri = 'https://'
+        . $conf->{domain} . "/connections/${conn_token}.json\n" ;
+    my $ua = LWP::UserAgent->new();
+    print STDERR "OneAll verify $user_token_uri";
+    my $resp = $ua->get($user_token_uri,
+                        'Authorization' => 'Basic ' . encode_base64($conf->{public_key} . ':' . $conf->{private_key}));
+    if(!$resp->is_success) {
+        return 0;
+    }
+    my $ut_json = $resp->decoded_content;
+    
+    my $ut_result = JSON::decode_json($ut_json) if $ut_json;
+    print STDERR Dumper($ut_result || '');
+    if($ut_json && $ut_result->{response}{result}{status}{flag} ne 'error') {
+        ## should be "social_login" as its the result of a login call? always?
+#                my $trans_type = $ut_result->{response}{result}{data}{plugin}{key};
+        return $ut_result->{response}{result}{data};
+    } else {
+        return 0;
+    }
+    
+}
+
 
 =head2 end
 

@@ -185,6 +185,8 @@ has_field capcha => => field_add_defaults {
 
 has_field 'submit' => ( type => 'Submit', value => 'Sign Up' );
 
+has_field 'submit_edit' => ( type => 'Submit', value => 'Update', inactive => 1 );
+
 no HTML::FormHandler::Moose;
 
 1;

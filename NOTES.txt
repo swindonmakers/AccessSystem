@@ -22,3 +22,5 @@ Jess: 0001, James, 0002, Jamie, 0003, Damian, 0004, Steve W, 0005, Rob L, 0006, 
 
 select written_date, substr(message, 24) as token, people.name from message_log join access_tokens on access_tokens.id = token join people on people.id = access_tokens.person_id where accessible_thing_id='1A9E3D66-E90F-11E5-83C1-1E346D398B53' and message like 'Permission granted to: %' order by written_date;
 
+https://ico.org.uk/for-organisations/data-protection-reform/overview-of-the-gdpr/individuals-rights/the-right-to-be-informed/
+
