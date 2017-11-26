@@ -15,3 +15,6 @@ Jess: 0001, James, 0002, Jamie, 0003, Damian, 0004, Steve W, 0005, Rob L, 0006, 
 *** Creates linked user entr(y|ies) - person has_a user?
 *** user_role == default (nonpaying member)
 *** collects email, name, date of birth
+
+
+https://ico.org.uk/for-organisations/data-protection-reform/overview-of-the-gdpr/individuals-rights/the-right-to-be-informed/
