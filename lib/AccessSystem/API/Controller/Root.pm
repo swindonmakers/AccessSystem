@@ -97,7 +97,7 @@ sub oneall_login_callback : Path('/oneall_login_callback') {
         }
         $c->model('AccessDB::MessageLog')->create({
             accessible_thing_id => 'D1CAE50C-0C2C-11E7-84F0-84242E34E104',
-            message => "Login attempt succeeded from $emails[0] ($res->{user}{identity}{accounts}[0]{username})",
+            message => "Login attempt succeeded from $emails[0] ($res->{user}{identity}{preferredUsername})",
             from_ip => '192.168.1.70',
         });
         $c->set_authen_cookie( value => { person_id => $person->id },

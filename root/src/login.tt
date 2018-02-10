@@ -20,7 +20,7 @@ This magic only works if the email you gave us on registration matches the one i
 <script type="text/javascript"> 
 
   /* Replace #your_callback_uri# with the url to your own callback script */
-  var your_callback_script = 'http://desert-island.me.uk/accesssystem/oneall_login_callback';
+  var your_callback_script = 'http://inside.swindon-makerspace.org/oneall_login_callback';
 
   /* Embeds the buttons into the container oa_social_login_container */
   var _oneall = _oneall || [];
