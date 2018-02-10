@@ -1,0 +1,20 @@
+[% WRAPPER wrapper.tt %]
+  [% IF !parent %]
+  <h2>Edit your Swindon Makerspace details</h2>
+  [% ELSE %]
+  <h2>Edit child [% child.name %]</h2>
+  [% END %]
+  <p>
+  Update your name, address or email here. If you got your birthdate wrong and need to update it, please <a href="mailto:info@swindon-makerspace.org">contact the directors</a>.
+  </p>
+  [% form.render() %]
+[% END %]
+
+<script type="text/javascript"> 
+  jQuery(function() { jQuery('#dob').datepicker({
+     dateFormat: "yy-mm-dd",
+     changeMonth: true,
+     changeYear: true,
+     yearRange: "c-99:c+0"
+  }); });
+</script>
