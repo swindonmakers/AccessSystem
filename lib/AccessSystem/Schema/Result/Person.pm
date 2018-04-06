@@ -7,6 +7,70 @@ use DateTime;
 
 use base 'DBIx::Class::Core';
 
+=head1 NAME
+
+AccessSystem::Schema::Result::Person
+
+=head1 DESCRIPTION
+
+Database class representing makerspace members or their children.
+
+=head1 FIELDS
+
+=head2 id
+
+Numeric identifier.
+
+=head2 parent_id
+
+Defaults to NULL, contains the id of the parent row if this is a child.
+
+=head2 name
+
+Full name of the member
+
+=head2 email
+
+Email of the member, NULLs allowed.
+
+=head2 opt_in
+
+Defaults to False. True if the member allows non-makerspace related emails.
+
+=head2 dob
+
+Date of birth of the member - compulsory
+
+=head2 address
+
+Free form address field for the member.
+
+=head2 github_user
+
+Nullable. Github username of the member if available.
+
+=head2 concessionary_rate_override
+
+String describing why the user is eligable for the concessionary rate.
+
+=head2 payment_override
+
+Default NULL. Amount the user is paying monthly, if it is not the default amount.
+
+=head2 member_of_another_hackspace
+
+Defaults to False. True if the member is paying "other hackspace" rate.
+
+=head2 created_date
+
+Date the member was created
+
+=head2 end_date
+
+Nullable. Set if the member has officially left.
+
+=cut
+
 __PACKAGE__->load_components('InflateColumn::DateTime', 'TimeStamp');
 
 __PACKAGE__->table('people');
@@ -52,6 +116,10 @@ __PACKAGE__->add_columns(
         data_type => 'varchar',
         size => 255,
         default_value => '',
+        is_nullable => 1,
+    },
+    payment_override => {
+        data_type => 'float',
         is_nullable => 1,
     },
     member_of_other_hackspace => {
@@ -128,7 +196,7 @@ sub bank_ref {
 ## divide by 2 for concessions (applies also to children!?)
 ## returns whole pence
 
-sub dues {
+sub normal_dues {
     my ($self) = @_;
 
     return 0 if $self->parent;
@@ -143,6 +211,17 @@ sub dues {
 
     if($self->concessionary_rate) {
         $dues /= 2;
+    }
+
+    return $dues;
+}
+
+sub dues {
+    my ($self) = @_;
+
+    my $dues = $self->normal_dues;
+    if($self->payment_override && $self->payment_override > $dues) {
+        $dues = $self->payment_override;
     }
 
     return $dues;
@@ -181,6 +260,7 @@ sub real_expiry {
     my ($self, $overlap) = @_;
 
     my $valid_until = $self->valid_until;
+    return if !$valid_until;
     return $valid_until->subtract(days => $overlap);
 }
 
@@ -190,6 +270,8 @@ sub concessionary_rate {
     if ($self->concessionary_rate_override) {
         return 1;
     }
+
+    return 0 if !$self->dob;
 
     # FIXME: This is a bit iffy, since it checks your current age, and not the age when the payment was made, or ... something.
     # $age is a DateTime::Duration
@@ -211,7 +293,7 @@ sub concessionary_rate {
     my $children = $self->children_rs;
     while (my $child = $children->next) {
         if ($child->concessionary_rate) {
-            print "concession child\n";
+            print STDERR "concession child\n";
             return 1;
         }
     }

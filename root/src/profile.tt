@@ -4,6 +4,7 @@
 <div class="col-md-10 col-md-offset-2"> Your Reference: <strong>[% person.bank_ref() %]</strong></div>
 <div class="col-md-10 col-md-offset-2"> Last payment: <strong>[% person.last_payment.paid_on_date.ymd() %]</strong></div>
 <div class="col-md-10 col-md-offset-2"> Valid until: <strong>[% person.real_expiry(c.config.payments.OVERLAP).ymd() %]</strong></div>
+<div class="col-md-10 col-md-offset-2"> Monthly dues: <strong>[% person.dues / 100 | format("%.02f") %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a></div>
 <div class="col-md-10 col-md-offset-2"> Status: <strong [% IF person.is_valid(); 'style="color:green;"'; ELSE; 'style="color: red;"'; END %]>[% IF person.is_valid(); 'Valid'; ELSE; 'Invalid'; END %]</strong></div>
 
 <div class="col-md-12"><strong>Your details:</strong></div>
@@ -19,3 +20,4 @@
 <div class="col-md-10 col-md-offset-2"> Sorry, no door codes when your membership is invalid </div>
 [% END %]
 [% END %]
+

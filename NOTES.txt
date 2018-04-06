@@ -1,4 +1,20 @@
 
+04.04.2018:
+
+Upgrade notes:
+1) install new HTML::FormHandler (for the Field::Money)
+2) update the database to add the payment_override field
+
+register / payments - allow users to pay more than the default
+suggest "correct" amount and allow making it bigger
+also add concessionary override entry - via multi choice
+test /editme!
+
+
+perl -Ilib -Mlocal::lib=/usr/src/perl/libs/access_system/perl5/ -MAccessSystem::Schema -le'AccessSystem::Schema->connect("dbi:SQLite:test.db")->create_ddl_dir(undef, undef, undef, "2.0")'
+
+emvtool -r 1 -p 8477 cap
+
 ssh pi@inside.swindon-makerspace.org -L 0.0.0.0:3001:localhost:3000 -L 0.0.0.0:3002:localhost:3001 -L 8080:192.168.1.1:80
 
 
@@ -24,3 +40,58 @@ select written_date, substr(message, 24) as token, people.name from message_log 
 
 https://ico.org.uk/for-organisations/data-protection-reform/overview-of-the-gdpr/individuals-rights/the-right-to-be-informed/
 
+Installing new version of config file /etc/dbus-1/system.d/bluetooth.conf ...
+Job for bluetooth.service failed. See 'systemctl status bluetooth.service' and 'journalctl -xn' for details.
+invoke-rc.d: initscript bluetooth, action "restart" failed.
+dpkg: error processing package bluez (--configure):
+
+Errors were encountered while processing:
+ bluez
+E: Sub-process /usr/bin/dpkg returned an error code (1)
+Failed to perform requested operation on package.  Trying to recover:
+Setting up bluez (5.23-2+rpi2) ...
+Job for bluetooth.service failed. See 'systemctl status bluetooth.service' and 'journalctl -xn' for details.
+invoke-rc.d: initscript bluetooth, action "restart" failed.
+dpkg: error processing package bluez (--configure):
+ subprocess installed post-installation script returned error exit status 1
+Errors were encountered while processing:
+ bluez
+Press Return to continue.
+
+pi@raspberrypi:~/packages $ sudo apt-cache showsrc python-cryptography
+Package: python-cryptography
+Version: 1.7.1-3~bpo8+1
+Build-Depends: debhelper (>= 9), dh-python, python-all-dev, python3-all-dev, python-setuptools, python3-setuptools, python-cffi (>= 0.8), python3-cffi (>= 0.8), python-six (>= 1.4.1), python3-six (>= 1.4.1), libssl-dev, python-cryptography-vectors (>= 0.8.2~), python-cryptography-vectors (<< 0.8.3~), python3-cryptography-vectors (>= 0.8.2~), python3-cryptography-vectors (<< 0.8.3~), python-iso8601, python3-iso8601, python-pytest, python3-pytest, python-pretend, python3-pretend, python-pyasn1, python3-pyasn1, python-enum34, python3-enum34
+
+Package: libjs-jquery python-alabaster python-imagesize python-sphinx sphinx-co\
+mmon libjs-sphinxdoc python-cryptography-vectors python-hypothesis python-idna \
+python-pyasn1 python3-setuptools python3-pkg-resources python3-six python3-cryp\
+tography-vectors python3-hypothesis python3-idna python3-imagesize python3-jinj\
+a2 python3-pyasn1 python3-pygments python3-alabaster python3-sphinx python-iso8\
+601 python3-iso8601 python-pytest, python3-pytest python-py python3-py
+
+The following NEW packages will be installed:
+  fonts-font-awesome libssl-dev python-alabaster python-babel
+  python-babel-localedata python-cryptography-vectors python-enum34
+  python-hypothesis python-idna python-imagesize python-iso8601 python-pretend
+  python-pyasn1-modules python-sphinx-rtd-theme python-tz python3-alabaster
+  python3-babel python3-cryptography-vectors python3-docutils
+  python3-hypothesis python3-idna python3-imagesize python3-iso8601
+  python3-jinja2 python3-markupsafe python3-pretend python3-pyasn1
+  python3-pyasn1-modules python3-pygments python3-roman python3-six
+  python3-sphinx python3-tz
+The following packages will be upgraded:
+  libjs-jquery libjs-sphinxdoc python-pkg-resources python-py python-pyasn1
+  python-pytest python-setuptools python-sphinx python3-pkg-resources
+  python3-py python3-pytest python3-setuptools sphinx-common
+13 upgraded, 33 newly installed, 0 to remove and 58 not upgraded.
+
+pi@raspberrypi:~/packages $ sudo apt-cache showsrc python-openssl
+Package: pyopenssl
+Binary: python-openssl, python-openssl-doc, python3-openssl
+Version: 16.0.0-1~bpo8+1
+Maintainer: Sandro Tosi <morph@debian.org>
+Uploaders: Debian Python Modules Team <python-modules-team@lists.alioth.debian.org>
+Build-Depends: debhelper (>= 9), python-all, python3-all, dh-python, libssl-dev (>= 0.9.8), openssl, python-sphinx (>= 1.0.7+dfsg), python-setuptools, python3-setuptools, python-cryptography (>= 1.3), python3-cryptography (>= 1.3), python-six, python3-six, python-pytest (>= 2.8.5), python3-pytest (>= 2.8.5), python-cffi, python3-cffi, python-all-dev, python3-all-dev, python-sphinx-rtd-theme
+
+- needs python-openssl installed too.. that one says "arch:any" so it should Just Work?

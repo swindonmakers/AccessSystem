@@ -335,11 +335,33 @@ sub induct: Chained('base'): PathPart('induct'): Args() {
     $c->forward('View::JSON');
 }
 
-sub register: Chained('base'): PathPath('register'): Args(0) {
+# Mini api - get possible dues given Age, Concession, Other hackspace member
+# Ignoring Children for now as the register form adds those after the main member
+
+sub get_dues: Chained('base'): PathPart('get_dues'): Args(0) {
+    my ($self, $c) = @_;
+
+    my $dob = $c->req->params->{dob};
+    my $concession = $c->req->params->{concessionary_rate_override};
+    my $other_hackspace = $c->req->params->{member_of_other_hackspace};
+
+    $c->log->debug(Data::Dumper::Dumper($c->req->params));
+#    $c->log->debug("Vals: $dob $concession $other_hackspace Result: ", $new_person->dues);
+    my $new_person = $c->model('AccessDB::Person')->new_result({});
+    $new_person->dob($dob);
+    $new_person->concessionary_rate_override($concession);
+    $new_person->member_of_other_hackspace(1) if $other_hackspace;
+
+    $c->log->debug("Vals: $dob $concession $other_hackspace Result: ", $new_person->dues);
+    $c->response->body($new_person->dues / 100);
+}
+
+sub register: Chained('base'): PathPart('register'): Args(0) {
     my ($self, $c) = @_;
 
     my $form = AccessSystem::Form::Person->new({ctx => $c});
     my $new_person = $c->model('AccessDB::Person')->new_result({});
+    $new_person->payment_override($new_person->dues);
 
     if($form->process(
         item => $new_person,
@@ -354,6 +376,7 @@ sub register: Chained('base'): PathPath('register'): Args(0) {
         }
 
         ## Email new member their payment details!
+        $new_person->discard_changes();
         $c->stash->{member} = $new_person;
         $c->forward('finish_new_member');
 
@@ -385,7 +408,7 @@ sub add_child: Chained('base') :PathPart('add_child') :Args(0) {
     my $form = AccessSystem::Form::Person->new(
         ctx => $c,
         active => ['more_children'], 
-        inactive => ['has_children', 'membership_guide', 'address']
+        inactive => ['has_children', 'membership_guide', 'address', 'payment_override']
     );
     my $new_person = $c->model('AccessDB::Person')->new_result({});
     $new_person->parent_id($parent_id);
@@ -456,7 +479,7 @@ sub send_membership_email: Private {
     my $dues_nice = sprintf("%0.2f", $member->dues/100);
     $c->stash->{email} = {
             to => $member->email,
-            cc => 'info@swindon-makerspace.org',
+            cc => $c->config->{emails}{cc},
             from => 'info@swindon-makerspace.org',
             subject => 'Swindon Makerspace membership info',
             body => "
@@ -535,7 +558,7 @@ sub send_reminder_email: Private {
                             $last->expires_on_date->year);
     $c->stash->{email} = {
             to => $member->email,
-            cc => 'info@swindon-makerspace.org',
+            cc => $c->config->{emails}{cc},
             from => 'info@swindon-makerspace.org',
             subject => 'Swindon Makerspace membership check',
             body => "
@@ -619,7 +642,7 @@ sub membership_status_update : Chained('base') :PathPart('membership_status_upda
     $c->log->debug(Dumper(\%data));
     $c->stash->{email} = {
 #            to => 'jess@jandj.me.uk', #'info@swindon-makerspace.org',
-            to => 'info@swindon-makerspace.org',
+            to => $c->config->{emails}{cc},
             from => 'info@swindon-makerspace.org',
             subject => 'Swindon Makerspace membership status',
             body => "

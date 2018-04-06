@@ -48,26 +48,25 @@ INSTALL
 
 * Install cpanm, either via https://metacpan.org/pod/App::cpanminus or wget http://xrl.us/cpanm, make the result executable.
 
-* Install local::lib: cpanm local::lib
+* Install carton: cpanm -S Carton
 
 * Checkout this git repo, cd into the repo directory.
 
-* Install dependencies for this system: cpanm --installdeps .
+* Install dependencies for this system: carton install --cached
 
-* Setup local::lib: see eval section of (https://metacpan.org/pod/local::lib#The-bootstrapping-technique)[local::lib docs]
 
 RUN
 ---
 
 This respository contains two pieces of software, the first is a thin layer over (https://metacpan.org/pod/RapidApp)[RadpiApp]. To run this, use the script:
 
-script/accesssystem_server.pl --port 3001
+carton exec perl script/accesssystem_server.pl --port 3001
 
 Which will start a service on http://localhost:3001/admin
 
 To run the API, use the script:
 
-script/accesssystem_api_server.pl --port 3001
+carton exec perl script/accesssystem_api_server.pl --port 3001
 
 Which will start a service on http://localhost:3000/
 
@@ -122,7 +121,13 @@ The /membership_status_update endpoint gathers data about numbers of members, pa
 
 ### Logins
 
-The /login endpoint is under development.
+The /login endpoint allows members to login, currently Github and Google are supported as social login methods, more are easily added via OneAll. The member must use an account with an email address that matches their registered email address, this is how the login is mapped to a member. This stores a cookie.
+
+The /logout endpoint removes the cookie.
+
+The /profile endpoint displays the logged in member their details, including last known payment date. Some details link to the /editme endpoint.
+
+The /editme endpoint displays the same form as the /register endpoint, but loads + saves the membership details for the logged in user.
 
 Security & DPA
 --------------
@@ -142,9 +147,9 @@ are assigned as fixed IPs to the controllers by the main network
 router. The API verifies that the IP of an incoming request matches
 the expected IP for the claimed thing controller id.
 
-### Personal logins (under development)
+### Personal logins
 
-Cookies for personal logins will be hashed to guard against content
+Cookies for personal logins are hashed to guard against content
 guessing (entire cookie stealing is not prevented). Members will have
 access only to their own data, and some shared items such as the door
 codes.
@@ -163,6 +168,12 @@ reference built from the member's id, eg member #1 will have to send a
 ref of SM0001 in their payment.
 
 Transactions are read regularly (nightly) from barclays bank using (https://github.com/russss/barclayscrape)[barclayscrape]. Any transaction matching SM\d+ is taken to be a payment for that member. A new payment row is added - if the member is currently valid, the new row's expiry date is extended from their current expiry date. If they are invalid, the new row expires ($amount_paid / $amount_due) months from the current date. (This has to be a whole number, else the entire payment is rejected).
+
+Payments may cover more than one month at a time. Monthly dues are calculated  starting with the standard rate (£25) and adjusting for circumstances -  if the member is a member of another hackspace the value is reduced to £5, if the member has more than one child registered, £5 is added per child, for members with concessions the value is then divided by 2.
+
+The value paid is then divided by this calculated amount, and that number of months is added to the member's expiry date.
+
+As of April 2018 - members may also specify the preference to pay more than their calculated amount, if the stored amount for this field is more than the calculated amount (described above), then the stored amount is used instead.
 
 To allow for bank oddities and other mishaps, an overlap of 14 days is allowed between payments.
 

@@ -10,11 +10,4 @@
   [% form.render() %]
 [% END %]
 
-<script type="text/javascript"> 
-  jQuery(function() { jQuery('#dob').datepicker({
-     dateFormat: "yy-mm-dd",
-     changeMonth: true,
-     changeYear: true,
-     yearRange: "c-99:c+0"
-  }); });
-</script>
+[% INCLUDE main.js %]

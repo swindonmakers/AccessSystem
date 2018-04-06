@@ -8,13 +8,13 @@ use DateTime;
 use HTML::FormHandler::Moose;
 use HTML::FormHandlerX::Field::noCAPTCHA;
 extends 'HTML::FormHandler::Model::DBIC';
-with 'HTML::FormHandler::Widget::Theme::Bootstrap3';
-# has '+widget_wrapper' => ( default => 'Bootstrap3' );
+with 'HTML::FormHandler::Widget::Theme::ASBootstrap3';
+#has '+widget_wrapper' => ( default => 'ASBootstrap3' );
 # with 'HTML::FormHandler::Widget::Theme::BootstrapFormMessages';
 has '+item_class' => ( default => 'Person' );
-#sub build_form_element_attr {
-#    return { class => 'form-horizontal' };
-#}
+sub build_form_element_attr {
+   return { id => 'register-form' };
+}
 
 ## See: https://github.com/gshank/html-formhandler/blob/master/t/bootstrap3/horiz.t
 sub build_form_tags {
@@ -22,17 +22,37 @@ sub build_form_tags {
         'layout_classes' => {
             label_class => ['col-md-3'],
             element_wrapper_class => ['col-md-5'],
-            no_label_element_wrapper_class => ['col-md-offset-2'],
+            no_label_element_wrapper_class => ['col-md-offset-3'],
         },
     };
 }
 
+# no idea what goes here, as this isnt the database, the item object
+# hasnt got the values in yet, so we cant just call item->dues .. ??
+# dont care too much as the system wont use one thats too low anyway?
+
+sub validate {
+    my $self = shift;
+    # temp person obj:
+    my $temp = $self->item->result_source->resultset->new_result({});
+    if($self->item->dob()) {
+        $temp->dob($self->item->dob);
+    } else {
+        $temp->dob($self->field('dob')->value());
+    }
+    $temp->concessionary_rate_override($self->field('concessionary_rate_override')->value());
+    $temp->member_of_other_hackspace(1) if $self->field('member_of_other_hackspace')->value();
+    $self->field('payment_override')
+        ->add_error('Voluntary payment amount must be more than suggested amount (' . $temp->normal_dues / 100 . ')')
+        if($self->field('payment_override')->value() < $temp->normal_dues);
+}
 
 sub field_add_defaults {
     my ($attrs) = @_;
     my $help_string = $attrs->{help_string} || '';
     ## This wants to be "after element control wrapper" .. doesnt exist??
     $attrs->{tags}{after_element_wrapper} //= "<div class='col-md-4'>$help_string</div>";
+#    $attrs->{tags}{after_wrapper} //= "<div class='col-md-4'>$help_string</div>";
 #    $attrs->{tags}{after_element} //= "<div class='col-md-4'>$help_string</div>";
 #    $attrs->{wrapper_class} ||= 'form-wrapper form-group';
 #    $attrs->{label_class} ||= 'control-label col-md-3';
@@ -73,6 +93,7 @@ has_field email => field_add_defaults {
     messages => {
         required => 'Please enter an email we can use to contact you',
     },
+    help_string => 'An email address we can contact you on. Your membership payment details will be sent to it.',
 };
 
 has_field opt_in => field_add_defaults {
@@ -83,7 +104,7 @@ has_field opt_in => field_add_defaults {
     messages => {
 #       required => 'Please read and agree to the Membership Guide',
     },
-    help_string => 'Free puppies and kittens! Occassionally we send out updates about thngs happening at the Makerspace. To join the busy mailing list, visit <a target="_blank" href="https://groups.google.com/forum/#!forum/swindon-makerspace">our Google Groups list</a>'
+    help_string => 'Free puppies and kittens! Occassionally we send out updates about thngs happening at the Makerspace, opt_in to get these non-membership specific emails..',
 };
     
 ## Child members only?
@@ -92,13 +113,13 @@ has_field dob => field_add_defaults {
     format => '%Y-%m-%d',
     end_date => DateTime->now->ymd,
     required => 1,
-    wrapper_attr => { id => 'field-dob', },
+    wrapper_attr => { id => 'field-dob', class => 'payment' },
     tags         => { no_errors => 1 },
     messages => {
         required => 'Please enter your date of birth',
     },
     label => 'Date of Birth',
-    help_string => 'YYYY-MM-DD, we can tell if you get youth or OAP concessions',
+    help_string => 'YYYY-MM-DD, so we can tell if you get OAP concessions',
 };
 
 has_field address => field_add_defaults {
@@ -123,7 +144,55 @@ has_field github_user => field_add_defaults {
     messages => {
         required => 'Please enter a github username',
     },
-    help_string => 'A github username, this will allow us to give you access to our code repositories and wiki. It will also be used to login and edit this data later.'
+    help_string => 'A github username, this will allow us to give you access to our code repositories and wiki.',
+};
+
+has_field payment_button => (
+    type => 'Button',
+    value => 'Change/Show Payment Details',
+    label => '',
+    element_attr => { style => 'background-color: #eabf83;' },
+    );
+
+# https://metacpan.org/pod/HTML::FormHandler::Field::Select
+# https://www.gov.uk/financial-help-disabled
+# https://www.gov.uk/universal-credit
+has_field concessionary_rate_override => field_add_defaults {
+    type => 'Select',
+    required => 0,
+    widget => 'RadioGroup',
+    options => [ { value => '', label => 'None' },
+                 { value => 'twigs', label => 'Referred by Twigs' },
+                 { value => 'student', label => 'Student' },
+                 { value => 'universal credit', label => 'Universal Credit' },
+                 { value => 'disability', label => 'Disbaility Benefits' },
+                 { value => 'job seeking', label => 'Job Seeking' },
+        ],
+    label => 'Concessionary Rate',
+    wrapper_attr => { id => 'field-concessionary-rate-override', class => 'payment payment_hide', style => "display:none"  },
+    tags => { no_errors => 1 },
+    help_string => 'Do you qualify for our reduced payment rate? Choose what best matches your situation, you will need to show documentation to a director to prove your status.',
+};
+
+has_field member_of_other_hackspace => field_add_defaults {
+    type => 'Checkbox',
+    required => 0,
+    wrapper_attr => { id => 'field-member-of-other-hackspace', class => 'payment payment_hide', style => "display:none" },
+    tags => { no_errors => 1},
+    label => 'I am mainly a member of another hackspace/makerspace',
+    help_string => 'Just visiting or only in Swindon part of the year? If you are a member of another hackspace somewhere, you can join us for only &pound;5/month.',
+};
+
+has_field payment_override => field_add_defaults {
+    type => 'Money',
+#    currency_symbol => '&pound;',
+    required => 0,
+    label => 'Payment Override',
+    wrapper_attr => { id => 'field-payment-override', class => 'payment_hide', style => "display:none" },
+#    tags => { no_errors => 1 },
+    deflation => sub { return $_[0] / 100 },
+    apply => [ { transform => sub { return $_[0] * 100 } } ],
+    help_string => 'You are welcome to overpay for use of the space, indicate here how much you would like to pay monthly.',
 };
 
 ## required checks if this is true as well as set, defaults to 0/1
@@ -146,7 +215,7 @@ has_field has_children => field_add_defaults {
     label => 'Add named children to this account?',
     wrapper_attr => { id => 'field-has-children', },
     tags         => { no_errors => 1 },
-#    help_string => 'If you have children aged under 18 you want to be under this account',
+    help_string => 'Named children can also access the Makerspace, one is included in your fee, more are &pound;5 per child.',
 };
 
 ## required checks if this is true as well as set, defaults to 0/1

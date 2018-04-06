@@ -2,7 +2,7 @@
 <script type="text/javascript">
  
     /* Replace #your_subdomain# by the subdomain of a Site in your OneAll account */    
-    var oneall_subdomain = 'swindon-makerspace';
+    var oneall_subdomain = '[% c.config.OneAll.subdomain %]';
  
     /* The library is loaded asynchronously */
     var oa = document.createElement('script');
@@ -20,7 +20,7 @@ This magic only works if the email you gave us on registration matches the one i
 <script type="text/javascript"> 
 
   /* Replace #your_callback_uri# with the url to your own callback script */
-  var your_callback_script = 'http://inside.swindon-makerspace.org/oneall_login_callback';
+  var your_callback_script = '[% c.config.OneAll.callback_url %]';
 
   /* Embeds the buttons into the container oa_social_login_container */
   var _oneall = _oneall || [];
