@@ -122,6 +122,8 @@ sub fiddle_payment {
         $trans->{name} = "$trans->{name} SM0039";
     } elsif($trans->{fitid} eq '+201705020000006') {
         $trans->{name} = "$trans->{name} SM0068";
+    } elsif($trans->{name} =~ /JAMES C SMO122/) {
+        $trans->{name} = 'JAMES C SM0122';
     }
     return 0;
 }
