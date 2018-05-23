@@ -124,6 +124,8 @@ sub fiddle_payment {
         $trans->{name} = "$trans->{name} SM0068";
     } elsif($trans->{name} =~ /JAMES C SMO122/) {
         $trans->{name} = 'JAMES C SM0122';
+    } elsif($trans->{name} =~ /Consulting NT LTD MAKESPACE SM01/) {
+        $trans->{name} = 'Consulting NT LTD MAKESPACE SM00129';
     }
     return 0;
 }
