@@ -214,7 +214,7 @@ sub normal_dues {
     }
 
     # minimum amount! cant be student+member of another, and pay only 2.50!
-    if($dues < 5000) {
+    if($dues < 500) {
         $dues = 500;
     }
 
