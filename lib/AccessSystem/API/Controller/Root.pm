@@ -167,6 +167,7 @@ sub editme : Chained('logged_in') :PathPart('editme'): Args(0) {
     my ($self, $c) = @_;
 
     my $form = AccessSystem::Form::Person->new({ctx => $c});
+    $c->stash->{person}->payment_override($c->stash->{person}->normal_dues);
     if($form->process(
            item => $c->stash->{person},
            params => $c->req->parameters,
@@ -342,8 +343,8 @@ sub get_dues: Chained('base'): PathPart('get_dues'): Args(0) {
     my ($self, $c) = @_;
 
     my $dob = $c->req->params->{dob};
-    my $concession = $c->req->params->{concessionary_rate_override};
-    my $other_hackspace = $c->req->params->{member_of_other_hackspace};
+    my $concession = $c->req->params->{concessionary_rate_override} || '';
+    my $other_hackspace = $c->req->params->{member_of_other_hackspace} || '';
 
     $c->log->debug(Data::Dumper::Dumper($c->req->params));
 #    $c->log->debug("Vals: $dob $concession $other_hackspace Result: ", $new_person->dues);
@@ -361,7 +362,7 @@ sub register: Chained('base'): PathPart('register'): Args(0) {
 
     my $form = AccessSystem::Form::Person->new({ctx => $c});
     my $new_person = $c->model('AccessDB::Person')->new_result({});
-    $new_person->payment_override($new_person->dues);
+    $new_person->payment_override($new_person->normal_dues);
 
     if($form->process(
         item => $new_person,
