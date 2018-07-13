@@ -360,7 +360,7 @@ sub get_dues: Chained('base'): PathPart('get_dues'): Args(0) {
 sub register: Chained('base'): PathPart('register'): Args(0) {
     my ($self, $c) = @_;
 
-    my $form = AccessSystem::Form::Person->new({ctx => $c});
+    my $form = AccessSystem::Form::Person->new({ctx => $c, inactive => ['has_children']});
     my $new_person = $c->model('AccessDB::Person')->new_result({});
     $new_person->payment_override($new_person->normal_dues);
 
