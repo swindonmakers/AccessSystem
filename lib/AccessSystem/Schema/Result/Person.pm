@@ -37,6 +37,10 @@ Email of the member, NULLs allowed.
 
 Defaults to False. True if the member allows non-makerspace related emails.
 
+=head2 analytics_use
+
+Defaults to False. True if the member allows use of their name/identifying data in GM reports et al.
+
 =head2 dob
 
 Date of birth of the member - compulsory
@@ -98,8 +102,14 @@ __PACKAGE__->add_columns(
         default_value => 0,
         is_nullable => 0,
     },
+    analytics_use => {
+        data_type => 'boolean',
+        default_value => 0,
+        is_nullable => 0,
+    },
     dob => {
-        data_type => 'datetime',
+        data_type => 'varchar',
+        size => '7',
         is_nullable => 0,
     },
     address => {
@@ -139,6 +149,22 @@ __PACKAGE__->add_columns(
 );
 
 __PACKAGE__->set_primary_key('id');
+
+__PACKAGE__->inflate_column('dob', {
+  inflate => sub {
+    my ($raw_value_from_db, $result_object) = @_;
+    my $date_str = length($raw_value_from_db) == 7 
+        ? $raw_value_from_db . '-28'
+        : $raw_value_from_db;
+    return $result_object->result_source->storage->datetime_parser->parse_date($date_str);
+  },
+  deflate => sub {
+    my ($inflated_value_from_user, $result_object) = @_;
+    my $date_str = sprintf("%04d-%02d", $inflated_value_from_user->year,
+                           $inflated_value_from_user->month);
+  },
+});
+
 # __PACKAGE__->add_unique_constraint('email' => ['email']);
 
 __PACKAGE__->has_many('communications', 'AccessSystem::Schema::Result::Communication', 'person_id');
@@ -268,6 +294,13 @@ sub real_expiry {
     return if !$valid_until;
     return $valid_until->subtract(days => $overlap);
 }
+
+=head2 concessionary_rate
+
+True if either a manual concessionary rate is set, or the member is
+older than 65.
+
+=cut
 
 sub concessionary_rate {
     my ($self) = @_;

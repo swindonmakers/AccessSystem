@@ -87,12 +87,14 @@ has_field name => field_add_defaults {
 has_field email => field_add_defaults {
     type => 'Email',
     required => 1,
+    unique => 1,
     maxlength => 255,
     wrapper_attr => { id => 'field-email', },
     tags         => { no_errors => 1 },
     messages => {
         required => 'Please enter an email we can use to contact you',
     },
+    unique_message => "That email address is already registered, did you do submit twice?",
     help_string => 'An email address we can contact you on. Your membership payment details will be sent to it.',
 };
 
@@ -106,12 +108,21 @@ has_field opt_in => field_add_defaults {
     },
     help_string => 'Free puppies and kittens! Occassionally we send out updates about thngs happening at the Makerspace, opt_in to get these non-membership specific emails..',
 };
+
+has_field analytics_use => field_add_defaults {
+    type => 'Checkbox',
+    label => 'Use my name/login data in GM reports',
+    wrapper_attr => { id => 'field-analytics-use', },
+    tags         => { no_errors => 1 },
+    help_string => 'General Meeting presentations include "use of the space" graphs, with a most-used-by ranking. If you allow, we will include your name, otherwise the graph will instead read "anonymous member" by your data.',
+};
     
 ## Child members only?
 has_field dob => field_add_defaults {
     type => 'Date',
-    format => '%Y-%m-%d',
-    end_date => DateTime->now->ymd,
+    format => '%Y-%m',
+    end_date => DateTime->now->clone()->subtract(years => 17)->ymd,
+    start_date => DateTime->now->clone()->subtract(years => 120)->ymd,
     required => 1,
     wrapper_attr => { id => 'field-dob', class => 'payment' },
     tags         => { no_errors => 1 },
@@ -119,7 +130,7 @@ has_field dob => field_add_defaults {
         required => 'Please enter your date of birth',
     },
     label => 'Date of Birth',
-    help_string => 'YYYY-MM-DD, so we can tell if you get OAP concessions',
+    help_string => 'YYYY-MM, only Year/Month accuracy is required. We use this to ensure that you are old enough to be an adult member, or if you are elgiable for OAP concessions.',
 };
 
 has_field address => field_add_defaults {
@@ -130,9 +141,9 @@ has_field address => field_add_defaults {
     wrapper_attr => { id => 'field-address', },
     tags         => { no_errors => 1 },
     messages => {
-        required => 'Please enter your full street address, this is necessary for our insurance',
+        required => 'Please enter your full street address',
     },
-    help_string => 'As it would appear on an envelope, for insurance purposes',
+    help_string => 'As it would appear on an envelope, for the membership register.',
 };
 
 has_field github_user => field_add_defaults {
@@ -162,6 +173,7 @@ has_field concessionary_rate_override => field_add_defaults {
     required => 0,
     widget => 'RadioGroup',
     options => [ { value => '', label => 'None' },
+                 { value => 'legacy', label => 'Yes' },
                  { value => 'twigs', label => 'Referred by Twigs' },
                  { value => 'student', label => 'Student' },
                  { value => 'universal credit', label => 'Universal Credit' },
