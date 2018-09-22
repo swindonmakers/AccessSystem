@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::MySQL
--- Created on Sat Jul  7 13:02:27 2018
+-- Created on Wed Aug  8 12:24:55 2018
 -- 
 SET foreign_key_checks=0;
 
@@ -25,8 +25,8 @@ DROP TABLE IF EXISTS membership_register;
 CREATE TABLE membership_register (
   name varchar(255) NOT NULL,
   address text NOT NULL,
-  started_date datetime NOT NULL,
-  ended_date datetime NULL,
+  started_date date NOT NULL,
+  ended_date date NULL,
   updated_date datetime NULL,
   updated_reason text NOT NULL,
   PRIMARY KEY (name, started_date)
@@ -44,7 +44,7 @@ CREATE TABLE people (
   email varchar(255) NULL,
   opt_in enum('0','1') NOT NULL DEFAULT '0',
   analytics_use enum('0','1') NOT NULL DEFAULT '0',
-  dob datetime NOT NULL,
+  dob varchar(7) NOT NULL,
   address text NOT NULL,
   github_user varchar(255) NULL,
   concessionary_rate_override varchar(255) NULL DEFAULT '',
@@ -139,6 +139,7 @@ CREATE TABLE allowed (
   person_id integer NOT NULL,
   accessible_thing_id varchar(40) NOT NULL,
   is_admin enum('0','1') NOT NULL,
+  added_on datetime NOT NULL,
   INDEX allowed_idx_accessible_thing_id (accessible_thing_id),
   INDEX allowed_idx_person_id (person_id),
   PRIMARY KEY (person_id, accessible_thing_id),

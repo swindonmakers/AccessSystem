@@ -1,7 +1,21 @@
 -- 
 -- Created by SQL::Translator::Producer::PostgreSQL
--- Created on Sat Jul  7 13:02:29 2018
+-- Created on Wed Aug  8 12:24:58 2018
 -- 
+--
+-- Table: membership_register
+--
+DROP TABLE membership_register CASCADE;
+CREATE TABLE membership_register (
+  name character varying(255) NOT NULL,
+  address character varying(1024) NOT NULL,
+  started_date date NOT NULL,
+  ended_date date,
+  updated_date timestamp,
+  updated_reason character varying(1024) NOT NULL,
+  PRIMARY KEY (name, started_date)
+);
+
 --
 -- Table: accessible_things
 --
@@ -15,20 +29,6 @@ CREATE TABLE accessible_things (
 );
 
 --
--- Table: membership_register
---
-DROP TABLE membership_register CASCADE;
-CREATE TABLE membership_register (
-  name character varying(255) NOT NULL,
-  address character varying(1024) NOT NULL,
-  started_date timestamp NOT NULL,
-  ended_date timestamp,
-  updated_date timestamp,
-  updated_reason character varying(1024) NOT NULL,
-  PRIMARY KEY (name, started_date)
-);
-
---
 -- Table: people
 --
 DROP TABLE people CASCADE;
@@ -39,7 +39,7 @@ CREATE TABLE people (
   email character varying(255),
   opt_in boolean DEFAULT '0' NOT NULL,
   analytics_use boolean DEFAULT '0' NOT NULL,
-  dob timestamp NOT NULL,
+  dob character varying(7) NOT NULL,
   address character varying(1024) NOT NULL,
   github_user character varying(255),
   concessionary_rate_override character varying(255) DEFAULT '',
@@ -122,6 +122,7 @@ CREATE TABLE allowed (
   person_id integer NOT NULL,
   accessible_thing_id character varying(40) NOT NULL,
   is_admin boolean NOT NULL,
+  added_on timestamp NOT NULL,
   PRIMARY KEY (person_id, accessible_thing_id)
 );
 CREATE INDEX allowed_idx_accessible_thing_id on allowed (accessible_thing_id);

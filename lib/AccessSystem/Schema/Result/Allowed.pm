@@ -5,7 +5,7 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-__PACKAGE__->load_components(qw/UUIDColumns/);
+__PACKAGE__->load_components(qw/InflateColumn::DateTime TimeStamp UUIDColumns/);
 
 __PACKAGE__->table('allowed');
 
@@ -20,6 +20,11 @@ __PACKAGE__->add_columns(
     is_admin => {
         data_type => 'boolean',
     },
+    added_on => {
+        data_type => 'datetime',
+        set_on_create => 1,
+        is_nullable => 0,
+    }
 );
 
 __PACKAGE__->uuid_columns(qw/accessible_thing_id/);

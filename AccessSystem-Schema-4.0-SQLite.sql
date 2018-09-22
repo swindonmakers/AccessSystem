@@ -1,9 +1,24 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Sat Jul  7 13:02:28 2018
+-- Created on Wed Aug  8 12:24:56 2018
 -- 
 
 BEGIN TRANSACTION;
+
+--
+-- Table: membership_register
+--
+DROP TABLE membership_register;
+
+CREATE TABLE membership_register (
+  name varchar(255) NOT NULL,
+  address varchar(1024) NOT NULL,
+  started_date date NOT NULL,
+  ended_date date,
+  updated_date datetime,
+  updated_reason varchar(1024) NOT NULL,
+  PRIMARY KEY (name, started_date)
+);
 
 --
 -- Table: accessible_things
@@ -20,21 +35,6 @@ CREATE TABLE accessible_things (
 CREATE UNIQUE INDEX name ON accessible_things (name);
 
 --
--- Table: membership_register
---
-DROP TABLE membership_register;
-
-CREATE TABLE membership_register (
-  name varchar(255) NOT NULL,
-  address varchar(1024) NOT NULL,
-  started_date datetime NOT NULL,
-  ended_date datetime,
-  updated_date datetime,
-  updated_reason varchar(1024) NOT NULL,
-  PRIMARY KEY (name, started_date)
-);
-
---
 -- Table: people
 --
 DROP TABLE people;
@@ -46,7 +46,7 @@ CREATE TABLE people (
   email varchar(255),
   opt_in boolean NOT NULL DEFAULT 0,
   analytics_use boolean NOT NULL DEFAULT 0,
-  dob datetime NOT NULL,
+  dob varchar(7) NOT NULL,
   address varchar(1024) NOT NULL,
   github_user varchar(255),
   concessionary_rate_override varchar(255) DEFAULT '',
@@ -146,6 +146,7 @@ CREATE TABLE allowed (
   person_id integer NOT NULL,
   accessible_thing_id varchar(40) NOT NULL,
   is_admin boolean NOT NULL,
+  added_on datetime NOT NULL,
   PRIMARY KEY (person_id, accessible_thing_id),
   FOREIGN KEY (accessible_thing_id) REFERENCES accessible_things(id) ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY (person_id) REFERENCES people(id) ON DELETE CASCADE ON UPDATE CASCADE
