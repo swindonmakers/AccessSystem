@@ -96,12 +96,18 @@ if($latest_payment_rs->count == 1) {
 print "Last run was at: $latest\n";
 # Find files newer than this date
 
+# Update membership table, based on current validity of members:
+$schema->resultset('Person')->update_member_register();
+
 my @allfiles = glob("$ENV{CATALYST_HOME}/ofx/*.ofx");
 foreach my $file (@allfiles) {
     my @stat = stat($file);
     next if $stat[10] <= $latest->epoch;
     import_payments($schema, $file);
 }
+
+# Update membership table, based on current validity of members:
+$schema->resultset('Person')->update_member_register();
 
 sub fiddle_payment {
     my ($trans) = @_;
@@ -129,6 +135,11 @@ sub fiddle_payment {
 sub import_payments {
     my ($schema, $filename) = @_;
 
+    # Map to actual members
+    # Figure out dates payment is valid for
+    # Add to dues table
+    # Update membership register
+
     print "import_payments(sch, $filename)\n";
 
     # Parse file, find actual payments (SMXXXX)
@@ -146,56 +157,9 @@ sub import_payments {
             next;
         }
 
-        # Have we imported this already?
-        my $dt_parser = $schema->storage->datetime_parser;
-        warn "$trn->{dtposted}\n";
-        my $pay_search = $member->search_related('payments')->search(
-            { paid_on_date => $dt_parser->format_datetime($trn->{dtposted}) });
-        if($pay_search->count) {
-            warn "Already imported payment for $trn->{name}\n";
-            next;
+        if(!$member->import_payment($trn, $OVERLAP_DAYS)) {
+            warn "Import failed! See above\n";
         }
-
-        # Figure out what sort of payment this is, if valid_until is
-        # empty, then its a first payment or renewal payment - use the
-        # payment date.
-        # Else use the valid_until date, unless member had already expired!
-
-        # Only add $OVERLAP  extra days if a first or renewal payment - these
-        # ensure member remains valid if standing order is not an
-        # exact month due to weekends and bank holidays
-        my $valid_until = $member->valid_until;
-        my %extra_days = ();
-        if(!$valid_until || $valid_until < DateTime->now ) {
-            $valid_until ||= $trn->{dtposted};
-            %extra_days = ( days => $OVERLAP_DAYS );
-        }
-        
-        # Calculate expiration date for this payment
-        my $expires_on;
-        if($trn->{trnamt} * 100 == $member->dues) {
-            $expires_on = $valid_until->clone->add(months => 1, %extra_days);
-        } elsif($trn->{trnamt} * 100 == ($member->dues * 12 - ( $member->dues * 12 * 0.1 ))
-                || $trn->{trnamt} * 100 == $member->dues * 12) {
-            $expires_on = $valid_until->clone->add(years => 1, %extra_days);
-        } elsif($trn->{trnamt} * 100 % $member->dues == 0) {
-            my $months = $trn->{trnamt} * 100 / $member->dues;
-            $expires_on = $valid_until->clone->add(months => $months, %extra_days);
-        } else {
-            warn "Can't work out how many months to pay for SM$id, with $trn->{trnamt}\n";
-            next;
-        }
-
-        warn "About to create add payment on: $trn->{dtposted} for " . $member->name, ", expiring: $expires_on.\n";
-        $member->create_related('payments',
-                                {
-                                    paid_on_date => $trn->{dtposted},
-                                    expires_on_date => $expires_on,
-                                    amount_p => $trn->{trnamt} * 100,
-                                });
     }
-    
-    # Map to actual members
-    # Figure out dates payment is valid for
-    # Add to dues table
+        
 }

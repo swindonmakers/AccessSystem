@@ -182,7 +182,36 @@ sub editme : Chained('logged_in') :PathPart('editme'): Args(0) {
     }
 }
 
+sub download_data: Chained('logged_in') :PathPart('download'): Args(0) {
+    my ($self, $c) = @_;
 
+    my $person_data_rs = $c->model('AccessDB::Person')->search(
+        { 'me.id' => $c->stash->{person}->id },
+        {
+            prefetch => ['payments', 'tokens', 'usage', 'allowed']
+        }
+    );
+    $person_data_rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
+
+    $c->response->content_type('application/json');
+    $c->res->header('Content-Disposition', qq[attachment; filename="makerspace_data.json"]);
+    $c->response->body(encode_json([ $person_data_rs->all ]));
+    
+}
+
+sub delete_me :Chained('logged_in'): PathPart('deleteme'): Args(0) {
+    my ($self, $c) = @_;
+
+    if($c->req->method eq 'POST' && $c->req->param('reallyreally') eq 'yupyup') {
+        $c->unset_authen_cookie();
+        $c->stash->{person}->delete;
+        return $c->response->redirect($c->uri_for('login'));
+    } else {
+        $c->stash->{template} = 'deleteme.tt';
+    }
+}
+
+    
 sub who : Chained('base') : PathPart('who') : Args(0)  {
     my ($self, $c) = @_;
 
@@ -704,6 +733,16 @@ sub verify_token {
     
 }
 
+sub membership_register : Chained('logged_in') :PathPart('membership_register') {
+    my ($self, $c) = @_;
+
+    my $from_date = $c->req->params->{at_date};
+    $from_date = DateTime->now->ymd
+        if $from_date !~ /^\d{4}-\d{2}-\d{2}$/;
+    $c->model('AccessDB::Person')->update_member_register();
+    $c->stash( register => $c->model('AccessDB::MemberRegister')->on_date($from_date),
+               template => 'member_register.tt' );
+}
 
 =head2 end
 

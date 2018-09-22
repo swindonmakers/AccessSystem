@@ -1,0 +1,9 @@
+[% WRAPPER wrapper.tt %]
+ <div class="col-md-12">Delete Member</div>
+ <form method="POST" action="[% c.uri_for('deleteme') %]">
+ <div class="col-md-10 col-md-offset-2"><input type="radio" name="reallyreally" value="NOPE"/><label>No, I didn&apos;t mean it</label></div>
+ <div class="col-md-10 col-md-offset-2"><input type="radio" name="reallyreally" value="yupyup"/><label>Yes, do it</label></div>
+ <div class="col-md-5 col-md-offset-7"><input type="submit" name="go" value="Do it"/></div>
+ 
+ </form>
+[% END %]

@@ -1,6 +1,5 @@
 package HTML::FormHandler::Widget::Theme::ASBootstrapFormMessages;
 # ABSTRACT: role to render form messages using Bootstrap styling
-$HTML::FormHandler::Widget::Theme::BootstrapFormMessages::VERSION = '0.40068';
 use Moose::Role;
 
 

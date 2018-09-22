@@ -1,0 +1,14 @@
+[% WRAPPER wrapper.tt %]
+<h2>Membership Register</h2>
+<table>
+  <tr><th>Name</th><th>Since</th><th>Ended</th></tr>
+  [% WHILE (row = register.next) %]
+  <tr>
+    <td>[% row.name %]</td>
+    <td>[% row.started_date.ymd %]</td>
+    <td>[% row.ended_date.ymd %]</td>
+  </tr>
+  [% END %]
+</table>
+[% END %]
+
