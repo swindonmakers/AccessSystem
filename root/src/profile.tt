@@ -28,7 +28,7 @@
     <div class="col-md-4"><u>Added</u></div>
     <div class="col-md-4"><u>Trainer?</u></div>
    [% FOREACH induct = person.allowed %]
-    <div class="col-md-4">[% induct.accessible_thing.name %]</div>
+    <div class="col-md-4">[% things.${induct.accessible_thing_id} %]</div>
     <div class="col-md-4">[% induct.added_on.ymd %]</div>
     <div class="col-md-4">[% IF induct.is_admin; ' Yes '; ELSE; ' No '; END %]</div>
    [% END %]
@@ -46,7 +46,7 @@ Please note: This list also contains the door hardware's "cache check" operation
     <div class="col-md-3"><u>When</u></div>
     <div class="col-md-3"><u>Status</u></div>
    [% FOREACH login = person.usage_by_date %]
-    <div class="col-md-3">[% login.accessible_thing.name %]</div>
+    <div class="col-md-3">[% things.${login.accessible_thing_id} %]</div>
     <div class="col-md-3">[% login.token_id %]</div>
     <div class="col-md-3">[% login.accessed_date %]</div>
     <div class="col-md-3">[% login.status %]</div>

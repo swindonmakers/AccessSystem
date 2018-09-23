@@ -74,7 +74,7 @@ sub oneall_login_callback : Path('/oneall_login_callback') {
              'me.email' => { '-in' => \@emails },
             ],
             {
-                prefetch => 'login_tokens',
+                prefetch => ['login_tokens','usage', 'allowed','payments'],
             }
             );
         if($person->count > 1) {
@@ -159,6 +159,14 @@ sub logged_in: Chained('base') :PathPart(''): CaptureArgs(0) {
 sub profile : Chained('logged_in') :PathPart('profile'): Args(0) {
     my ($self, $c) = @_;
 
+    my $things_rs = $c->model('AccessDB::AccessibleThing');
+    $things_rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
+    my %things;
+    foreach my $thing ($things_rs->all) {
+	$things{$thing->{id}} = $thing->{name};
+    }
+
+    $c->stash->{things} = \%things;
     $c->stash->{current_page} = 'profile';
     $c->stash->{template} = 'profile.tt';
 }
