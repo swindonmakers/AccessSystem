@@ -747,7 +747,7 @@ sub membership_register : Chained('logged_in') :PathPart('membership_register') 
     my $from_date = $c->req->params->{at_date};
     $from_date = DateTime->now->ymd
         if $from_date !~ /^\d{4}-\d{2}-\d{2}$/;
-    $c->model('AccessDB::Person')->update_member_register();
+    #$c->model('AccessDB::Person')->update_member_register();
     $c->stash( register => $c->model('AccessDB::MemberRegister')->on_date($from_date),
                template => 'member_register.tt' );
 }
