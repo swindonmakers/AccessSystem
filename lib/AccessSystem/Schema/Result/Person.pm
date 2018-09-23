@@ -37,6 +37,10 @@ Email of the member, NULLs allowed.
 
 Defaults to False. True if the member allows non-makerspace related emails.
 
+=head2 analytics_use
+
+Defaults to False. True if the member allows use of their name/identifying data in GM reports et al.
+
 =head2 dob
 
 Date of birth of the member - compulsory
@@ -99,7 +103,8 @@ __PACKAGE__->add_columns(
         is_nullable => 0,
     },
     dob => {
-        data_type => 'datetime',
+        data_type => 'varchar',
+        size => '7',
         is_nullable => 0,
     },
     address => {
@@ -139,12 +144,29 @@ __PACKAGE__->add_columns(
 );
 
 __PACKAGE__->set_primary_key('id');
+
+__PACKAGE__->inflate_column('dob', {
+  inflate => sub {
+    my ($raw_value_from_db, $result_object) = @_;
+    my $date_str = length($raw_value_from_db) == 7 
+        ? $raw_value_from_db . '-28'
+        : $raw_value_from_db;
+    return $result_object->result_source->storage->datetime_parser->parse_date($date_str);
+  },
+  deflate => sub {
+    my ($inflated_value_from_user, $result_object) = @_;
+    my $date_str = sprintf("%04d-%02d", $inflated_value_from_user->year,
+                           $inflated_value_from_user->month);
+  },
+});
+
 # __PACKAGE__->add_unique_constraint('email' => ['email']);
 
 __PACKAGE__->has_many('communications', 'AccessSystem::Schema::Result::Communication', 'person_id');
 __PACKAGE__->has_many('payments', 'AccessSystem::Schema::Result::Dues', 'person_id');
 __PACKAGE__->has_many('allowed', 'AccessSystem::Schema::Result::Allowed', 'person_id');
 __PACKAGE__->has_many('tokens', 'AccessSystem::Schema::Result::AccessToken', 'person_id');
+__PACKAGE__->has_many('usage', 'AccessSystem::Schema::Result::UsageLog', 'person_id');
 __PACKAGE__->has_many('login_tokens', 'AccessSystem::Schema::Result::PersonLoginTokens', 'person_id');
 __PACKAGE__->has_many('children', 'AccessSystem::Schema::Result::Person', 'parent_id');
 __PACKAGE__->belongs_to('parent', 'AccessSystem::Schema::Result::Person', 'parent_id', { 'join_type' => 'left'} );
@@ -213,6 +235,11 @@ sub normal_dues {
         $dues /= 2;
     }
 
+    # minimum amount! cant be student+member of another, and pay only 2.50!
+    if($dues < 500) {
+        $dues = 500;
+    }
+
     return $dues;
 }
 
@@ -264,6 +291,13 @@ sub real_expiry {
     return $valid_until->subtract(days => $overlap);
 }
 
+=head2 concessionary_rate
+
+True if either a manual concessionary rate is set, or the member is
+older than 65.
+
+=cut
+
 sub concessionary_rate {
     my ($self) = @_;
 
@@ -299,6 +333,95 @@ sub concessionary_rate {
     }
 
     return 0;
+}
+
+=head2 usage_by_date
+
+Sort the user's login info by date (newest first).
+
+Used on the profile page.
+
+=cut
+
+sub usage_by_date {
+    my ($self) = @_;
+
+    return $self->usage_rs->search({ }, { order_by => { '-desc' => 'accessed_date' } });
+}
+
+=head2 payments_by_date
+
+=cut
+
+sub payments_by_date {
+    my ($self) = @_;
+
+    return $self->payments_rs->search({ }, { order_by => {'-desc' => 'expires_on_date' } } );
+}
+
+=head2 import_payment
+
+Check if a new payment containing this person's ID as a ref (SMXXid)
+is a valid payment for this person, if so, add it. Returns undef if
+the add failed.
+
+Taken out of the update_payments script.
+
+=cut
+
+sub import_payment {
+    my ($self, $transaction, $OVERLAP_DAYS) = @_;
+    my $schema = $self->result_source->schema;
+
+    # Have we imported this already?
+    my $dt_parser = $schema->storage->datetime_parser;
+    warn "$transaction->{dtposted}\n";
+    my $pay_search = $self->search_related('payments')->search(
+        { paid_on_date => $dt_parser->format_datetime($transaction->{dtposted}) });
+    if($pay_search->count) {
+        warn "Already imported payment for $transaction->{name}\n";
+        return;
+    }
+    
+    # Figure out what sort of payment this is, if valid_until is
+    # empty, then its a first payment or renewal payment - use the
+    # payment date.
+    # Else use the valid_until date, unless member had already expired!
+
+    # Only add $OVERLAP  extra days if a first or renewal payment - these
+    # ensure member remains valid if standing order is not an
+    # exact month due to weekends and bank holidays
+    my $valid_until = $self->valid_until;
+    my %extra_days = ();
+    if(!$valid_until || $valid_until < DateTime->now ) {
+        $valid_until ||= $transaction->{dtposted};
+        %extra_days = ( days => $OVERLAP_DAYS );
+    }
+  
+    # Calculate expiration date for this payment
+    my $expires_on;
+    if($transaction->{trnamt} * 100 == $self->dues) {
+        $expires_on = $valid_until->clone->add(months => 1, %extra_days);
+    } elsif($transaction->{trnamt} * 100 == ($self->dues * 12 - ( $self->dues * 12 * 0.1 ))
+            || $transaction->{trnamt} * 100 == $self->dues * 12) {
+        $expires_on = $valid_until->clone->add(years => 1, %extra_days);
+    } elsif($transaction->{trnamt} * 100 % $self->dues == 0) {
+        my $months = $transaction->{trnamt} * 100 / $self->dues;
+        $expires_on = $valid_until->clone->add(months => $months, %extra_days);
+    } else {
+        warn "Can't work out how many months to pay for " . $self->name ." with $transaction->{trnamt}\n";
+        return;
+    }
+
+    warn "About to create add payment on: $transaction->{dtposted} for " . $self->name, ", expiring: $expires_on.\n";
+    $self->create_related('payments',
+                          {
+                              paid_on_date => $transaction->{dtposted},
+                              expires_on_date => $expires_on,
+                              amount_p => $transaction->{trnamt} * 100,
+                          });
+
+    return 1;
 }
 
 1;

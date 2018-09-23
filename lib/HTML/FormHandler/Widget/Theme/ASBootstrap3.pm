@@ -34,7 +34,7 @@ Implement your own sub to use 'form-vertical':
 =cut
 
 use Moose::Role;
-with 'HTML::FormHandler::Widget::Theme::BootstrapFormMessages';
+with 'HTML::FormHandler::Widget::Theme::ASBootstrapFormMessages';
 
 after 'before_build' => sub {
     my $self = shift;

@@ -21,6 +21,7 @@ requires 'Daemon::Control';
 requires 'Catalyst::View::JSON';
 requires 'Daemon::Control';
 requires 'LWP::UserAgent';
+requires 'LWP::Protocol::https';
 requires 'JSON';
 requires 'MIME::Base64';
 requires 'CatalystX::AuthenCookie';

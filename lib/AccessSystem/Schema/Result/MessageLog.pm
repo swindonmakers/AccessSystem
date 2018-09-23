@@ -29,6 +29,7 @@ __PACKAGE__->add_columns(
 
 __PACKAGE__->set_primary_key('accessible_thing_id', 'written_date');
 __PACKAGE__->belongs_to('accessible_thing', 'AccessSystem::Schema::Result::AccessibleThing', 'accessible_thing_id');
+__PACKAGE__->has_one('message_log_view', 'AccessSystem::Schema::Result::MessageLog', { 'foreign.accessible_thing_id' => 'self.accessible_thing_id', 'foreign.written_date' => 'self.written_date' });
 
 1;
 

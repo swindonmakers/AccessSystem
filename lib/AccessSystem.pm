@@ -77,6 +77,12 @@ __PACKAGE__->config(
                      },
                          
                  },
+                 'MessageLog' => {
+                   'token' => {
+                     data_type => 'varchar',
+                     sql => "SELECT substr(message, 24) as token FROM message_log WHERE message_log.accessible_thing_id = self.accessible_thing_id and message_log.written_date = self.written_date AND message like 'Permission granted to: %'",
+                     }
+                  }
              }
            # ...
          }
