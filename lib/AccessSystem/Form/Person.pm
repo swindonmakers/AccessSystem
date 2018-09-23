@@ -44,7 +44,7 @@ sub validate {
     $temp->member_of_other_hackspace(1) if $self->field('member_of_other_hackspace')->value();
     $self->field('payment_override')
         ->add_error('Voluntary payment amount must be more than suggested amount (' . $temp->normal_dues / 100 . ')')
-        if($self->field('payment_override')->value() < $temp->normal_dues);
+        if($self->field('payment_override')->is_active()  && $self->field('payment_override')->value() < $temp->normal_dues);
 }
 
 sub field_add_defaults {

@@ -128,6 +128,16 @@ sub fiddle_payment {
         $trans->{name} = "$trans->{name} SM0039";
     } elsif($trans->{fitid} eq '+201705020000006') {
         $trans->{name} = "$trans->{name} SM0068";
+    } elsif($trans->{name} =~ /JAMES C SMO122/) {
+        $trans->{name} = 'JAMES C SM0122';
+    } elsif($trans->{name} =~ /Consulting NT LTD MAKESPACE SM01/) {
+        $trans->{name} = 'Consulting NT LTD MAKESPACE SM00129';
+    } elsif($trans->{name} =~ / SN0068/) {
+        $trans->{name} = 'MR MARK HEWLETT SM0068';
+    } elsif($trans->{name} =~ /SWAG /) {
+        $trans->{name} = 'FELLOWES DJ SM0136';
+    } elsif($trans->{name} =~ /POULIS-JARVI/) {
+        $trans->{name} = 'POULIS-JARVI SM0155';
     }
     return 0;
 }
