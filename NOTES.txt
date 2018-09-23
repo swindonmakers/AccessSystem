@@ -1,4 +1,12 @@
 
+13.07.2018:
+
+dob - now year/month only
+added analysis_use for data
+add tokens, token use data, payment data to profile
+removed "has_children" and mention of children at top of form
+add privacy policy link to person form
+
 04.04.2018:
 
 Upgrade notes:

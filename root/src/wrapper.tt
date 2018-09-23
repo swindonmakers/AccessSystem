@@ -12,7 +12,7 @@
 <script src="https://code.jquery.com/jquery-2.2.1.min.js"></script>
 <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
 <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
-
+<script src="[% c.uri_for('assets/js/access.js') %]"></script>
   <!-- Latest compiled and minified JavaScript -->
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="[% c.uri_for('assets/css/main.css') %]">
@@ -22,6 +22,7 @@
       <ul class="nav nav-pills">
         [% IF person %]
         <li role="presentation" [% IF current_page == 'profile' %];'class="active"';[% END %]><a href="profile">Profile</a></li>
+        <li role="presentation" [% IF current_page == 'membership_register' %];'class="active"';[% END %]><a href="membership_register">Membership Register</a></li>
         <li role="presentation" ><a href="logout#">Logout</a></li>
         [% END %]
       </ul>

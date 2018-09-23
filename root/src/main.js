@@ -1,10 +1,10 @@
 <script type="text/javascript"> 
   jQuery(function() {
     jQuery('#dob').datepicker({
-     dateFormat: "yy-mm-dd",
+     dateFormat: "yy-mm",
      changeMonth: true,
      changeYear: true,
-     yearRange: "c-99:c+0"
+     yearRange: "c-120:c-17"
     });
 
     jQuery('#payment_button').click(function() {
