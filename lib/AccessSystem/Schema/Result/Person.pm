@@ -380,7 +380,7 @@ sub import_payment {
         { paid_on_date => $dt_parser->format_datetime($transaction->{dtposted}) });
     if($pay_search->count) {
         warn "Already imported payment for $transaction->{name}\n";
-        return;
+        return 1;
     }
     
     # Figure out what sort of payment this is, if valid_until is
