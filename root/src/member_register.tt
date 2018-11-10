@@ -1,5 +1,6 @@
 [% WRAPPER wrapper.tt %]
 <h2>Membership Register</h2>
+<p>See also: <a href="https://www.legislation.gov.uk/ukpga/2006/46/part/8/chapter/2"/>Companies Act on keeping a Register of Members</a></p>
 <table>
   <tr><th>Name</th><th>Since</th><th>Ended</th></tr>
   [% WHILE (row = register.next) %]
