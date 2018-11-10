@@ -97,7 +97,7 @@ print "Last run was at: $latest\n";
 # Find files newer than this date
 
 # Update membership table, based on current validity of members:
-$schema->resultset('Person')->update_member_register();
+# $schema->resultset('Person')->update_member_register();
 
 my @allfiles = glob("$ENV{CATALYST_HOME}/ofx/*.ofx");
 foreach my $file (@allfiles) {
@@ -107,7 +107,7 @@ foreach my $file (@allfiles) {
 }
 
 # Update membership table, based on current validity of members:
-$schema->resultset('Person')->update_member_register();
+# $schema->resultset('Person')->update_member_register();
 
 sub fiddle_payment {
     my ($trans) = @_;
