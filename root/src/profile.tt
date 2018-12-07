@@ -16,6 +16,14 @@
   <div class="col-md-10 col-md-offset-2"> Emails: <strong>[% IF person.opt_in; 'Yes'; ELSE; 'No'; END %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
   <div class="col-md-10 col-md-offset-2"> Concessions?: <strong>[% person.concessionary_rate_override || '&lt;none&gt;' %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
 
+
+<div class="col-md-12"><strong>Important Info:</strong></div>
+[% IF person.is_valid() %]
+<div class="col-md-10 col-md-offset-2"> BSS House Door codes: <strong>Access A: [% c.config.code_a %], Reception: [% c.config.code_reception %]</strong></div>
+[% ELSE %]
+<div class="col-md-10 col-md-offset-2"> Sorry, no door codes when your membership is invalid </div>
+[% END %]
+
 <div class="col-md-12"><strong>Your Access Tokens:</strong></div>
 [% FOREACH token = person.tokens %]
   <div class="col-md-10 col-md-offset-2"> ID: <strong>[% token.id %]</strong> [% token.type %] [% IF person.tokens_rs.count > 1 %] <a class="confirm" href="[% c.uri_for('delete_token', { id => token.id }) %]">Delete</a> [% END %] </div>
@@ -77,13 +85,5 @@ Please note: Expiry dates have 2 weeks overlap added to allow for issues with im
 </div>
 
 
-
-<hr/>
-<div class="col-md-12"><strong>Important Info:</strong></div>
-[% IF person.is_valid() %]
-<div class="col-md-10 col-md-offset-2"> BSS House Door codes: <strong>Access A: [% c.config.code_a %], Reception: [% c.config.code_reception %]</strong></div>
-[% ELSE %]
-<div class="col-md-10 col-md-offset-2"> Sorry, no door codes when your membership is invalid </div>
-[% END %]
 [% END %]
 
