@@ -20,6 +20,7 @@
 <div class="col-md-12"><strong>Important Info:</strong></div>
 [% IF person.is_valid() %]
 <div class="col-md-10 col-md-offset-2"> BSS House Door codes: <strong>Access A: [% c.config.code_a %], Reception: [% c.config.code_reception %]</strong></div>
+<div class="col-md-10 col-md-offset-2"><strong>Please do NOT share these with non-members</strong></div>
 [% ELSE %]
 <div class="col-md-10 col-md-offset-2"> Sorry, no door codes when your membership is invalid </div>
 [% END %]
