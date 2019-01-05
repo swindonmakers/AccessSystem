@@ -39,3 +39,7 @@ Maybe: Add support for incoming payments via paypal?
 ### Technical changes (hardware)
 
 We would need a Pi or similar that lives in the kitchen, with an RFID reader, and either some buttons or a barcode scanner (or both). The member would bop their RFID token on the reader, then scan a barcode (we will print a list with code per type of item). The (new) software would attempt to record the transaction, and report (leds? sound?) whether it worked.
+
+### Bonus technology
+
+Phone app!?
