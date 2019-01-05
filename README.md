@@ -66,7 +66,7 @@ Which will start a service on http://localhost:3001/admin
 
 To run the API, use the script:
 
-carton exec perl script/accesssystem_api_server.pl --port 3001
+carton exec perl script/accesssystem_api_server.pl --port 3000
 
 Which will start a service on http://localhost:3000/
 
@@ -192,3 +192,9 @@ Assigning access tokens etc
 ---------------------------
 
 Please see the Makerspace "Operating Procedures" document.
+
+
+Future Plans / Ideas
+--------------------
+
+See FUTURE_PLANS.md
