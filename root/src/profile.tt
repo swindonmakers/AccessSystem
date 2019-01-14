@@ -13,6 +13,7 @@
   <div class="col-md-10 col-md-offset-2"> Address: <strong>[% person.address %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
   <div class="col-md-10 col-md-offset-2"> Email: <strong>[% person.email %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
   <div class="col-md-10 col-md-offset-2"> Github User: <strong>[% person.github_user %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
+  <div class="col-md-10 col-md-offset-2"> Google Id: <strong>[% person.google_id %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
   <div class="col-md-10 col-md-offset-2"> Emails: <strong>[% IF person.opt_in; 'Yes'; ELSE; 'No'; END %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
   <div class="col-md-10 col-md-offset-2"> Concessions?: <strong>[% person.concessionary_rate_override || '&lt;none&gt;' %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
 

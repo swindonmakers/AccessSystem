@@ -72,6 +72,7 @@ sub oneall_login_callback : Path('/oneall_login_callback') {
             [
              'login_tokens.login_token' => $user_token,
              'me.email' => { '-in' => \@emails },
+             'me.google_id' => { '-in' => \@emails },
             ],
             {
                 prefetch => ['login_tokens','usage', 'allowed','payments'],

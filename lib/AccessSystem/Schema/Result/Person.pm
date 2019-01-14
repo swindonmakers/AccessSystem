@@ -53,6 +53,10 @@ Free form address field for the member.
 
 Nullable. Github username of the member if available.
 
+=head2 google_id
+
+Nullable. Google id/email of the member if available.
+
 =head2 concessionary_rate_override
 
 String describing why the user is eligable for the concessionary rate.
@@ -113,6 +117,11 @@ __PACKAGE__->add_columns(
         is_nullable => 0,
     },
     github_user => {
+        data_type => 'varchar',
+        size => 255,
+        is_nullable => 1,
+    },
+    google_id => {
         data_type => 'varchar',
         size => 255,
         is_nullable => 1,

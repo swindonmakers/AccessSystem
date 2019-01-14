@@ -74,6 +74,7 @@ sub field_add_defaults {
     
 has_field name => field_add_defaults {
     type => 'Text',
+    label => 'Name *',
     required => 1,
     maxlength => 255,
     wrapper_attr => { id => 'field-name', },
@@ -86,6 +87,7 @@ has_field name => field_add_defaults {
 
 has_field email => field_add_defaults {
     type => 'Email',
+    label => 'Email *',
     required => 1,
     unique => 1,
     maxlength => 255,
@@ -129,12 +131,13 @@ has_field dob => field_add_defaults {
     messages => {
         required => 'Please enter your date of birth',
     },
-    label => 'Date of Birth',
+    label => 'Date of Birth *',
     help_string => 'YYYY-MM, only Year/Month accuracy is required. We use this to ensure that you are old enough to be an adult member, or if you are elgiable for OAP concessions.',
 };
 
 has_field address => field_add_defaults {
     type => 'TextArea',
+    label => 'Address *',
     required => 1,
     rows => 6,
     maxlength => 1024,
@@ -156,6 +159,18 @@ has_field github_user => field_add_defaults {
         required => 'Please enter a github username',
     },
     help_string => 'A github username, this will allow us to give you access to our code repositories and wiki.',
+};
+
+has_field google_id => field_add_defaults {
+    type => 'Text',
+    required => 0,
+    maxlength => 255,
+    wrapper_attr => { id => 'field-google-id', },
+    tags         => { no_errors => 1 },
+    messages => {
+        required => 'Please enter a google id/email address',
+    },
+    help_string => 'Your google account email address, (even if the same as your usual email address) - this will be used for access to our Google Drive documents.',
 };
 
 has_field payment_button => (
@@ -211,7 +226,7 @@ has_field payment_override => field_add_defaults {
 has_field membership_guide => field_add_defaults {
     type => 'Checkbox',
     required => 1,
-    label => 'I have read and agree to comply with the Membership Guide',
+    label => 'I have read and agree to comply with the Membership Guide *',
     wrapper_attr => { id => 'field-membership-guide', },
     tags         => { no_errors => 1 },
     messages => {
@@ -246,7 +261,7 @@ has_field capcha => => field_add_defaults {
   required => 1,
   help_string => 'Sorry, membership is only open to people capable of passing a Turing test',
   wrapper_attr => { id => 'field-recapcha' },
-  label => "I am a person",
+  label => "I am a person *",
 };
 
 
