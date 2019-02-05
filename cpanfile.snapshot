@@ -1828,6 +1828,7 @@ DISTRIBUTIONS
       Class::Accessor::Grouped 0
       DBD::SQLite 1.11
       DBIx::Class 0.07005
+      Data::UUID 0
       ExtUtils::MakeMaker 6.42
       perl 5.008001
   DBIx-Introspector-0.001005
@@ -3974,18 +3975,6 @@ DISTRIBUTIONS
       IO::WrapTie::Slave 2.111
     requirements:
       ExtUtils::MakeMaker 0
-  IPC-Cmd-0.94
-    pathname: B/BI/BINGOS/IPC-Cmd-0.94.tar.gz
-    provides:
-      IPC::Cmd 0.94
-    requirements:
-      ExtUtils::MakeMaker 0
-      File::Spec 0
-      File::Temp 0
-      Locale::Maketext::Simple 0
-      Module::Load::Conditional 0
-      Params::Check 0.20
-      Test::More 0
   IPC-System-Simple-1.25
     pathname: P/PJ/PJF/IPC-System-Simple-1.25.tar.gz
     provides:
@@ -4039,16 +4028,6 @@ DISTRIBUTIONS
       JSON::PP 2.27300
       Scalar::Util 0
       perl 5.006
-  JSON-PP-2.97001
-    pathname: I/IS/ISHIGAKI/JSON-PP-2.97001.tar.gz
-    provides:
-      JSON::PP 2.97001
-      JSON::PP::Boolean 2.97001
-      JSON::PP::IncrParser 2.97001
-    requirements:
-      ExtUtils::MakeMaker 0
-      Scalar::Util 1.08
-      Test::More 0
   LWP-MediaTypes-6.02
     pathname: G/GA/GAAS/LWP-MediaTypes-6.02.tar.gz
     provides:
@@ -4136,10 +4115,10 @@ DISTRIBUTIONS
       perl 5.006
       strict 0
       warnings 0
-  Lingua-EN-Tagger-0.25
-    pathname: A/AC/ACOBURN/Lingua-EN-Tagger-0.25.tar.gz
+  Lingua-EN-Tagger-0.30
+    pathname: A/AC/ACOBURN/Lingua-EN-Tagger-0.30.tar.gz
     provides:
-      Lingua::EN::Tagger 0.25
+      Lingua::EN::Tagger 0.30
     requirements:
       ExtUtils::MakeMaker 0
       File::Spec 0.84
@@ -4325,13 +4304,17 @@ DISTRIBUTIONS
       Net::Domain 1.05
       Net::SMTP 1.03
       Test::More 0
-  Memoize-ExpireLRU-0.55
-    pathname: B/BP/BPOWERS/Memoize-ExpireLRU-0.55.tar.gz
+  Memoize-ExpireLRU-0.56
+    pathname: N/NE/NEILB/Memoize-ExpireLRU-0.56.tar.gz
     provides:
-      Memoize::ExpireLRU 0.55
+      Memoize::ExpireLRU 0.56
     requirements:
+      AutoLoader 0
+      Carp 0
       ExtUtils::MakeMaker 0
-      Memoize 0.52
+      perl 5.006
+      strict 0
+      warnings 0
   Module-Build-0.4216
     pathname: L/LE/LEONT/Module-Build-0.4216.tar.gz
     provides:
@@ -5715,13 +5698,12 @@ DISTRIBUTIONS
     requirements:
       ExtUtils::MakeMaker 0
       perl 5.008001
-  Params-Classify-0.013
-    pathname: Z/ZE/ZEFRAM/Params-Classify-0.013.tar.gz
+  Params-Classify-0.015
+    pathname: Z/ZE/ZEFRAM/Params-Classify-0.015.tar.gz
     provides:
-      Params::Classify 0.013
+      Params::Classify 0.015
     requirements:
       Exporter 0
-      ExtUtils::ParseXS 2.2006
       Module::Build 0
       Scalar::Util 1.01
       Test::More 0
@@ -6475,17 +6457,6 @@ DISTRIBUTIONS
       Exporter 5.57
       ExtUtils::MakeMaker 0
       Scalar::Util 0
-      perl 5.006
-  Scalar-List-Utils-1.45
-    pathname: P/PE/PEVANS/Scalar-List-Utils-1.45.tar.gz
-    provides:
-      List::Util 1.45
-      List::Util::XS 1.45
-      Scalar::Util 1.45
-      Sub::Util 1.45
-    requirements:
-      ExtUtils::MakeMaker 0
-      Test::More 0
       perl 5.006
   Scalar-String-0.002
     pathname: Z/ZE/ZEFRAM/Scalar-String-0.002.tar.gz
@@ -7735,17 +7706,20 @@ DISTRIBUTIONS
       perl 5.006
       strict 0
       warnings 0
-  bareword-filehandles-0.003
-    pathname: I/IL/ILMARI/bareword-filehandles-0.003.tar.gz
+  bareword-filehandles-0.006
+    pathname: I/IL/ILMARI/bareword-filehandles-0.006.tar.gz
     provides:
-      bareword::filehandles 0.003
+      bareword::filehandles 0.006
     requirements:
       B::Hooks::OP::Check 0
       ExtUtils::Depends 0
-      ExtUtils::MakeMaker 6.31
-      Lexical::SealRequireHints 0
+      ExtUtils::MakeMaker 0
       Test::More 0.88
       XSLoader 0
+      if 0
+      perl 5.008001
+      strict 0
+      warnings 0
   curry-1.000000
     pathname: M/MS/MSTROUT/curry-1.000000.tar.gz
     provides:
@@ -7856,18 +7830,19 @@ DISTRIBUTIONS
     requirements:
       ExtUtils::MakeMaker 0
       XML::Parser 2.19
-  multidimensional-0.011
-    pathname: I/IL/ILMARI/multidimensional-0.011.tar.gz
+  multidimensional-0.014
+    pathname: I/IL/ILMARI/multidimensional-0.014.tar.gz
     provides:
-      multidimensional 0.011
+      multidimensional 0.014
     requirements:
       B::Hooks::OP::Check 0.19
       CPAN::Meta 2.112580
       ExtUtils::Depends 0
-      ExtUtils::MakeMaker 6.30
-      Lexical::SealRequireHints 0.005
+      ExtUtils::MakeMaker 0
       Test::More 0.88
       XSLoader 0
+      if 0
+      perl 5.008001
       strict 0
       warnings 0
   namespace-autoclean-0.28
@@ -7893,10 +7868,10 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 0
       Package::Stash 0.23
       perl 5.008001
-  strictures-2.000002
-    pathname: H/HA/HAARG/strictures-2.000002.tar.gz
+  strictures-2.000005
+    pathname: E/ET/ETHER/strictures-2.000005.tar.gz
     provides:
-      strictures 2.000002
+      strictures 2.000005
       strictures::extra undef
     requirements:
       bareword::filehandles 0
