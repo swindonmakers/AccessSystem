@@ -194,6 +194,7 @@ has_field concessionary_rate_override => field_add_defaults {
                  { value => 'universal credit', label => 'Universal Credit' },
                  { value => 'disability', label => 'Disbaility Benefits' },
                  { value => 'job seeking', label => 'Job Seeking' },
+                 { value => 'mensshed', label => 'Men&apos;s Shed Member' },
         ],
     label => 'Concessionary Rate',
     wrapper_attr => { id => 'field-concessionary-rate-override', class => 'payment payment_hide', style => "display:none"  },

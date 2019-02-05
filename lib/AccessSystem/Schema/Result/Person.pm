@@ -236,14 +236,21 @@ sub normal_dues {
     if($self->member_of_other_hackspace) {
         $dues = 500;
     }
-    if($self->children_rs->search({ end_date => { '!=' => undef } })->count > 1) {
-        $dues += 500 * ($self->children_rs->count-1);
-    }
+
+    # Children's data no longer collected (or paid for)
+    # if($self->children_rs->search({ end_date => { '!=' => undef } })->count > 1) {
+    #     $dues += 500 * ($self->children_rs->count-1);
+    # }
 
     if($self->concessionary_rate) {
         $dues /= 2;
     }
 
+    ## Men's shed special:
+    if($self->concessionary_rate_override eq 'mensshed') {
+        $dues = 1000;
+    }
+    
     # minimum amount! cant be student+member of another, and pay only 2.50!
     if($dues < 500) {
         $dues = 500;
