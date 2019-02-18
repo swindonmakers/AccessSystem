@@ -111,13 +111,13 @@ has_field opt_in => field_add_defaults {
     help_string => 'Free puppies and kittens! Occassionally we send out updates about thngs happening at the Makerspace, opt_in to get these non-membership specific emails..',
 };
 
-has_field analytics_use => field_add_defaults {
-    type => 'Checkbox',
-    label => 'Use my name/login data in GM reports',
-    wrapper_attr => { id => 'field-analytics-use', },
-    tags         => { no_errors => 1 },
-    help_string => 'General Meeting presentations include "use of the space" graphs, with a most-used-by ranking. If you allow, we will include your name, otherwise the graph will instead read "anonymous member" by your data.',
-};
+# has_field analytics_use => field_add_defaults {
+#     type => 'Checkbox',
+#     label => 'Use my name/login data in GM reports',
+#     wrapper_attr => { id => 'field-analytics-use', },
+#     tags         => { no_errors => 1 },
+#     help_string => 'General Meeting presentations include "use of the space" graphs, with a most-used-by ranking. If you allow, we will include your name, otherwise the graph will instead read "anonymous member" by your data.',
+# };
     
 ## Child members only?
 has_field dob => field_add_defaults {
