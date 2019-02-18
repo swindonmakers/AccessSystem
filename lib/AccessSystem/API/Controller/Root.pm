@@ -541,8 +541,7 @@ Please do make sure you have read the Member's Guide (which you just agreed to!)
 For live chat with other members, you are encouraged to join our Telegram group: https://telegram.me/joinchat/A5Xbrj7rku3FJlueOPF8vg.
 This is useful for seeing if anyone is in the space, getting help/ideas on projects etc.
 
-For more drawn out discussions (that you can read back on), we use Google Groups: https://groups.google.com/forum/#!forum/swindon-makerspace
-and store the results in Google Drive, to view these please reply with your google login details.
+For more drawn out discussions (that you can read back on), announcements, and projects we have a forum located at http://forum.swindon-makerspace.org/.
 
 Please also keep an eye on our calendar at http://www.swindon-makerspace.org/calendar/, sometimes the space is \"booked\" (see Guide!)
  you may still use the space, but please be courteous and avoid using loud machinery during bookings.
