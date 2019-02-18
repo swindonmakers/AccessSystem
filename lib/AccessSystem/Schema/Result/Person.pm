@@ -247,7 +247,8 @@ sub normal_dues {
     }
 
     ## Men's shed special:
-    if($self->concessionary_rate_override eq 'mensshed') {
+    if($self->concessionary_rate_override &&
+       $self->concessionary_rate_override eq 'mensshed') {
         $dues = 1000;
     }
     
