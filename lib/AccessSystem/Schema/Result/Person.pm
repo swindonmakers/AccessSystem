@@ -160,6 +160,9 @@ __PACKAGE__->inflate_column('dob', {
     my $date_str = length($raw_value_from_db) == 7 
         ? $raw_value_from_db . '-28'
         : $raw_value_from_db;
+    if(length($date_str) > 7) {
+        $date_str = substr($date_str, 0, 10);
+    }
     return $result_object->result_source->storage->datetime_parser->parse_date($date_str);
   },
   deflate => sub {
