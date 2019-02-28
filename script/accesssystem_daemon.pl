@@ -3,7 +3,7 @@ use warnings;
 use strict;
 use Daemon::Control;
 #use local::lib '/usr/src/perl/libs/access_system/perl5/';
-my $path = "/home/pi/AccessSystem";
+my $path = "/opt/AccessSystem";
 
 exit Daemon::Control->new(
     name        => "AccessSystem-CRUD",
