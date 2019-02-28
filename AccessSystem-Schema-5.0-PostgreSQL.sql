@@ -37,14 +37,14 @@ CREATE TABLE people (
   parent_id integer,
   name character varying(255) NOT NULL,
   email character varying(255),
-  opt_in boolean DEFAULT '0' NOT NULL,
+  opt_in integer DEFAULT '0' NOT NULL,
   dob character varying(7) NOT NULL,
   address character varying(1024) NOT NULL,
   github_user character varying(255),
   google_id character varying(255),
   concessionary_rate_override character varying(255) DEFAULT '',
   payment_override float,
-  member_of_other_hackspace boolean DEFAULT '0' NOT NULL,
+  member_of_other_hackspace integer DEFAULT '0' NOT NULL,
   created_date timestamp NOT NULL,
   end_date timestamp,
   PRIMARY KEY (id)
@@ -121,7 +121,7 @@ DROP TABLE allowed CASCADE;
 CREATE TABLE allowed (
   person_id integer NOT NULL,
   accessible_thing_id character varying(40) NOT NULL,
-  is_admin boolean NOT NULL,
+  is_admin integer NOT NULL,
   added_on timestamp NOT NULL,
   PRIMARY KEY (person_id, accessible_thing_id)
 );
