@@ -68,7 +68,7 @@ CREATE INDEX access_tokens_idx_person_id on access_tokens (person_id);
 --
 DROP TABLE communications CASCADE;
 CREATE TABLE communications (
-  person_id serial NOT NULL,
+  person_id integer NOT NULL,
   sent_on timestamp NOT NULL,
   type character varying(50) NOT NULL,
   content character varying(10240) NOT NULL,

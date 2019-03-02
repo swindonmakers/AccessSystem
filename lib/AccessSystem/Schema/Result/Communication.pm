@@ -10,7 +10,6 @@ __PACKAGE__->table('communications');
 __PACKAGE__->add_columns(
     person_id => {
         data_type => 'integer',
-        is_auto_increment => 1,
     },
     sent_on => {
         data_type => 'datetime',
