@@ -16,10 +16,10 @@
 
 
 
-if [ -x /home/pi/AccessSystem/script/accesssystem_api_daemon.pl ];
+if [ -x /opt/AccessSystem/script/accesssystem_api_daemon.pl ];
 then
-    /home/pi/AccessSystem/script/accesssystem_api_daemon.pl $1
+    /opt/AccessSystem/script/accesssystem_api_daemon.pl $1
 else
-    echo "Required program /home/pi/AccessSystem/script/accesssystem_api_daemon.pl not found!"
+    echo "Required program /opt/AccessSystem/script/accesssystem_api_daemon.pl not found!"
     exit 1;
 fi

@@ -88,7 +88,8 @@ my $latest_payment_rs = $schema->resultset('Dues')->search(
 
 my $latest;
 if($latest_payment_rs->count == 1) {
-    $latest = $latest_payment_rs->first->added_on;
+    # Do at least the last few days, in case we manually added some
+    $latest = $latest_payment_rs->first->added_on->clone()->subtract(days => 2);
 } else {
     $latest = DateTime->now->subtract(days => 30);
 }
@@ -138,6 +139,10 @@ sub fiddle_payment {
         $trans->{name} = 'FELLOWES DJ SM0136';
     } elsif($trans->{name} =~ /POULIS-JARVI/) {
         $trans->{name} = 'POULIS-JARVI SM0155';
+    } elsif($trans->{name} =~ /POULIS-JARVI/) {
+        $trans->{name} = 'POULIS-JARVI SM0155';
+    } elsif($trans->{name} =~ /K WALLBANK/) {
+        $trans->{name} = 'K WALLBANK SM00194';
     }
     return 0;
 }

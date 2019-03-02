@@ -73,7 +73,7 @@ __PACKAGE__->config(
                      is_valid => {
                          data_type => 'boolean',
                          is_nullable => 0,
-                         sql => 'SELECT CASE WHEN max_valid >= CURRENT_TIMESTAMP THEN 1 ELSE 0 END FROM (SELECT max(dues.expires_on_date) as max_valid FROM dues WHERE dues.person_id=self.id)',
+                         sql => 'SELECT CASE WHEN max_valid >= CURRENT_TIMESTAMP THEN 1 ELSE 0 END FROM (SELECT max(dues.expires_on_date) as max_valid FROM dues WHERE dues.person_id=self.id) as valid',
                      },
                          
                  },

@@ -3,7 +3,7 @@ use warnings;
 use strict;
 use Daemon::Control;
 #use local::lib '/usr/src/perl/libs/access_system/perl5/';
-my $path = "/home/pi/AccessSystem";
+my $path = "/opt/AccessSystem";
 
 exit Daemon::Control->new(
     name        => "AccessSystem-CRUD",
@@ -14,8 +14,8 @@ exit Daemon::Control->new(
     path        => "$path/script/accesssystem_daemon.pl",
     directory   => "$path",
 #    init_config => "$path etc/environment",
-    user        => 'pi',
-    group       => 'pi',
+    user        => 'castaway',
+    group       => 'castaway',
     program     => "carton exec $path/script/accesssystem_server.pl --port 3001",
  
     pid_file    => '/tmp/accesssystem_crud.pid',
