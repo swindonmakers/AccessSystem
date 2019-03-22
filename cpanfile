@@ -27,3 +27,6 @@ requires 'JSON';
 requires 'MIME::Base64';
 requires 'CatalystX::AuthenCookie';
 requires 'Catalyst::Plugin::StackTrace';
+requires 'DBD::Pg';
+requires 'DateTime::Format::Pg';
+requires 'List::Util';
