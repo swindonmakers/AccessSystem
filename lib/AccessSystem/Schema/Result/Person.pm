@@ -181,6 +181,7 @@ __PACKAGE__->has_many('tokens', 'AccessSystem::Schema::Result::AccessToken', 'pe
 __PACKAGE__->has_many('usage', 'AccessSystem::Schema::Result::UsageLog', 'person_id');
 __PACKAGE__->has_many('login_tokens', 'AccessSystem::Schema::Result::PersonLoginTokens', 'person_id');
 __PACKAGE__->has_many('children', 'AccessSystem::Schema::Result::Person', 'parent_id');
+__PACKAGE__->has_many('transactions', 'AccessSystem::Schema::Result::Transactions', 'person_id');
 __PACKAGE__->belongs_to('parent', 'AccessSystem::Schema::Result::Person', 'parent_id', { 'join_type' => 'left'} );
 
 sub is_valid {
@@ -442,6 +443,12 @@ sub import_payment {
                           });
 
     return 1;
+}
+
+sub balance {
+    my ($self) = @_;
+
+    return $self->transactions_rs->get_column('amount_p')->sum();
 }
 
 1;
