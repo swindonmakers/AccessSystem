@@ -380,30 +380,66 @@ sub payments_by_date {
     return $self->payments_rs->search({ }, { order_by => {'-desc' => 'expires_on_date' } } );
 }
 
-=head2 import_payment
+=head2 import_transaction
 
-Check if a new payment containing this person's ID as a ref (SMXXid)
-is a valid payment for this person, if so, add it. Returns undef if
+Check if a new transaction containing this person's ID as a ref (SMXXid)
+is a valid transaction for this person, if so, add it. Returns undef if
 the add failed.
 
-Taken out of the update_payments script.
+Transaction consists of: dtposted => DateTime of the transaction, trnamt => $value_in_GBP, name => $ref_on_payment
 
 =cut
 
-sub import_payment {
-    my ($self, $transaction, $OVERLAP_DAYS) = @_;
+sub import_transaction {
+    my ($self, $transaction) = @_;
     my $schema = $self->result_source->schema;
 
     # Have we imported this already?
     my $dt_parser = $schema->storage->datetime_parser;
     warn "$transaction->{dtposted}\n";
-    my $pay_search = $self->search_related('payments')->search(
-        { paid_on_date => $dt_parser->format_datetime($transaction->{dtposted}) });
-    if($pay_search->count) {
-        warn "Already imported payment for $transaction->{name}\n";
+    my $trans_search = $self->search_related('transactions')->search(
+        { added_on => $dt_parser->format_datetime($transaction->{dtposted}) });
+    if($trans_search->count) {
+        warn "Already imported transaction $transaction->{name} $transaction->{dtposted}\n";
         return 1;
     }
-    
+
+    $self->create_related('transactions',
+                          {
+                              added_on => $transaction->{dtposted},
+                              reason   => "Imported from OFX/Barclays on " . DateTime->now->iso8601(),
+                              amount_p => $transaction->{trnamt} * 100,
+                          });
+    return 1;
+}
+
+=head2 create_payment
+
+Check if we are nearing the end of this member's paid membership,
+return true if not.
+
+Check if this member has enough in their balance (transactions) to pay
+for another month, if so, create a payment row. Return undef if we
+can't find one.
+
+=cut
+
+sub create_payment {
+    my ($self, $OVERLAP_DAYS) = @_;
+    my $schema = $self->result_source->schema;
+
+    my $valid_date = $self->valid_until;
+    if($valid_date && $valid_date->subtract(days => $OVERLAP_DAYS) > DateTime->now) {
+        warn "Member " . $self->bank_ref . " not about to expire.\n";
+        return 1;
+    }
+
+    if($self->balance_p < $self->dues) {
+        warn "Member " . $self->bank_ref . " balance not enough for another month.\n";
+        return;
+    }
+
+    my $now = DateTime->now;
     # Figure out what sort of payment this is, if valid_until is
     # empty, then its a first payment or renewal payment - use the
     # payment date.
@@ -412,43 +448,55 @@ sub import_payment {
     # Only add $OVERLAP  extra days if a first or renewal payment - these
     # ensure member remains valid if standing order is not an
     # exact month due to weekends and bank holidays
-    my $valid_until = $self->valid_until;
     my %extra_days = ();
-    if(!$valid_until || $valid_until < DateTime->now ) {
-        $valid_until ||= $transaction->{dtposted};
+    if(!$valid_date || $valid_date < $now ) {
+        $valid_date ||= $now;
         %extra_days = ( days => $OVERLAP_DAYS );
     }
-  
-    # Calculate expiration date for this payment
-    my $expires_on;
-    if($transaction->{trnamt} * 100 == $self->dues) {
-        $expires_on = $valid_until->clone->add(months => 1, %extra_days);
-    } elsif($transaction->{trnamt} * 100 == ($self->dues * 12 - ( $self->dues * 12 * 0.1 ))
-            || $transaction->{trnamt} * 100 == $self->dues * 12) {
-        $expires_on = $valid_until->clone->add(years => 1, %extra_days);
-    } elsif($transaction->{trnamt} * 100 % $self->dues == 0) {
-        my $months = $transaction->{trnamt} * 100 / $self->dues;
-        $expires_on = $valid_until->clone->add(months => $months, %extra_days);
-    } else {
-        warn "Can't work out how many months to pay for " . $self->name ." with $transaction->{trnamt}\n";
-        return;
-    }
 
-    warn "About to create add payment on: $transaction->{dtposted} for " . $self->name, ", expiring: $expires_on.\n";
-    $self->create_related('payments',
-                          {
-                              paid_on_date => $transaction->{dtposted},
-                              expires_on_date => $expires_on,
-                              amount_p => $transaction->{trnamt} * 100,
-                          });
+    # # Calculate expiration date for this payment (10% off if year at once)
+    # my $expires_on;
+    # if($transaction->{trnamt} * 100 == $self->dues) {
+    #     $expires_on = $valid_until->clone->add(months => 1, %extra_days);
+    # } elsif($transaction->{trnamt} * 100 == ($self->dues * 12 - ( $self->dues * 12 * 0.1 ))
+    #         || $transaction->{trnamt} * 100 == $self->dues * 12) {
+    #     $expires_on = $valid_until->clone->add(years => 1, %extra_days);
+    # } elsif($transaction->{trnamt} * 100 % $self->dues == 0) {
+    #     my $months = $transaction->{trnamt} * 100 / $self->dues;
+    #     $expires_on = $valid_until->clone->add(months => $months, %extra_days);
+    # } else {
+    #     warn "Can't work out how many months to pay for " . $self->name ." with $transaction->{trnamt}\n";
+    #     return;
+    # }
 
+    my $expires_on = $valid_date->clone->add(months => 1, %extra_days);
+    
+    warn "About to create add payment on: $now for " . $self->bank_ref, ", expiring: $expires_on.\n";
+    $schema->txn_do( sub {
+        $self->create_related('transactions', {
+            added_on => $now,
+            reason => "Membership payment for " . $now->month_name . " " . $now->year,
+            amount_p => -1*$self->dues,
+        });
+        $self->create_related('payments', {
+            paid_on_date => $now,
+            expires_on_date => $expires_on,
+            amount_p => $self->dues,
+        });
+    });
     return 1;
 }
 
-sub balance {
+=head2 balance_p
+
+Total of all member's transactions, in pence.
+
+=cut
+
+sub balance_p {
     my ($self) = @_;
 
-    return $self->transactions_rs->get_column('amount_p')->sum();
+    return $self->transactions_rs->get_column('amount_p')->sum() || 0;
 }
 
 1;
