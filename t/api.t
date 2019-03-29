@@ -2,12 +2,16 @@
 use strict;
 use warnings;
 
+use Test::More;
 use JSON::MaybeXS;
 BEGIN: {
     $ENV{ MYAPP_CONFIG_LOCAL_SUFFIX } = 'testing';
 };
 
-use Catalyst::Test 'AccessSystem';
+use Catalyst::Test 'AccessSystem::API';
 
-my ($res, $ctx) = ctx_request('/admin/login');
+action_ok('/login');
+
+done_testing;
+
 

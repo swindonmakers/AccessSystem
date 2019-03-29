@@ -3,8 +3,8 @@ use strict;
 use warnings;
 use Test::More;
 
-use Catalyst::Test 'AccessSystem';
+use Catalyst::Test 'AccessSystem::API';
 
-ok( request('/')->is_success, 'Request should succeed' );
+ok( request('/register')->is_success, 'Request should succeed' );
 
 done_testing();
