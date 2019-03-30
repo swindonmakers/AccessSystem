@@ -64,20 +64,20 @@ Please note: This list also contains the door hardware's "cache check" operation
  </div>
 </div>
 
-<div class="col-md-12"><strong>Your Payments:</strong></div>
+<div class="col-md-12"><strong>Your Transactions - Balance: [% person.balance_p / 100 | format("%.2f") %]</strong></div>
 <div class="col-md-12">
-Please note: Expiry dates have 2 weeks overlap added to allow for issues with importing bank data (downtime, holidays, etc).
+All payments to and from the space:
 </div>
 
  <div class="col-md-10 col-md-offset-2">
    <div style="height:200px; overflow:auto">
    <div class="col-md-4"><u>Paid On</u></div>
    <div class="col-md-4"><u>Amount</u></div>
-   <div class="col-md-4"><u>Valid Until</u></div>
-   [% FOREACH due = person.payments_by_date %]
-    <div class="col-md-4">[% due.paid_on_date.ymd %]</div>
-    <div class="col-md-4">[% due.amount_p / 100 | format("%.2f") %]</div>
-    <div class="col-md-4">[% due.expires_on_date.ymd %]</div>
+   <div class="col-md-4"><u>Reason</u></div>
+   [% FOREACH tran = person.transactions_by_date %]
+    <div class="col-md-4">[% tran.added_on.ymd %]</div>
+    <div class="col-md-4">[% tran.amount_p / 100 | format("%.2f") %]</div>
+    <div class="col-md-4">[% tran.reason %]</div>
    [% END %]
  </div>
 </div>

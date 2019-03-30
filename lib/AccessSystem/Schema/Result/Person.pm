@@ -380,6 +380,16 @@ sub payments_by_date {
     return $self->payments_rs->search({ }, { order_by => {'-desc' => 'expires_on_date' } } );
 }
 
+=head2 transactions_by_date
+
+=cut
+
+sub transactions_by_date {
+    my ($self) = @_;
+
+    return $self->transactions_rs->search({ }, { order_by => {'-desc' => 'added_on' } } );
+}
+
 =head2 import_transaction
 
 Check if a new transaction containing this person's ID as a ref (SMXXid)
