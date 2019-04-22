@@ -108,7 +108,7 @@ foreach my $file (@allfiles) {
 }
 
 # Update membership table, based on current validity of members:
-# $schema->resultset('Person')->update_member_register();
+$schema->resultset('Person')->update_member_register();
 
 sub fiddle_payment {
     my ($trans) = @_;

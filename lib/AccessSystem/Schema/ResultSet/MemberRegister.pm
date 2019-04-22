@@ -22,7 +22,7 @@ sub new_entry_including_dues {
     return if !$person->is_valid && !$person->valid_until;
     
     my $now = DateTime->now();
-    my $payments_rs = $person->payments;
+    my $payments_rs = $person->payments->search({}, { order_by => { '-asc' => 'paid_on_date' } });
     my $row = $payments_rs->next;
     my $end = $row->expires_on_date;
     my $current_entry;
