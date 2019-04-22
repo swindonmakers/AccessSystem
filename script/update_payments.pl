@@ -145,6 +145,8 @@ sub fiddle_payment {
         $trans->{name} = 'K WALLBANK SM00194';
     } elsif($trans->{name} =~ /RENEW SMO188/) {
         $trans->{name} = 'RENEW SM0188';
+    } elsif($trans->{name} =~ /MR LAWRENCE A ONSL SM0190/) {
+        $trans->{name} = 'MR LAWRENCE A ONSL SM0189';
     }
     return 0;
 }
