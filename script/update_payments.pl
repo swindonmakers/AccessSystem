@@ -110,8 +110,7 @@ sub import_payments {
 
     # Map to actual members
     # Figure out dates payment is valid for
-    # Add to dues table
-    # Update membership register
+    # Add to transactions table
 
     print "import_transaction(sch, $filename)\n";
 

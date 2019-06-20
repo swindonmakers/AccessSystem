@@ -8,7 +8,7 @@ use lib "$ENV{CATALYST_HOME}/lib";
 use AccessSystem::Schema;
 use OFX::Parse;
 
-=head1 NAME update_payments
+=head1 NAME membership_payments
 
 =head1 DESCRIPTION
 
