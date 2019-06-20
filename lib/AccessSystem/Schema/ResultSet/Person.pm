@@ -76,6 +76,7 @@ sub update_member_register {
 
     my $register = $self->result_source->schema->resultset('MemberRegister');
     while (my $member = $self->next) {
+        # Skip if never were valid (havent paid)
         next if !$member->is_valid && !$member->valid_until;
         # No children
         next if $member->parent_id;

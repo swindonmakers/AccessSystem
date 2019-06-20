@@ -184,9 +184,11 @@ __PACKAGE__->has_many('children', 'AccessSystem::Schema::Result::Person', 'paren
 __PACKAGE__->has_many('transactions', 'AccessSystem::Schema::Result::Transactions', 'person_id');
 __PACKAGE__->belongs_to('parent', 'AccessSystem::Schema::Result::Person', 'parent_id', { 'join_type' => 'left'} );
 
+# FIXME: Magic number 
 sub is_valid {
     my ($self, $date) = @_;
-    $date ||= DateTime->today()->add(days => 1);
+    my $overlap_days = 14;
+    $date ||= DateTime->today()->add(days => $overlap_days);
 
     my $dtf = $self->result_source->schema->storage->datetime_parser;
     my $date_str = $dtf->format_datetime($date);
@@ -439,7 +441,7 @@ sub create_payment {
     my $schema = $self->result_source->schema;
 
     my $valid_date = $self->valid_until;
-    if($valid_date && $valid_date->subtract(days => $OVERLAP_DAYS) > DateTime->now) {
+    if($valid_date && $valid_date->clone->subtract(days => $OVERLAP_DAYS) > DateTime->now) {
         warn "Member " . $self->bank_ref . " not about to expire.\n";
         return 1;
     }
