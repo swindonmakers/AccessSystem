@@ -197,7 +197,7 @@ sub download_data: Chained('logged_in') :PathPart('download'): Args(0) {
     my $person_data_rs = $c->model('AccessDB::Person')->search(
         { 'me.id' => $c->stash->{person}->id },
         {
-            prefetch => ['payments', 'tokens', 'usage', 'allowed']
+            prefetch => ['payments', 'tokens', 'usage', 'allowed', 'transactions']
         }
     );
     $person_data_rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
@@ -372,6 +372,74 @@ sub induct: Chained('base'): PathPart('induct'): Args() {
     ## can't fwd to our own View::JSON, this one somehow takes over
     ## and fucks it up!
     $c->forward('View::JSON');
+}
+
+sub record_transaction: Chained('base'): PathPart('transaction'): Args(0) {
+    my ($self, $c) = @_;
+
+    if($c->req->params->{token} && $c->req->params->{thing} && $c->req->params->{amount} && $c->req->params->{reason}) {
+        my $is_allowed = $c->model('AccessDB::Person')->allowed_to_thing
+            ($c->req->params->{token}, $c->req->params->{thing});
+        if($is_allowed && !$is_allowed->{error}) {
+            my $amount = $c->req->params->{amount};
+            if($amount =~/\D/) {
+                $c->stash(
+                    json => {
+                        success => 0,
+                        error   => 'Amount must be a positive integer of pence',
+                    }
+                );
+            } elsif($thing->assigned_ip ne $c->req->address) {
+                $c->stash(
+                    json => {
+                        success => 0,
+                        error   => 'Request does not come from correct thing IP',
+                    });
+            } elsif($is_allowed->{person}->balance_p < $amount) {
+                $c->stash(
+                    json => {
+                        success => 0,
+                        error   => 'Not enough money for that transaction',
+                    });
+            } else {
+                my $tr = $is_allowed->{person}->create_related('transactions', {
+                    reason   => $c->req->params->{reason},
+                    amount_p => -1*$amount,
+                });
+                $c->stash(
+                    json => {
+                        success => 1,
+                        balance => $is_allowed->{person}->balance_p,
+                    });
+            }
+        } elsif($is_allowed) {
+            $c->stash(
+                json => {
+                    success => 0,
+                    error   => $is_allowed->{error},
+                }
+            );
+        } else {
+            $c->stash(
+                json => {
+                    success => 0,
+                    error   => 'Failed to look up parameters',
+                }
+            );
+        }
+    } else {
+        $c->stash(
+            json => {
+                success => 0,
+                error   => 'Missing token or thing or amount or reason parameter(s)',
+            }
+        );
+    }
+    print STDERR "TRANSACTION: ", Dumper($c->stash->{json});
+    ## can't fwd to our own View::JSON, this one somehow takes over
+    ## and fucks it up!
+    $c->forward('View::JSON');
+    
 }
 
 # Mini api - get possible dues given Age, Concession, Other hackspace member

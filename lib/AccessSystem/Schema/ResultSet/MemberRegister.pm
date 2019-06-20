@@ -17,7 +17,7 @@ sub new_entry_including_dues {
 
     # This is only for fresh members
     # What does this do if someone changed their name!?
-    return if $self->find({ name => $person->name });
+    return if $self->search({ name => $person->name })->count;
     # No point if no dues/validity
     return if !$person->is_valid && !$person->valid_until;
     
