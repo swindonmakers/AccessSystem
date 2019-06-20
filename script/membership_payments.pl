@@ -76,7 +76,7 @@ my $schema = AccessSystem::Schema->connect(
 my $people_rs = $schema->resultset('Person');
 while (my $person = $people_rs->next) {
     next if $person->parent_id;
-    $person->create_payment($schema, $OVERLAP_DAYS);
+    $person->create_payment($OVERLAP_DAYS);
 }
 
 # Update membership table, based on current validity of members:

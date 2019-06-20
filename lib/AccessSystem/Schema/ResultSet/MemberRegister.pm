@@ -17,12 +17,12 @@ sub new_entry_including_dues {
 
     # This is only for fresh members
     # What does this do if someone changed their name!?
-    return if $self->find({ name => $person->name });
+    return if $self->search({ name => $person->name })->count;
     # No point if no dues/validity
     return if !$person->is_valid && !$person->valid_until;
     
     my $now = DateTime->now();
-    my $payments_rs = $person->payments;
+    my $payments_rs = $person->payments->search({}, { order_by => { '-asc' => 'paid_on_date' } });
     my $row = $payments_rs->next;
     my $end = $row->expires_on_date;
     my $current_entry;
