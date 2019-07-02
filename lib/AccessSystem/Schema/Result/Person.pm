@@ -416,6 +416,7 @@ sub import_transaction {
         return 1;
     }
 
+    warn "About to create transaction for ", $self->name, "\n";
     $self->create_related('transactions',
                           {
                               added_on => $transaction->{dtposted},
@@ -462,7 +463,7 @@ sub create_payment {
     # exact month due to weekends and bank holidays
     my %extra_days = ();
     if(!$valid_date || $valid_date < $now ) {
-        $valid_date ||= $now;
+        $valid_date = $now;
         %extra_days = ( days => $OVERLAP_DAYS );
     }
 
@@ -482,7 +483,8 @@ sub create_payment {
     # }
 
     my $expires_on = $valid_date->clone->add(months => 1, %extra_days);
-    
+
+    die "Expires date is before now!? (for " .  $self->bank_ref if $expires_on < $now;
     warn "About to create add payment on: $now for " . $self->bank_ref, ", expiring: $expires_on.\n";
     $schema->txn_do( sub {
         $self->create_related('transactions', {
