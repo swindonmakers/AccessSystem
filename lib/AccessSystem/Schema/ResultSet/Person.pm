@@ -3,6 +3,9 @@ package AccessSystem::Schema::ResultSet::Person;
 use strict;
 use warnings;
 
+use Digest::MD5 qw(md5_hex);
+use DateTime;
+
 use base 'DBIx::Class::ResultSet';
 
 sub allowed_to_thing {
@@ -132,6 +135,23 @@ sub update_member_register {
             # Not valid, previously ended - all done
         }
     }
+}
+
+sub get_person_from_hash {
+    my ($self, $hash) = @_;
+
+    my $ymd = DateTime->now()->ymd();
+    foreach my $person ($self->all) {
+        print STDERR "Person: ", $person->id, "\n";
+        foreach my $token ($person->login_tokens) {
+#            print STDERR "Token: ", $token->login_token, "\n";
+            print STDERR "Checking: $ymd$token $hash:". md5_hex($ymd . $token->login_token), "\n";
+            if(md5_hex($ymd . $token->login_token) eq $hash) {
+                return $person;
+            }
+        }
+    }
+    return 0;
 }
 
 1;

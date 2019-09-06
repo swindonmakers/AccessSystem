@@ -513,4 +513,44 @@ sub balance_p {
     return $self->transactions_rs->get_column('amount_p')->sum() || 0;
 }
 
+=head2 add_debit
+
+Add debit transaction with checks
+
+=cut
+
+sub add_debit {
+    my ($self, $amount, $reason) = @_;
+
+    if(length($reason) > 255) {
+        $reason = substr($reason, 0, 255);
+    }
+    if($amount =~/\D/) {
+        return (0, 'Amount must be a positive integer of pence');
+    } elsif($self->balance_p < $amount) {
+        return (0, 'Not enough money for that transaction');
+    } else {
+        my $tr = $self->create_related('transactions', {
+            reason   => $reason,
+            amount_p => -1*$amount,
+        });
+        
+        return (1, 'Success', $self->balance_p);
+    }
+}
+
+sub recent_transactions {
+    my ($self, $count) = @_;
+    $count ||= 10;
+
+    return $self->transactions_rs->search(
+        {},
+        {
+            rows => $count,
+            order_by => [{ -desc => 'added_on' }],
+        }
+        );
+                                          
+}
+
 1;
