@@ -377,41 +377,50 @@ sub induct: Chained('base'): PathPart('induct'): Args() {
 sub record_transaction: Chained('base'): PathPart('transaction'): Args(0) {
     my ($self, $c) = @_;
 
-    if($c->req->params->{token} && $c->req->params->{thing} && $c->req->params->{amount} && $c->req->params->{reason}) {
+    ## GUID - using an app linked to a user via a guid
+    if($c->req->params->{hash} && $c->req->params->{amount} && $c->req->params->{reason}) {
+        $c->model('AccessDB')->schema->txn_do(
+            sub {
+                ## Member: - using oneall guids?
+                my $member = $c->model('AccessDB::Person')->get_person_from_hash($c->req->params->{hash});
+                print STDERR "Found person: ", $member->id, "\n";
+                if($member) {
+                    my @result = $member->add_debit($c->req->params->{amount}, $c->req->params->{reason});
+                    $c->stash(
+                        json => {
+                            success => $result[0],
+                            ( $result[0] ? () : ( error => $result[1])),
+                            ( $result[2] ? ( balance => $result[2] ) : () ),
+                        },
+                    );
+                }
+            }
+        );
+    }
+    
+    ## Token - using an iot device with an rfid reader
+    elsif($c->req->params->{token} && $c->req->params->{thing} && $c->req->params->{amount} && $c->req->params->{reason}) {
         my $is_allowed = $c->model('AccessDB::Person')->allowed_to_thing
             ($c->req->params->{token}, $c->req->params->{thing});
         if($is_allowed && !$is_allowed->{error}) {
             my $amount = $c->req->params->{amount};
-            if($amount =~/\D/) {
-                $c->stash(
-                    json => {
-                        success => 0,
-                        error   => 'Amount must be a positive integer of pence',
-                    }
-                );
-            } elsif($thing->assigned_ip ne $c->req->address) {
+            my $thing = $is_allowed->{thing};
+            if($thing->assigned_ip ne $c->req->address) {
                 $c->stash(
                     json => {
                         success => 0,
                         error   => 'Request does not come from correct thing IP',
                     });
-            } elsif($is_allowed->{person}->balance_p < $amount) {
-                $c->stash(
-                    json => {
-                        success => 0,
-                        error   => 'Not enough money for that transaction',
-                    });
-            } else {
-                my $tr = $is_allowed->{person}->create_related('transactions', {
-                    reason   => $c->req->params->{reason},
-                    amount_p => -1*$amount,
-                });
-                $c->stash(
-                    json => {
-                        success => 1,
-                        balance => $is_allowed->{person}->balance_p,
-                    });
             }
+            my ($success, $mesg, $bal) = $is_allowed->{person}->add_debit($amount, $c->req->params->{reason});
+
+            $c->stash(
+                json => {
+                    success => $success,
+                    ($success ? (error => $mesg) : ()),
+                    ($bal     ? (balance => $bal) : ()),
+                });
+
         } elsif($is_allowed) {
             $c->stash(
                 json => {
@@ -440,6 +449,101 @@ sub record_transaction: Chained('base'): PathPart('transaction'): Args(0) {
     ## and fucks it up!
     $c->forward('View::JSON');
     
+}
+
+=head2 get_transactions
+
+Get most N recent transactions
+
+=cut
+
+sub get_transactions: Chained('base'): PathPart('get_transactions'): Args(2) {
+    my ($self, $c, $count, $userhash) = @_;
+
+    print STDERR "Looking for person: $userhash\n";
+    my $member = $c->model('AccessDB::Person')->get_person_from_hash($userhash);
+    if(!$member) {
+        $c->stash(
+            json => [],
+        );
+    } else {
+        my @transactions = map { {
+            added_on => $_->added_on->iso8601(),
+            reason => $_->reason,
+            amount => $_->amount_p,
+        }  } ($member->recent_transactions($count)->all);
+        
+        $c->stash(
+            json => {
+                transactions => [@transactions],
+                balance      => $member->balance_p,
+            },
+        );
+    }
+    $c->forward('View::JSON');
+    
+}
+
+=head2 user_guid_request
+
+Given a user id, send the member with that id an email, containing
+their guid. This is for putting into the phone app.
+
+=cut
+
+sub user_guid_request: Chained('base'): PathPart('user_guid_request'): Args(0) {
+    my ($self, $c) = @_;
+    my $userid = $c->req->params->{userid};
+    $userid =~ s/^(?:SM|sm)//;
+    my $success = 1;
+    my $message = '';
+    my $member = $c->model('AccessDB::Person')->find({ id => $userid});
+
+    if(!$userid || $userid =~ /\D/ || !$member) {
+        $c->stash(
+            json => {
+                success => 0,
+                error => 'No member matching this reference',
+            });
+        return $c->forward('JSON');
+    } elsif($member->login_tokens->count == 0) {
+        $success = 0;
+        $message = 'Member doesn\'t have any logins';
+    }
+    $c->stash->{email} = {
+        to => $member->email,
+        cc => $c->config->{email}{cc},
+        from => 'info@swindon-makerspace.org',
+        subject => 'Swindon Makerspace App Login',
+        body => "
+Dear " . $member->name . ",
+
+You requested to use the Access System Mobile Payments app (or someone did using your id). " . ($success 
+? "
+
+Enter this key into the Settings -> Key field to continue: " . $member->login_tokens->first->login_token
+: "
+
+You need to login to the website first to create a login key, please visit " . $c->uri_for('login') . " ."
+) .
+"
+
+Regards,
+
+Swindon Makerspace
+",
+    };
+    ## Store the comms:
+    $member->communications_rs->create({
+        type => 'app_login_email',
+        content => $c->stash->{email}{body},
+    });
+    $c->forward($c->view('Email'));
+    $c->stash(
+        json => {
+            success => 1,
+        });
+    $c->forward($c->view('JSON'));
 }
 
 # Mini api - get possible dues given Age, Concession, Other hackspace member
