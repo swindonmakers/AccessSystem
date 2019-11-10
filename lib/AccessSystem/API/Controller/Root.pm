@@ -506,6 +506,13 @@ sub user_guid_request: Chained('base'): PathPart('user_guid_request'): Args(0) {
                 error => 'No member matching this reference',
             });
         return $c->forward('JSON');
+    } elsif(!$member->valid_until || $member->valid_until < DateTime->now) {
+        $c->stash(
+            json => {
+                success => 0,
+                error => 'Member is invalid (not paid recently), did you mistype the ref?',
+            });
+        return $c->forward('JSON');
     } elsif($member->login_tokens->count == 0) {
         $success = 0;
         $message = 'Member doesn\'t have any logins';
