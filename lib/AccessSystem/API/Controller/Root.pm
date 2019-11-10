@@ -402,6 +402,7 @@ sub record_transaction: Chained('base'): PathPart('transaction'): Args(0) {
     elsif($c->req->params->{token} && $c->req->params->{thing} && $c->req->params->{amount} && $c->req->params->{reason}) {
         my $is_allowed = $c->model('AccessDB::Person')->allowed_to_thing
             ($c->req->params->{token}, $c->req->params->{thing});
+        my $thing = $c->model('AccessDB::AccessibleThing')->find({ id => $c->req->params->{thing} });
         if($is_allowed && !$is_allowed->{error}) {
             my $amount = $c->req->params->{amount};
             my $thing = $is_allowed->{thing};
