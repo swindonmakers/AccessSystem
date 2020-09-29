@@ -715,6 +715,8 @@ Ref: " . $member->bank_ref . "
 
 To get access to the Makerspace, please visit on an open evening (Wednesday evenings), and bring (or buy for £1 from the space) a suitable token.
 
+Please note the current COVID19 rules: https://docs.google.com/document/d/16mV84mCQopn1XfSpfCc63ajw_3NzWuM-kgNz3xnNy1Y/edit?usp=sharing . Booking is required for members to use the space.
+
 Please do make sure you have read the Member's Guide (which you just agreed to!) as this details how the space works
 - if you missed it, here is the link again: https://docs.google.com/document/d/1ruqYeKe7kMMnNzKh_LLo2aeoFufMfQsdX987iU6zgCI/edit#heading=h.a7vgchnwk02g
 
