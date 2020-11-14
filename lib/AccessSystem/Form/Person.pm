@@ -8,7 +8,7 @@ use DateTime;
 use HTML::FormHandler::Moose;
 use HTML::FormHandlerX::Field::noCAPTCHA;
 extends 'HTML::FormHandler::Model::DBIC';
-with 'HTML::FormHandler::Widget::Theme::ASBootstrap3';
+with 'HTML::FormHandler::Widget::Theme::ASBootstrap4';
 #has '+widget_wrapper' => ( default => 'ASBootstrap3' );
 # with 'HTML::FormHandler::Widget::Theme::BootstrapFormMessages';
 has '+item_class' => ( default => 'Person' );
@@ -20,9 +20,9 @@ sub build_form_element_attr {
 sub build_form_tags {
     return {
         'layout_classes' => {
-            label_class => ['col-md-3'],
+            label_class => ['col-md-3 font-weight-bold text-right'],
             element_wrapper_class => ['col-md-5'],
-            no_label_element_wrapper_class => ['col-md-offset-3'],
+            no_label_element_wrapper_class => ['offset-3'],
         },
     };
 }
