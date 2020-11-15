@@ -55,7 +55,7 @@ sub verify: Chained('/base') :PathPart('verify') :Args(0) {
         $c->model('AccessDB::UsageLog')->create(
             {
                 person_id => $result && $result->{person} && $result->{person}->id || undef,
-                accessible_thing_id => $c->req->params->{thing},
+                tool_id => $c->req->params->{thing},
                 token_id => $c->req->params->{token},
                 status => ($c->stash->{json}{access} ? 'started' : 'rejected'),
             });

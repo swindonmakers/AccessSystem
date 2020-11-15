@@ -53,7 +53,7 @@ sub default :Path {
     $c->response->status(404);
 }
 
-# insert into accessible_things (id, name, assigned_ip) values ('D1CAE50C-0C2C-11E7-84F0-84242E34E104', 'oneall_login_callback', '192.168.1.70');
+# insert into tools (id, name, assigned_ip) values ('D1CAE50C-0C2C-11E7-84F0-84242E34E104', 'oneall_login_callback', '192.168.1.70');
 
 sub oneall_login_callback : Path('/oneall_login_callback') {
     my ($self, $c) = @_;
@@ -85,7 +85,7 @@ sub oneall_login_callback : Path('/oneall_login_callback') {
             $c->session->{message} = "Failed to match login against existing Makerspace member, ask an admin to check the message log if this is incorrect (tried to match email: $emails[0] )";
 
             $c->model('AccessDB::MessageLog')->create({
-                accessible_thing_id => 'D1CAE50C-0C2C-11E7-84F0-84242E34E104',
+                tool_id => 'D1CAE50C-0C2C-11E7-84F0-84242E34E104',
                 message => "Login attempt failed from $emails[0] ($res->{user}{identity}{accounts}[0]{username})",
                 from_ip => '192.168.1.70',
                                                       });
@@ -97,7 +97,7 @@ sub oneall_login_callback : Path('/oneall_login_callback') {
             $person->login_tokens->create({ login_token => $user_token });
         }
         $c->model('AccessDB::MessageLog')->create({
-            accessible_thing_id => 'D1CAE50C-0C2C-11E7-84F0-84242E34E104',
+            tool_id => 'D1CAE50C-0C2C-11E7-84F0-84242E34E104',
             message => "Login attempt succeeded from $emails[0] ($res->{user}{identity}{preferredUsername})",
             from_ip => '192.168.1.70',
         });
@@ -160,7 +160,7 @@ sub logged_in: Chained('base') :PathPart(''): CaptureArgs(0) {
 sub profile : Chained('logged_in') :PathPart('profile'): Args(0) {
     my ($self, $c) = @_;
 
-    my $things_rs = $c->model('AccessDB::AccessibleThing');
+    my $things_rs = $c->model('AccessDB::Tool');
     $things_rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
     my %things;
     foreach my $thing ($things_rs->all) {
@@ -272,7 +272,7 @@ sub verify: Chained('base') :PathPart('verify') :Args(0) {
         $c->model('AccessDB::UsageLog')->create(
             {
                 person_id => $result && $result->{person} && $result->{person}->id || undef,
-                accessible_thing_id => $c->req->params->{thing},
+                tool_id => $c->req->params->{thing},
                 token_id => $c->req->params->{token},
                 status => ($c->stash->{json}{access} ? 'started' : 'rejected'),
             });
@@ -297,7 +297,7 @@ sub msg_log: Chained('base'): PathPart('msglog'): Args() {
     my ($self, $c) = @_;
     
     if($c->req->params->{thing} && $c->req->params->{msg}) {
-        my $thing = $c->model('AccessDB::AccessibleThing')->find({ id => $c->req->params->{thing} });
+        my $thing = $c->model('AccessDB::Tool')->find({ id => $c->req->params->{thing} });
         if($thing) {
             $thing->create_related('logs',
                                    { message => $c->req->params->{msg},
@@ -322,7 +322,7 @@ sub induct: Chained('base'): PathPart('induct'): Args() {
     my ($self, $c) = @_;
 
     if($c->req->params->{token_t} && $c->req->params->{token_s} && $c->req->params->{thing}) {
-        my $thing = $c->model('AccessDB::AccessibleThing')->find({ id => $c->req->params->{thing} });
+        my $thing = $c->model('AccessDB::Tool')->find({ id => $c->req->params->{thing} });
 #        print STDERR "Thing IP: ", $thing->assigned_ip, "\n";
 #        print STDERR "Req   IP: ", $c->req->address, "\n";
         if(!$thing) {
@@ -402,7 +402,7 @@ sub record_transaction: Chained('base'): PathPart('transaction'): Args(0) {
     elsif($c->req->params->{token} && $c->req->params->{thing} && $c->req->params->{amount} && $c->req->params->{reason}) {
         my $is_allowed = $c->model('AccessDB::Person')->allowed_to_thing
             ($c->req->params->{token}, $c->req->params->{thing});
-        my $thing = $c->model('AccessDB::AccessibleThing')->find({ id => $c->req->params->{thing} });
+        my $thing = $c->model('AccessDB::Tool')->find({ id => $c->req->params->{thing} });
         if($is_allowed && !$is_allowed->{error}) {
             my $amount = $c->req->params->{amount};
             my $thing = $is_allowed->{thing};
@@ -668,10 +668,10 @@ sub finish_new_member: Private {
     # Allow member + all children to access door!
     $c->stash->{member}->create_related(
         'allowed',
-        { accessible_thing_id => '1A9E3D66-E90F-11E5-83C1-1E346D398B53', is_admin => 0 });
+        { tool_id => '1A9E3D66-E90F-11E5-83C1-1E346D398B53', is_admin => 0 });
     $_->create_related(
         'allowed',
-        { accessible_thing_id => '1A9E3D66-E90F-11E5-83C1-1E346D398B53', is_admin => 0 })
+        { tool_id => '1A9E3D66-E90F-11E5-83C1-1E346D398B53', is_admin => 0 })
         for $c->stash->{member}->children;
     $c->forward('send_membership_email');   
 }

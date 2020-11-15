@@ -13,7 +13,7 @@ __PACKAGE__->add_columns(
         data_type => 'integer',
         is_nullable => 1,
     },
-    accessible_thing_id => {
+    tool_id => {
         data_type => 'varchar',
         size => 40,
     },
@@ -31,10 +31,10 @@ __PACKAGE__->add_columns(
     },
 );
 
-__PACKAGE__->set_primary_key('accessible_thing_id', 'accessed_date');
+__PACKAGE__->set_primary_key('tool_id', 'accessed_date');
 __PACKAGE__->belongs_to('person', 'AccessSystem::Schema::Result::Person', 'person_id', { join_type => 'left'});
 ## We log the thing id even if its not a known thing id:
-__PACKAGE__->belongs_to('accessible_thing', 'AccessSystem::Schema::Result::AccessibleThing', 'accessible_thing_id', { join_type => 'left'});
+__PACKAGE__->belongs_to('tool', 'AccessSystem::Schema::Result::Tool', 'tool_id', { join_type => 'left'});
 
 1;
 

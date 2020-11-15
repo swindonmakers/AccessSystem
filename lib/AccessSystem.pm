@@ -44,8 +44,8 @@ __PACKAGE__->config(
          AccessDB => {
              grid_params => {
                  '*defaults' => { # Defaults for all Sources
-                     updatable_colspec => ['*','!id', '!person_id', '!accessible_thing_id',],
-                     creatable_colspec => ['*','!id', '!person_id', '!accessible_thing_id',],
+                     updatable_colspec => ['*','!id', '!person_id', '!tool_id',],
+                     creatable_colspec => ['*','!id', '!person_id', '!tool_id',],
                      destroyable_relspec => ['*'],
                  }, # ('*defaults')
                  'AccessToken' => {
@@ -59,7 +59,7 @@ __PACKAGE__->config(
                  'Person' => {
                      display_column => 'name',
                  },
-                 'AccessibleThing' => {
+                 'Tool' => {
                      display_column => 'name',
                  },
              },
@@ -80,7 +80,7 @@ __PACKAGE__->config(
                  'MessageLog' => {
                    'token' => {
                      data_type => 'varchar',
-                     sql => "SELECT substr(message, 24) as token FROM message_log WHERE message_log.accessible_thing_id = self.accessible_thing_id and message_log.written_date = self.written_date AND message like 'Permission granted to: %'",
+                     sql => "SELECT substr(message, 24) as token FROM message_log WHERE message_log.tool_id = self.tool_id and message_log.written_date = self.written_date AND message like 'Permission granted to: %'",
                      }
                   }
              }

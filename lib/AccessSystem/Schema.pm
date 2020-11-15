@@ -5,7 +5,7 @@ use warnings;
 
 use base 'DBIx::Class::Schema';
 
-our $VERSION = '6.0';
+our $VERSION = '7.0';
 
 __PACKAGE__->load_namespaces();
 

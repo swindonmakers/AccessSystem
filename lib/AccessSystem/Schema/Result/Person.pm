@@ -442,6 +442,14 @@ sub create_payment {
     my ($self, $OVERLAP_DAYS) = @_;
     my $schema = $self->result_source->schema;
 
+    ## minor(?) side effects:
+    
+    # if no valid date (havent paid yet), and created date longer than
+    # a week? ago, then email member to see why they havent yet
+
+    # if no valid date yet, but we now make a payment (first ever),
+    # email member to notify them
+    
     my $valid_date = $self->valid_until;
     if($valid_date && $valid_date->clone->subtract(days => $OVERLAP_DAYS) > DateTime->now) {
         warn "Member " . $self->bank_ref . " not about to expire.\n";
@@ -459,6 +467,15 @@ sub create_payment {
     # payment date.
     # Else use the valid_until date, unless member had already expired!
 
+    # Check for first payment / renewed payment, queue up email:
+    if(!$valid_date) {
+        # first payment ever
+        $self->create_communication('new_payment.tt');
+    }
+    if($valid_date && $valid_date < $now) {
+        # renewed payments
+        $self->create_communication('renewed_payment.tt');
+    }
     # Only add $OVERLAP  extra days if a first or renewal payment - these
     # ensure member remains valid if standing order is not an
     # exact month due to weekends and bank holidays
@@ -552,6 +569,39 @@ sub recent_transactions {
         }
         );
                                           
+}
+
+sub create_communication {
+    my ($self, $template) = @_;
+
+    ## Eventtually! this should store the template name in the comms
+    ## table, and the comms sending part should construct the text?!
+
+    my ($type) = $template =~ /^(\w+)/; # template with no .tt
+    if($type eq 'new_payment') {
+        $self->communications_rs->create({
+            sent_on => undef,
+            type => $type,
+            status => 'unsent',
+            content => "
+Dear " . $self->name . ",
+
+Your initial payment has been received by the Swindon Makerspace, your
+membership is now activated. You can now access the Makerspace.
+
+If you do not yet have a door token, visit the Makerspace on a
+Wednesday evening and ask to be assigned one. To organise a different
+date email us at info\@swindon-makerspace.org or (better) join our
+group Telegram chat: https://t.me/joinchat/A5Xbrj7rku0D-F3p8wAgtQ .
+
+Don't forget that you'll need inductions before you use some of the machines.
+
+Regards,
+
+Swindon Makerspace
+"
+                                         });
+    }
 }
 
 1;

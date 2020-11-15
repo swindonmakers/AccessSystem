@@ -80,14 +80,14 @@ like($no_token->{error}, qr/isn't associated with any user/, 'No such member wit
 $test9->create_related('tokens', { id => '12345678', type => 'test token' });
 
 my $no_thing = $schema->resultset('Person')->allowed_to_thing('12345678', 'blahblahblah');
-like($no_thing->{error}, qr/doesn't represent any AccessibleThing I've heard of/, 'No such missing thing');
+like($no_thing->{error}, qr/doesn't represent any Tool I've heard of/, 'No such missing thing');
 
-my $thing = $schema->resultset('AccessibleThing')->create({ name => 'test thing', assigned_ip => '10.0.0.1' });
+my $thing = $schema->resultset('Tool')->create({ name => 'test thing', assigned_ip => '10.0.0.1' });
 
 my $no_allowed = $schema->resultset('Person')->allowed_to_thing('12345678', $thing->id);
 like($no_allowed->{error}, qr/The thing exists, but the Person isn't allowed to access it/, 'Person cannot use the thing');
 
-$test9->create_related('allowed', { accessible_thing => $thing, is_admin => 0 });
+$test9->create_related('allowed', { tool => $thing, is_admin => 0 });
 
 my $no_pay = $schema->resultset('Person')->allowed_to_thing('12345678', $thing->id);
 like($no_pay->{error}, qr/Member would have access with that token, but their membership has expired/, 'Member hasnt paid');

@@ -13,7 +13,7 @@ sub allowed_to_thing {
 
     my $person_rs = $self->search(
         {
-            'allowed.accessible_thing_id' => $thing_guid,
+            'allowed.tool_id' => $thing_guid,
             'tokens.id' => $token,
         }, {
             '+columns' => [{ 'trainer' => 'allowed.is_admin'}],

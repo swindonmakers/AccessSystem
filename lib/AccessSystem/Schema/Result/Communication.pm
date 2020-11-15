@@ -19,6 +19,11 @@ __PACKAGE__->add_columns(
         data_type => 'varchar',
         size => 50,
     },
+    status => {
+        data_type => 'varchar', #enum ideally but lazy
+        size => 10,
+        default => 'unsent',
+    },
     content => {
         data_type => 'varchar',
         size => 10240,

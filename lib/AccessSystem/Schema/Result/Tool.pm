@@ -1,13 +1,47 @@
-package AccessSystem::Schema::Result::AccessibleThing;
+package AccessSystem::Schema::Result::Tool;
 
 use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
 
+=head1 NAME
+
+AccessSystem::Schema::Result::Tool
+
+=head1 DESCRIPTION
+
+A Makerspace tool (or the Door!) - for tracking status, inductions, usage.
+
+=head1 ATTRIBUTES
+
+=head2 id
+
+UUID column of tool id
+
+=head2 name
+
+Unique name of tool
+
+=head2 assigned_ip
+
+IP of tool (or its access hardware) if on the network / required for usage.
+
+NULLable (no IP)
+
+=head2 requires_induction
+
+True/False - does it require the user to have been inducted
+
+=head2 team
+
+Team name (maybe more complex later?)
+
+=cut
+
 __PACKAGE__->load_components(qw/UUIDColumns/);
 
-__PACKAGE__->table('accessible_things');
+__PACKAGE__->table('tools');
 
 __PACKAGE__->add_columns(
     id => {
@@ -21,6 +55,15 @@ __PACKAGE__->add_columns(
     assigned_ip => {
         data_type => 'varchar',
         size => 15,
+        is_nullable => 1,
+    },
+    requires_induction => {
+        data_type => 'boolean',
+#        default_value => 'false', #'
+    },
+    team => {
+        data_type => 'varchar',
+        size => 50,
     },
 );
 
@@ -28,8 +71,24 @@ __PACKAGE__->uuid_columns(qw/id/);
 __PACKAGE__->set_primary_key('id');
 __PACKAGE__->add_unique_constraint('name' => ['name']);
 
-__PACKAGE__->has_many('allowed_people', 'AccessSystem::Schema::Result::Allowed', 'accessible_thing_id');
-__PACKAGE__->has_many('logs', 'AccessSystem::Schema::Result::MessageLog', 'accessible_thing_id');
+__PACKAGE__->has_many('allowed_people', 'AccessSystem::Schema::Result::Allowed', 'tool_id');
+__PACKAGE__->has_many('logs', 'AccessSystem::Schema::Result::MessageLog', 'tool_id');
+__PACKAGE__->has_many('statuses', 'AccessSystem::Schema::Result::ToolStatus', 'tool_id');
+
+sub current_status {
+    my ($self) = @_;
+
+    ## Must be at least one?
+    my $last = $self->statuses_rs->search(
+        {},
+        {
+            order_by => [{ '-desc' => 'when' }],
+            rows => 1,
+        })->single;
+
+    return $last;
+    
+}
 
 sub induct_student {
     my ($self, $admin_token, $student_token) = @_;
