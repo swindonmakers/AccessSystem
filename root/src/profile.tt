@@ -1,88 +1,100 @@
 [% WRAPPER wrapper.tt %]
-<div class="col-md-12">Hey [% person.name %]</div>
+<div class="col-lg-12">Hey [% person.name %]</div>
 
-<div class="col-md-12"><strong>Your membership:</strong></div>
-  <div class="col-md-10 offset-2"> Your Reference: <strong>[% person.bank_ref() %]</strong></div>
-  <div class="col-md-10 offset-2"> Last payment: <strong>[% person.last_payment.paid_on_date.ymd() %]</strong></div>
-  <div class="col-md-10 offset-2"> Valid until: <strong>[% person.real_expiry(c.config.payments.OVERLAP).ymd() %]</strong></div>
-  <div class="col-md-10 offset-2"> Monthly dues: <strong>[% person.dues / 100 | format("%.02f") %]</strong> <a class="confirm" href="[% c.uri_for('editme') %]">Edit</a></div>
-  <div class="col-md-10 offset-2"> Status: <strong [% IF person.is_valid(); 'style="color:green;"'; ELSE; 'style="color: red;"'; END %]>[% IF person.is_valid(); 'Valid'; ELSE; 'Invalid'; END %]</strong></div>
-  <div class="col-md-10 offset-2"> Remove user: <strong><a class="confirm" href="[% c.uri_for('deleteme') %]">DELETE ME (and all my data) - No Undo</a></strong></div>
+<div class="col-lg-12"><strong>Your membership:</strong></div>
+  <div class="col-lg-10 offset-2"> Your Reference: <strong>[% person.bank_ref() %]</strong></div>
+  <div class="col-lg-10 offset-2"> Last payment: <strong>[% person.last_payment.paid_on_date.ymd() %]</strong></div>
+  <div class="col-lg-10 offset-2"> Valid until: <strong>[% person.real_expiry(c.config.payments.OVERLAP).ymd() %]</strong></div>
+  <div class="col-lg-10 offset-2"> Monthly dues: <strong>[% person.dues / 100 | format("%.02f") %]</strong> <a class="confirm" href="[% c.uri_for('editme') %]">Edit</a></div>
+  <div class="col-lg-10 offset-2"> Status: <strong [% IF person.is_valid(); 'style="color:green;"'; ELSE; 'style="color: red;"'; END %]>[% IF person.is_valid(); 'Valid'; ELSE; 'Invalid'; END %]</strong></div>
+  <div class="col-lg-10 offset-2"> Remove user: <strong><a class="confirm" href="[% c.uri_for('deleteme') %]">DELETE ME (and all my data) - No Undo</a></strong></div>
 
-<div class="col-md-12"><strong>Your details:</strong></div>
-  <div class="col-md-10 offset-2"> Address: <strong>[% person.address %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
-  <div class="col-md-10 offset-2"> Email: <strong>[% person.email %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
-  <div class="col-md-10 offset-2"> Github User: <strong>[% person.github_user %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
-  <div class="col-md-10 offset-2"> Google Id: <strong>[% person.google_id %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
-  <div class="col-md-10 offset-2"> Emails: <strong>[% IF person.opt_in; 'Yes'; ELSE; 'No'; END %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
-  <div class="col-md-10 offset-2"> Concessions?: <strong>[% person.concessionary_rate_override || '&lt;none&gt;' %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
+<div class="col-lg-12"><strong>Your details:</strong></div>
+  <div class="col-lg-10 offset-2"> Address: <strong>[% person.address %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
+  <div class="col-lg-10 offset-2"> Email: <strong>[% person.email %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
+  <div class="col-lg-10 offset-2"> Github User: <strong>[% person.github_user %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
+  <div class="col-lg-10 offset-2"> Google Id: <strong>[% person.google_id %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
+  <div class="col-lg-10 offset-2"> Emails: <strong>[% IF person.opt_in; 'Yes'; ELSE; 'No'; END %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
+  <div class="col-lg-10 offset-2"> Concessions?: <strong>[% person.concessionary_rate_override || '&lt;none&gt;' %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
 
 
-<div class="col-md-12"><strong>Important Info:</strong></div>
+<div class="col-lg-12"><strong>Important Info:</strong></div>
 [% IF person.is_valid() %]
-<div class="col-md-10 offset-2"> BSS House Door codes: <strong>Access A: [% c.config.code_a %], Reception: [% c.config.code_reception %]</strong></div>
-<div class="col-md-10 offset-2"><strong>Please do NOT share these with non-members</strong></div>
+<div class="col-lg-10 offset-2"> BSS House Door codes: <strong>Access A: [% c.config.code_a %], Reception: [% c.config.code_reception %]</strong></div>
+<div class="col-lg-10 offset-2"><strong>Please do NOT share these with non-members</strong></div>
 [% ELSE %]
-<div class="col-md-10 offset-2"> Sorry, no door codes when your membership is invalid </div>
+<div class="col-lg-10 offset-2"> Sorry, no door codes when your membership is invalid </div>
 [% END %]
 
-<div class="col-md-12"><strong>Your Access Tokens:</strong></div>
+<div class="col-lg-12"><strong>Your Access Tokens:</strong></div>
 [% FOREACH token = person.tokens %]
-  <div class="col-md-10 offset-2"> ID: <strong>[% token.id %]</strong> [% token.type %] [% IF person.tokens_rs.count > 1 %] <a class="confirm" href="[% c.uri_for('delete_token', { id => token.id }) %]">Delete</a> [% END %] </div>
+  <div class="col-lg-10 offset-2"> ID: <strong>[% token.id %]</strong> [% token.type %] [% IF person.tokens_rs.count > 1 %] <a class="confirm" href="[% c.uri_for('delete_token', { id => token.id }) %]">Delete</a> [% END %] </div>
  [% END %]
 
-<div class="col-md-12"><strong>Your Inductions:</strong></div>
- <div class="col-md-10 offset-2">
+<div class="col-lg-12"><strong>Your Inductions:</strong></div>
+ <div class="col-lg-10 offset-2">
   <div style="height:200px; overflow:auto">
-    <div class="col-md-4"><u>Thing</u></div>
-    <div class="col-md-4"><u>Added</u></div>
-    <div class="col-md-4"><u>Trainer?</u></div>
+  <div class="row">
+    <span class="col-lg"><u>Thing</u></span>
+    <span class="col-lg"><u>Added</u></span>
+    <span class="col-lg"><u>Trainer?</u></span>
+    </div>
    [% FOREACH induct = person.allowed %]
-    <div class="col-md-4">[% things.${induct.tool_id} %]</div>
-    <div class="col-md-4">[% induct.added_on.ymd %]</div>
-    <div class="col-md-4">[% IF induct.is_admin; ' Yes '; ELSE; ' No '; END %]</div>
+   <div class="row">
+    <span class="col-lg">[% things.${induct.tool_id} %]</span>
+    <span class="col-lg">[% induct.added_on.ymd %]</span>
+    <span class="col-lg">[% IF induct.is_admin; ' Yes '; ELSE; ' No '; END %]</span>
+    </div>
    [% END %]
  </div>
 </div>
 
-<div class="col-md-12"><strong>Your Logins/Usage:</strong></div>
-<div class="col-md-12">
+<div class="col-lg-12"><strong>Your Logins/Usage:</strong></div>
+<div class="col-lg-12">
 Please note: This list also contains the door hardware's "cache check" operations, which happen every 10mins for items in the cache.
 </div>
- <div class="col-md-10 offset-2">
+ <div class="col-lg-10 offset-2">
   <div style="height:200px; overflow:auto">
-    <div class="col-md-3"><u>Accessed</u></div>
-    <div class="col-md-3"><u>Token</u></div>
-    <div class="col-md-3"><u>When</u></div>
-    <div class="col-md-3"><u>Status</u></div>
+  <div class="row">
+    <span class="col-lg"><u>Accessed</u></span>
+    <span class="col-lg"><u>Token</u></span>
+    <span class="col-lg"><u>When</u></span>
+    <span class="col-lg"><u>Status</u></span>
+    </div>
    [% FOREACH login = person.usage_by_date %]
-    <div class="col-md-3">[% things.${login.tool_id} %]</div>
-    <div class="col-md-3">[% login.token_id %]</div>
-    <div class="col-md-3">[% login.accessed_date %]</div>
-    <div class="col-md-3">[% login.status %]</div>
+  <div class="row">
+    <span class="col-lg">[% things.${login.tool_id} %]</span>
+    <span class="col-lg">[% login.token_id %]</span>
+    <span class="col-lg">[% login.accessed_date %]</span>
+    <span class="col-lg">[% login.status %]</span>
+    </div>
    [% END %]
  </div>
 </div>
 
-<div class="col-md-12"><strong>Your Transactions - Balance: [% person.balance_p / 100 | format("%.2f") %]</strong></div>
-<div class="col-md-12">
+<div class="col-lg-12"><strong>Your Transactions - Balance: [% person.balance_p / 100 | format("%.2f") %]</strong></div>
+<div class="col-lg-12">
 All payments to and from the space:
 </div>
 
- <div class="col-md-10 offset-2">
+ <div class="col-lg-10 offset-2">
    <div style="height:200px; overflow:auto">
-   <div class="col-md-4"><u>Paid On</u></div>
-   <div class="col-md-4"><u>Amount</u></div>
-   <div class="col-md-4"><u>Reason</u></div>
+     <div class="row">
+   <span class="col-lg"><u>Paid On</u></span>
+   <span class="col-lg"><u>Amount</u></span>
+   <span class="col-lg"><u>Reason</u></span>
+   </div>
    [% FOREACH tran = person.transactions_by_date %]
-    <div class="col-md-4">[% tran.added_on.ymd %]</div>
-    <div class="col-md-4">[% tran.amount_p / 100 | format("%.2f") %]</div>
-    <div class="col-md-4">[% tran.reason %]</div>
+     <div class="row">
+    <span class="col-lg">[% tran.added_on.ymd %]</span>
+    <span class="col-lg">[% tran.amount_p / 100 | format("%.2f") %]</span>
+    <span class="col-lg">[% tran.reason %]</span>
+    </div>
    [% END %]
  </div>
 </div>
 
-<div class="col-md-12">
+<div class="col-lg-12">
 <a href="[% c.uri_for('download') %]">Download all this lovely data about you and the space</a>
 </div>
 
