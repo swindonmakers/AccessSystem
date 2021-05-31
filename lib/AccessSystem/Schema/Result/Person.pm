@@ -189,10 +189,11 @@ sub is_valid {
     my ($self, $date) = @_;
 #    my $overlap_days = 14;
     #   $date ||= DateTime->today()->add(days => $overlap_days);
-    $date = DateTime->today();
+    $date = DateTime->now();
 
     my $dtf = $self->result_source->schema->storage->datetime_parser;
     my $date_str = $dtf->format_datetime($date);
+    print STDERR "Date valid compare $date_str\n";
 
     my $is_paid;
 
