@@ -806,6 +806,68 @@ Swindon Makerspace
     $c->forward($c->view('Email'));   
 }
 
+sub box_reminder: Chained('base'): PathPart('box_reminder'): Args(1) {
+    my ($self, $c, $id) = @_;
+    my $member = $c->model('AccessDB::Person')->find({ id => $id });
+    if($member && !$member->is_valid && !$member->end_date) {
+        $c->stash(member => $member);
+        $c->forward('send_box_reminder_email');
+        $c->stash(json => { message => "Attempted to send box reminder email" });
+    } else {
+        $c->stash(json => { message => "Can't find member $id or member is still valid!" });
+    }
+    delete $c->stash->{member};
+    $c->forward('View::JSON');
+}
+
+sub send_box_reminder_email: Private {
+    my ($self, $c) = @_;
+
+    my $member = $c->stash->{member};
+    my $dues_nice = sprintf("%0.2f", $member->dues/100);
+    my $name = $member->name;
+    my $expire_date = DateTime->now()->add(months => 1);
+    my $now_plus_one_month = sprintf("%s, %d %s %d",
+                                     $expire_date->day_abbr,
+                                     $expire_date->day,
+                                     $expire_date->month_name,
+                                     $expire_date->year
+        );
+    my $bank_ref = $member->bank_ref;
+    $c->stash->{email} = {
+            to => $member->email,
+            cc => $c->config->{emails}{cc},
+            from => 'info@swindon-makerspace.org',
+            subject => 'Your Swindon Makerspace member box',
+            body => "
+Hello, $name,
+  We were just doing a check-up of the member boxes, and we noticed you seem to have a box, but not a current membership.
+We would, of course, love to have you back. Now is a great time to re-up. If circumstances have changed such that you need a concessionary membership (half price, 12.50 GBP/month), reply to this email and a director will help you. If you've just paused your membership during lockdown, you will be happy to know that we are now allowing groups of up to 6, and hope to be open as in the before-times on June 21st. If you've decided to not rejoin, then please reply to this email and arrange a time to get your box (and we'd like to know why you aren't coming back, if you don't mind). At the very least, please respond to this email to let us know that you don't want your stuff back, and we will dispose of it.
+
+If you don't tell us anything, or pay your membership fees, at some point after $now_plus_one_month, we will assume you don't want your box & contents back.  Consider this your final warning of that.
+
+Just in case you've fogotten how to give us money:
+
+Monthly fee: £${dues_nice}/month
+To: Swindon Makerspace
+Bank: Barclays
+Sort Code: 20-84-58
+Account: 83789160
+Ref: $bank_ref
+
+Regards,
+Swindon Makerspace
+",
+    };
+
+    ## Store the comms:
+    $member->communications_rs->create({
+        type => 'box_reminder_email',
+        content => $c->stash->{email}{body},
+    });
+    $c->forward($c->view('Email'));
+}
+
 =head2 membership_status_update
 
 Collect and send out details about current membership to
