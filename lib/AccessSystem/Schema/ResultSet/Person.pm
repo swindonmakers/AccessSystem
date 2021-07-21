@@ -48,7 +48,7 @@ sub allowed_to_thing {
             $person = $has_token->first;
         }
         
-        my $thing_rs = $self->result_source->schema->resultset('AccessibleThing')->search(
+        my $thing_rs = $self->result_source->schema->resultset('Tool')->search(
             {
                 'id' => $thing_guid,
             });
