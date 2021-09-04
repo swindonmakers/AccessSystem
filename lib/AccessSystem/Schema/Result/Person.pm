@@ -437,6 +437,8 @@ Check if this member has enough in their balance (transactions) to pay
 for another month, if so, create a payment row. Return undef if we
 can't find one.
 
+If the balance is >= 12*$monthly*0.1, then make a year payment.
+
 =cut
 
 sub create_payment {
@@ -486,22 +488,13 @@ sub create_payment {
         %extra_days = ( days => $OVERLAP_DAYS );
     }
 
-    # # Calculate expiration date for this payment (10% off if year at once)
-    # my $expires_on;
-    # if($transaction->{trnamt} * 100 == $self->dues) {
-    #     $expires_on = $valid_until->clone->add(months => 1, %extra_days);
-    # } elsif($transaction->{trnamt} * 100 == ($self->dues * 12 - ( $self->dues * 12 * 0.1 ))
-    #         || $transaction->{trnamt} * 100 == $self->dues * 12) {
-    #     $expires_on = $valid_until->clone->add(years => 1, %extra_days);
-    # } elsif($transaction->{trnamt} * 100 % $self->dues == 0) {
-    #     my $months = $transaction->{trnamt} * 100 / $self->dues;
-    #     $expires_on = $valid_until->clone->add(months => $months, %extra_days);
-    # } else {
-    #     warn "Can't work out how many months to pay for " . $self->name ." with $transaction->{trnamt}\n";
-    #     return;
-    # }
-
+    my $payment_size = $self->dues;
     my $expires_on = $valid_date->clone->add(months => 1, %extra_days);
+    if($self->balance_p >= $self->dues * 12 * 0.9) {
+        # Special case, they paid for a year in advance (we assume!)
+        $expires_on = $valid_date->clone->add(years => 1, %extra_days);
+        $payment_size = $self->dues * 12 * 0.9;
+    }
 
     die "Expires date is before now!? (for " .  $self->bank_ref if $expires_on < $now;
     warn "About to create add payment on: $now for " . $self->bank_ref, ", expiring: $expires_on.\n";
@@ -509,12 +502,12 @@ sub create_payment {
         $self->create_related('transactions', {
             added_on => $now,
             reason => "Membership payment for " . $now->month_name . " " . $now->year,
-            amount_p => -1*$self->dues,
+            amount_p => -1*$payment_size,
         });
         $self->create_related('payments', {
             paid_on_date => $now,
             expires_on_date => $expires_on,
-            amount_p => $self->dues,
+            amount_p => $payment_size,
         });
     });
     return 1;
