@@ -725,6 +725,8 @@ This is useful for seeing if anyone is in the space, getting help/ideas on proje
 
 For more drawn out discussions (that you can read back on), announcements, and projects we have a forum located at http://forum.swindon-makerspace.org/.
 
+Information such as Equipment documentation and ongoing project notes can be found on our wiki, located at https://github.com/swindonmakers/wiki/wiki/.
+
 Please also keep an eye on our calendar at http://www.swindon-makerspace.org/calendar/, sometimes the space is \"booked\" (see Guide!)
  you may still use the space, but please be courteous and avoid using loud machinery during bookings.
 
