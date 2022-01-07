@@ -4,7 +4,7 @@
      dateFormat: "yy-mm",
      changeMonth: true,
      changeYear: true,
-     yearRange: "c-120:c-17"
+     yearRange: "-17:-120"
     });
 
     jQuery('#payment_button').click(function() {
