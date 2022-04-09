@@ -33,6 +33,7 @@ sub headers {
     my ($self) = @_;
 
     return {
+        'Content-Type' => 'application/json',
         Accept => 'application/json',
         'api-key' => $self->api_key,
     };
@@ -48,7 +49,7 @@ sub get_lists {
     if($response->is_success) {
         my $result = decode_json($response->decoded_content);
         @lists = @{$result->{lists}};
-        while (scalar @lists < $response->{count}) {
+        while (scalar @lists < $result->{count}) {
             $offset += $limit;
             my $uri = $self->_construct_uri('contacts/lists', { limit => $limit, offset => $offset });
             my $response = $self->ua->get($uri, %{ $self->headers });
@@ -73,11 +74,12 @@ sub get_contacts {
     if($response->is_success) {
         my $result = decode_json($response->decoded_content);
         @contacts = @{$result->{contacts}};
-        while (scalar @contacts < $response->{count}) {
+        while (scalar @contacts < $result->{count}) {
             $offset += $limit;
             my $uri = $self->_construct_uri('contacts', { limit => $limit, offset => $offset });
             my $response = $self->ua->get($uri, %{ $self->headers });
-            for my $person (@{ $response->{contacts} }) {
+	    $result = decode_json($response->decoded_content);
+            for my $person (@{ $result->{contacts} }) {
                 push @contacts, $person;
             }
         }
@@ -110,15 +112,32 @@ sub add_contact {
 sub update_contacts {
     my ($self, $contacts) = @_;
 
+    return if !@$contacts;
+    # no modifiedAt / createdAt
+    # only one of email/id/sms
+    foreach my $c (@$contacts) {
+	delete $c->{modifiedAt};
+	delete $c->{createdAt};
+	delete $c->{email};
+	delete $c->{sms};
+    }
     my $uri = $self->_construct_uri('contacts/batch');
-    my $response = $self->ua->post(
-        $uri,
-        Content => encode_json($contacts),
-        %{ $self->headers },
-    );
-
+    #    print STDERR Dumper($contacts);
+#    if (scalar @$contacts > 100) {
+	
+	my $response = $self->ua->post(
+	    $uri,
+	    Content => encode_json({ contacts => $contacts}),
+	    %{ $self->headers },
+	    );
+    # print STDERR "Update Contacts:", Dumper( $response);
+ #   }
     if($response->is_success) {
-        return decode_json $response->decoded_content;
+	if ($response->code == 204) {
+	    return 1;
+	} else {
+	    return decode_json $response->decoded_content;
+	}
     } else {
         warn "Post $uri failed: " . $response->status_line;
         return {};
