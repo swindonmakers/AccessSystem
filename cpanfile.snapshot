@@ -556,12 +556,14 @@ DISTRIBUTIONS
       CatalystX::Component::Traits 0.14
       DBD::SQLite 0
       DBIx::Class 0.08114
+      DBIx::Class::Schema::Loader 0.04005
       ExtUtils::MakeMaker 6.59
       Hash::Merge 0
       List::MoreUtils 0
       Module::Runtime 0.012
       Moose 1.12
       MooseX::MarkAsMethods 0.13
+      MooseX::NonMoose 0.16
       MooseX::Types 0
       MooseX::Types::LoadableClass 0.009
       Storable 0
@@ -1284,11 +1286,11 @@ DISTRIBUTIONS
       Crypt::UnixCrypt_XS 0.10
     requirements:
       ExtUtils::MakeMaker 0
-  DBD-Pg-3.8.1
-    pathname: T/TU/TURNSTEP/DBD-Pg-3.8.1.tar.gz
+  DBD-Pg-3.7.4
+    pathname: T/TU/TURNSTEP/DBD-Pg-3.7.4.tar.gz
     provides:
-      Bundle::DBD::Pg v3.8.1
-      DBD::Pg v3.8.1
+      Bundle::DBD::Pg v3.7.4
+      DBD::Pg v3.7.4
     requirements:
       DBI 1.614
       ExtUtils::MakeMaker 6.11
@@ -2747,32 +2749,12 @@ DISTRIBUTIONS
     requirements:
       Devel::StackTrace 0
       ExtUtils::MakeMaker 0
-  Digest-BubbleBabble-0.02
-    pathname: B/BT/BTROTT/Digest-BubbleBabble-0.02.tar.gz
-    provides:
-      Digest::BubbleBabble 0.02
-    requirements:
-      ExtUtils::MakeMaker 6.42
-      Filter::Util::Call 0
-      Test::More 0
-      perl 5.008001
   Digest-CRC-0.21
     pathname: O/OL/OLIMAUL/Digest-CRC-0.21.tar.gz
     provides:
       Digest::CRC 0.21
     requirements:
       ExtUtils::MakeMaker 0
-  Digest-GOST-0.06
-    pathname: G/GR/GRAY/Digest-GOST-0.06.tar.gz
-    provides:
-      Digest::GOST 0.06
-      Digest::GOST::CryptoPro undef
-    requirements:
-      Digest 0
-      ExtUtils::MakeMaker 0
-      Test::More 0.82
-      XSLoader 0
-      parent 0
   Digest-HMAC-1.03
     pathname: G/GA/GAAS/Digest-HMAC-1.03.tar.gz
     provides:
@@ -3942,36 +3924,21 @@ DISTRIBUTIONS
       Encode 2.10
       Exporter 5.57
       ExtUtils::MakeMaker 6.30
-  IO-Socket-INET6-2.72
-    pathname: S/SH/SHLOMIF/IO-Socket-INET6-2.72.tar.gz
+  IO-Socket-SSL-2.062
+    pathname: S/SU/SULLR/IO-Socket-SSL-2.062.tar.gz
     provides:
-      IO::Socket::INET6 2.72
-    requirements:
-      Carp 0
-      Errno 0
-      Exporter 0
-      IO::Socket 0
-      Module::Build 0.36
-      Socket 0
-      Socket6 0.12
-      Test::More 0
-      perl 5.008
-      strict 0
-      warnings 0
-  IO-Socket-SSL-2.025
-    pathname: S/SU/SULLR/IO-Socket-SSL-2.025.tar.gz
-    provides:
-      IO::Socket::SSL 2.025
-      IO::Socket::SSL::Intercept 2.014
-      IO::Socket::SSL::OCSP_Cache 2.025
-      IO::Socket::SSL::OCSP_Resolver 2.025
+      IO::Socket::SSL 2.062
+      IO::Socket::SSL::Intercept 2.056
+      IO::Socket::SSL::OCSP_Cache 2.062
+      IO::Socket::SSL::OCSP_Resolver 2.062
       IO::Socket::SSL::PublicSuffix undef
-      IO::Socket::SSL::SSL_Context 2.025
-      IO::Socket::SSL::SSL_HANDLE 2.025
-      IO::Socket::SSL::Session_Cache 2.025
+      IO::Socket::SSL::SSL_Context 2.062
+      IO::Socket::SSL::SSL_HANDLE 2.062
+      IO::Socket::SSL::Session_Cache 2.062
       IO::Socket::SSL::Utils 2.014
     requirements:
       ExtUtils::MakeMaker 0
+      Mozilla::CA 0
       Net::SSLeay 1.46
       Scalar::Util 0
   IO-String-1.08
@@ -3996,6 +3963,18 @@ DISTRIBUTIONS
       IO::WrapTie::Slave 2.111
     requirements:
       ExtUtils::MakeMaker 0
+  IPC-Cmd-1.02
+    pathname: B/BI/BINGOS/IPC-Cmd-1.02.tar.gz
+    provides:
+      IPC::Cmd 1.02
+    requirements:
+      ExtUtils::MakeMaker 0
+      File::Spec 0
+      File::Temp 0
+      Locale::Maketext::Simple 0
+      Module::Load::Conditional 0.66
+      Params::Check 0.20
+      Test::More 0
   IPC-System-Simple-1.25
     pathname: P/PJ/PJF/IPC-System-Simple-1.25.tar.gz
     provides:
@@ -4049,6 +4028,16 @@ DISTRIBUTIONS
       JSON::PP 2.27300
       Scalar::Util 0
       perl 5.006
+  JSON-PP-4.02
+    pathname: I/IS/ISHIGAKI/JSON-PP-4.02.tar.gz
+    provides:
+      JSON::PP 4.02
+      JSON::PP::Boolean 4.02
+      JSON::PP::IncrParser 4.02
+    requirements:
+      ExtUtils::MakeMaker 0
+      Scalar::Util 1.08
+      Test::More 0
   LWP-MediaTypes-6.02
     pathname: G/GA/GAAS/LWP-MediaTypes-6.02.tar.gz
     provides:
@@ -4481,6 +4470,19 @@ DISTRIBUTIONS
       YAML::Tiny 1.38
       autodie 0
       perl 5.006
+  Module-Load-Conditional-0.68
+    pathname: B/BI/BINGOS/Module-Load-Conditional-0.68.tar.gz
+    provides:
+      Module::Load::Conditional 0.68
+    requirements:
+      ExtUtils::MakeMaker 0
+      Locale::Maketext::Simple 0
+      Module::CoreList 2.22
+      Module::Load 0.28
+      Module::Metadata 1.000005
+      Params::Check 0
+      Test::More 0
+      version 0.69
   Module-Locate-1.80
     pathname: N/NE/NEILB/Module-Locate-1.80.tar.gz
     provides:
@@ -5383,8 +5385,6 @@ DISTRIBUTIONS
       Net::DNS::ZoneFile::Generator 1464
       Net::DNS::ZoneFile::Text 1464
     requirements:
-      Digest::BubbleBabble 0.01
-      Digest::GOST 0.06
       Digest::HMAC 1.03
       Digest::MD5 2.13
       Digest::SHA 5.23
@@ -5392,35 +5392,11 @@ DISTRIBUTIONS
       File::Spec 0.86
       IO::Socket 1.16
       IO::Socket::INET 1.25
-      IO::Socket::INET6 2.01
       IO::Socket::IP 0.32
       MIME::Base64 2.11
-      Net::DNS::SEC 1.01
-      Net::LibIDN 0.12
       Test::More 0.52
       Time::Local 1.19
       perl 5.00404
-  Net-DNS-SEC-1.10
-    pathname: W/WI/WILLEM/Net-DNS-SEC-1.10.tar.gz
-    provides:
-      Net::DNS::SEC 1.10
-      Net::DNS::SEC::DSA 1701
-      Net::DNS::SEC::ECCGOST 1701
-      Net::DNS::SEC::ECDSA 1701
-      Net::DNS::SEC::EdDSA 1701
-      Net::DNS::SEC::Keyset 1705
-      Net::DNS::SEC::Private 1705
-      Net::DNS::SEC::RSA 1677
-    requirements:
-      DynaLoader 1.04
-      ExtUtils::MakeMaker 0
-      File::Find 1.05
-      File::Spec 0.86
-      IO::File 1.08
-      MIME::Base64 2.13
-      Net::DNS 1.08
-      Test::More 0.47
-      perl 5.006
   Net-HTTP-6.09
     pathname: E/ET/ETHER/Net-HTTP-6.09.tar.gz
     provides:
@@ -5436,12 +5412,6 @@ DISTRIBUTIONS
       IO::Uncompress::Gunzip 0
       URI 0
       perl 5.006002
-  Net-LibIDN-0.12
-    pathname: T/TH/THOR/Net-LibIDN-0.12.tar.gz
-    provides:
-      Net::LibIDN 0.12
-    requirements:
-      ExtUtils::MakeMaker 0
   Net-SMTP-SSL-1.04
     pathname: R/RJ/RJBS/Net-SMTP-SSL-1.04.tar.gz
     provides:
@@ -5451,10 +5421,10 @@ DISTRIBUTIONS
       IO::Socket::SSL 0
       Net::SMTP 0
       Test::More 0.47
-  Net-SSLeay-1.74
-    pathname: M/MI/MIKEM/Net-SSLeay-1.74.tar.gz
+  Net-SSLeay-1.85
+    pathname: M/MI/MIKEM/Net-SSLeay-1.85.tar.gz
     provides:
-      Net::SSLeay 1.74
+      Net::SSLeay 1.85
       Net::SSLeay::Handle 0.61
     requirements:
       ExtUtils::MakeMaker 6.36
@@ -6469,6 +6439,17 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 0
       Scalar::Util 0
       perl 5.006
+  Scalar-List-Utils-1.50
+    pathname: P/PE/PEVANS/Scalar-List-Utils-1.50.tar.gz
+    provides:
+      List::Util 1.50
+      List::Util::XS 1.50
+      Scalar::Util 1.50
+      Sub::Util 1.50
+    requirements:
+      ExtUtils::MakeMaker 0
+      Test::More 0
+      perl 5.006
   Scalar-String-0.002
     pathname: Z/ZE/ZEFRAM/Scalar-String-0.002.tar.gz
     provides:
@@ -6516,12 +6497,6 @@ DISTRIBUTIONS
       Lingua::Stem::Snowball::Se 1.2
     requirements:
       Test::More 0.42
-  Socket6-0.28
-    pathname: U/UM/UMEMOTO/Socket6-0.28.tar.gz
-    provides:
-      Socket6 0.28
-    requirements:
-      ExtUtils::MakeMaker 0
   Sort-Naturally-1.03
     pathname: B/BI/BINGOS/Sort-Naturally-1.03.tar.gz
     provides:
@@ -7050,6 +7025,15 @@ DISTRIBUTIONS
       Test::Builder::Module 0
       Test::More 0.47
       perl 5.006
+  Test-RequiresInternet-0.05
+    pathname: M/MA/MALLEN/Test-RequiresInternet-0.05.tar.gz
+    provides:
+      Test::RequiresInternet 0.05
+    requirements:
+      ExtUtils::MakeMaker 0
+      Socket 0
+      strict 0
+      warnings 0
   Test-SharedFork-0.35
     pathname: E/EX/EXODIST/Test-SharedFork-0.35.tar.gz
     provides:

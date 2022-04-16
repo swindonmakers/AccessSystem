@@ -54,7 +54,11 @@ my @updates = ();
 my @checked_emails = ();
 
 foreach my $person (@people) {
-    my $db_person = $db_people->search({ email => { '-ilike' => $person->{email} }, end_date => undef });
+    my $db_person = $db_people->search({ '-and' => [
+					     end_date => undef,
+					     \['LOWER(email) = ?', lc($person->{email})], # 
+				       ]});
+# email => { '-ilike' => $person->{email} }, end_date => undef });
     if ($db_person->count == 1) {
 	$db_person = $db_person->first;
 	if (($person->{attributes}{NAME} ne $db_person->name
@@ -93,10 +97,11 @@ foreach my $person (@people) {
 }
 # All changed members:
 print "Updating " . scalar @updates . " people statuses in Sendinblue\n";
+print STDERR Dumper(\@updates);
 $sb->update_contacts(\@updates);
 
 # New members:
-my $new_members = $db_people->search({ email => { '-not_in' => \@checked_emails }, end_date => undef });
+my $new_members = $db_people->search({ email => { '-not_in' => [map { lc($_) } @checked_emails] }, end_date => undef });
 print "Adding " . $new_members->count . " new members into Sendinblue\n";
 
 while (my $person = $new_members->next) {
@@ -117,10 +122,10 @@ while (my $person = $new_members->next) {
 # my @gone_people = grep { !$db_people->find({email => $_->{email}}) } @people;
 
 my $ended_people = $db_people->search({ end_date => { '!=' => undef }});; 
-my @gone_people = grep { $ended_people->search({email => $_->{email}})->count >= 1} @people;
+my @gone_people = grep { $ended_people->search({email => lc($_->{email})})->count >= 1} @people;
 
 print "Would remove " . scalar @gone_people . " members who left from Sendinblue\n";
-# print STDERR Dumper(\@gone_people);
+print STDERR Dumper(\@gone_people);
 exit;
 foreach my $person (@gone_people) {
     $sb->delete_contact($person);
