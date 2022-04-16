@@ -30,3 +30,5 @@ requires 'Catalyst::Plugin::StackTrace';
 requires 'DBD::Pg';
 requires 'DateTime::Format::Pg';
 requires 'List::Util';
+requires 'Mojo::Base';
+requires 'Telegram::Bot::Brain';
