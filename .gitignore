@@ -1,8 +1,19 @@
 *~
 *.bak
+*.png
 
 local/
 ofx/
 db/
+20845883789160.ofx
 accesssystem.conf
+accesssystem_dev.conf
 accesssystem_api.conf
+accesssystem_api_local.conf
+keys.conf
+script/expand_dues_to_14_days.pl
+script/fetch_paypal.pl
+script/fetch_sumup.pl
+script/oauth_test.pl
+script/test.pl
+script/update_valid_until.pl
