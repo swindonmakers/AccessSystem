@@ -39,7 +39,8 @@ __PACKAGE__->add_columns(
         is_auto_increment => 1,
     },
     tool_id => {
-        data_type => 'integer',
+        data_type => 'varchar',
+        size => 40,
     },
     entered_at => {
         data_type => 'datetime',
