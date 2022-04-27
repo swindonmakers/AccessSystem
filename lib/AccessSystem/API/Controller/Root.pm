@@ -7,6 +7,7 @@ use Data::Dumper;
 use LWP::UserAgent;
 use MIME::Base64;
 use JSON;
+use Data::GUID;
 
 BEGIN { extends 'Catalyst::Controller' }
 
@@ -554,6 +555,85 @@ Swindon Makerspace
     $c->forward($c->view('JSON'));
 }
 
+sub confirm_telegram: Chained('base'): PathPart('confirm_telegram'): Args(0) {
+    my ($self, $c) = @_;
+
+    my $email = $c->req->params->{email};
+    my $telegram_chatid = $c->req->params->{chatid};
+    my $telegram_user   = $c->req->params->{username} || '';
+    my $members = $c->model('AccessDB::Person')->search_rs({
+        '-and' => [
+            end_date => undef,
+            \ ['LOWER(email) = ?', lc($email)],
+            ]});
+    my $success = 0;
+    my $msg = '';
+    if ($members->count == 1) {
+        my $token = Data::GUID->new->as_string();
+        my $member = $members->first;
+        $member->confirmations->create({
+            token => $token,
+            storage => {
+                telegram_chatid => $telegram_chatid,
+                telegram_username => $telegram_user,
+                },
+        });
+        $c->stash->{email} = {
+                to => $member->email,
+                cc => $c->config->{email}{cc},
+                from => 'info@swindon-makerspace.org',
+                subject => 'Swindon Makerspace Telegram Confirmation',
+                body => "
+Dear " . $member->name . ",
+
+You requested to attach a Telegram ID of $telegram_chatid ($telegram_user) to your Makerspace Member account (or someone did using your email).
+
+Follow this link to confirm: " . $c->uri_for('confirm_email', { token => $token }) . "
+
+Regards,
+
+Swindon Makerspace
+",
+        };
+        ## Store the comms:
+        $member->communications_rs->create({
+            type => 'telegram_confirm',
+            content => $c->stash->{email}{body},
+        });
+        $c->forward($c->view('Email'));
+        $success = 1;
+   } else {
+        $msg = "I can't find a member with that email address, or there are more than one of them!";
+    }
+    $c->stash(
+        json => {
+            ( $msg ? (error => $msg) : () ),
+                success => $success,
+        });
+    $c->forward($c->view('JSON'));
+}
+
+sub confirm_email: Chained('base'): PathPart('confirm_email'): Args(0) {
+    my ($self, $c) = @_;
+
+    my $token = $c->req->params->{token};
+    my $confirm = $c->model('AccessDB::Confirm')->find({ token => $token });
+    if ($confirm) {
+        my $user_update = $confirm->storage;
+        # telegram_chatid, telegram_username .. or whatever we add later
+        $confirm->person->update($user_update);
+        $confirm->delete();
+    }
+    return $c->res->redirect($c->uri_for('post_confirm'));
+}
+
+sub post_confirm: Chained('base'): PathPart('post_confirm'): Arg(0) {
+    my ($self, $c) = @_;
+
+    $c->stash->{current_page} = 'post_confirm';
+    $c->stash->{template} = 'post_confirm.tt';
+}
+
 # Mini api - get possible dues given Age, Concession, Other hackspace member
 # Ignoring Children for now as the register form adds those after the main member
 
@@ -919,7 +999,7 @@ The Access System.
     };
 
     $c->forward($c->view('Email'));   
-    $c->stash->{json} = \%data;
+    $c->stash->{json} = $data;
     $c->forward('View::JSON');
 
 }

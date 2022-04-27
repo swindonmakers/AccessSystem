@@ -1,7 +1,10 @@
 package AccessBot;
 
+use feature 'signatures';
+
 use Mojo::Base 'Telegram::Bot::Brain';
 use Config::General;
+use LWP::Simple;
 use lib 'lib';
 use AccessSystem::Schema;
 
@@ -31,6 +34,10 @@ sub init {
     $self->add_listener(\&read_message);
 }
 
+sub member ($self, $message) {
+    return $self->db->resultset('Person')->find({ telegram_chatid => $message->from->id });
+}
+
 sub read_message {
     my ($self,$message) = @_;
     if($message->text =~ m{^/memberstats}) {
@@ -42,14 +49,64 @@ Overdue members: " . ($data->{overdue_members}{count} || 0) ." - (" . join(', ',
 Left this month: " . ($data->{recent_expired}{count} || 0) ." - (" . join(', ', map { "$_: " . ($data->{recent_expired}{$_} || 0) } (qw/full concession otherspace/)) . ")";
 
         $message->reply($msg_text);
+
+        return;
     }
+
+    if($message->text =~ m{^/identify}) {
+        if($message->text =~ m{^/identify ([ -~]+\@[ -~]+)$}) {
+            my $email = $1;
+            print STDERR "Email: $email\n";
+            my $members = $self->db->resultset('Person')->search_rs({
+                '-and' => [
+                    end_date => undef,
+                    \ ['LOWER(email) = ?', lc($email)],
+                   ]});
+            if($members->count == 1) {
+                my $url = 'https://inside.swindon-makerspace.org/confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
+                print STDERR "Calling: $url\n";
+                # my $member = $members->first;
+                # if(!$member->telegram_chatid) {
+                #     $member->update({ telegram_chatid => $message->from->id, telegram_username => $message->from->username });
+                #     $message->reply('Set your telegram chatid to ' . $message->from->id);
+                # } else {
+                #     $message->reply('Your telegram chatid is already set! Ask a director to unset it');
+                # }
+                $message->reply("You should have an email to confirm your membership/telegram mashup");
+            } else {
+                $message->reply("I can't find a member with that email address, try again or check https://inside.swindon-makerspace.org/profile");
+            }
+        } else {
+            $message->reply("That didn't look like an email address, try again?");
+        }
+
+       return;
+    }
+
+    if ($message->text =~ m!/doorcode!) {
+        if ($self->member($message)->is_valid) {
+            $message->reply("Use NNNN on the keypad by either external door of BSS House to get in at night.");
+        } elsif ($self->member($message)) {
+            $message->reply("I know who you are, but you don't seem to be paid up, sorry");
+        } else {
+            $message->reply("I don't know who you are.  Please use /identify and then try again");
+        }
+
+        return;
+    }
+
+    if ($message->text =~ m!^/(help|start)!) {
+        $message->reply("I know /identify <your email address>, /memberstats, /doorcode");
+        return;
+    }
+    
+    $message->reply(qq<I don't know that command, sorry.>);
 }
 1;
     
 package main;
 
 my $bot = AccessBot->new();
-$bot->init;
  
 my $me = $bot->getMe();
 use Data::Dumper;

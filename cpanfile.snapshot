@@ -1672,6 +1672,20 @@ DISTRIBUTIONS
       SQL::Translator 0
       Test::More 0.89
       parent 0
+  DBIx-Class-InflateColumn-Serializer-0.09
+    pathname: M/MR/MRUIZ/DBIx-Class-InflateColumn-Serializer-0.09.tar.gz
+    provides:
+      DBIx::Class::InflateColumn::Serializer 0.09
+      DBIx::Class::InflateColumn::Serializer::JSON 0.09
+      DBIx::Class::InflateColumn::Serializer::Storable 0.09
+      DBIx::Class::InflateColumn::Serializer::YAML 0.09
+    requirements:
+      DBIx::Class 0
+      ExtUtils::MakeMaker 0
+      JSON::MaybeXS 1.002005
+      YAML 0
+      namespace::clean 0
+      perl 5.008000
   DBIx-Class-IntrospectableM2M-0.001002
     pathname: I/IL/ILMARI/DBIx-Class-IntrospectableM2M-0.001002.tar.gz
     provides:

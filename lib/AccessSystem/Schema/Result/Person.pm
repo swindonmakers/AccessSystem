@@ -177,6 +177,8 @@ __PACKAGE__->add_columns(
 
 __PACKAGE__->set_primary_key('id');
 
+__PACKAGE__->add_unique_constraint('telegram_id' => ['telegram_chatid']);
+
 __PACKAGE__->inflate_column('dob', {
   inflate => sub {
     my ($raw_value_from_db, $result_object) = @_;
@@ -198,6 +200,7 @@ __PACKAGE__->inflate_column('dob', {
 # __PACKAGE__->add_unique_constraint('email' => ['email']);
 
 __PACKAGE__->has_many('communications', 'AccessSystem::Schema::Result::Communication', 'person_id');
+__PACKAGE__->has_many('confirmations', 'AccessSystem::Schema::Result::Confirm', 'person_id');
 __PACKAGE__->has_many('payments', 'AccessSystem::Schema::Result::Dues', 'person_id');
 __PACKAGE__->has_many('allowed', 'AccessSystem::Schema::Result::Allowed', 'person_id');
 __PACKAGE__->has_many('tokens', 'AccessSystem::Schema::Result::AccessToken', 'person_id');
