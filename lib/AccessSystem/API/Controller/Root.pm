@@ -7,6 +7,7 @@ use Data::Dumper;
 use LWP::UserAgent;
 use MIME::Base64;
 use JSON;
+use Data::GUID;
 
 BEGIN { extends 'Catalyst::Controller' }
 
@@ -555,6 +556,85 @@ Swindon Makerspace
     $c->forward($c->view('JSON'));
 }
 
+sub confirm_telegram: Chained('base'): PathPart('confirm_telegram'): Args(0) {
+    my ($self, $c) = @_;
+
+    my $email = $c->req->params->{email};
+    my $telegram_chatid = $c->req->params->{chatid};
+    my $telegram_user   = $c->req->params->{username} || '';
+    my $members = $c->model('AccessDB::Person')->search_rs({
+        '-and' => [
+            end_date => undef,
+            \ ['LOWER(email) = ?', lc($email)],
+            ]});
+    my $success = 0;
+    my $msg = '';
+    if ($members->count == 1) {
+        my $token = Data::GUID->new->as_string();
+        my $member = $members->first;
+        $member->confirmations->create({
+            token => $token,
+            storage => {
+                telegram_chatid => $telegram_chatid,
+                telegram_username => $telegram_user,
+                },
+        });
+        $c->stash->{email} = {
+                to => $member->email,
+                cc => $c->config->{email}{cc},
+                from => 'info@swindon-makerspace.org',
+                subject => 'Swindon Makerspace Telegram Confirmation',
+                body => "
+Dear " . $member->name . ",
+
+You requested to attach a Telegram ID of $telegram_chatid ($telegram_user) to your Makerspace Member account (or someone did using your email).
+
+Follow this link to confirm: " . $c->uri_for('confirm_email', { token => $token }) . "
+
+Regards,
+
+Swindon Makerspace
+",
+        };
+        ## Store the comms:
+        $member->communications_rs->create({
+            type => 'telegram_confirm',
+            content => $c->stash->{email}{body},
+        });
+        $c->forward($c->view('Email'));
+        $success = 1;
+   } else {
+        $msg = "I can't find a member with that email address, or there are more than one of them!";
+    }
+    $c->stash(
+        json => {
+            ( $msg ? (error => $msg) : () ),
+                success => $success,
+        });
+    $c->forward($c->view('JSON'));
+}
+
+sub confirm_email: Chained('base'): PathPart('confirm_email'): Args(0) {
+    my ($self, $c) = @_;
+
+    my $token = $c->req->params->{token};
+    my $confirm = $c->model('AccessDB::Confirm')->find({ token => $token });
+    if ($confirm) {
+        my $user_update = $confirm->storage;
+        # telegram_chatid, telegram_username .. or whatever we add later
+        $confirm->person->update($user_update);
+        $confirm->delete();
+    }
+    return $c->res->redirect($c->uri_for('post_confirm'));
+}
+
+sub post_confirm: Chained('base'): PathPart('post_confirm'): Arg(0) {
+    my ($self, $c) = @_;
+
+    $c->stash->{current_page} = 'post_confirm';
+    $c->stash->{template} = 'post_confirm.tt';
+}
+
 # Mini api - get possible dues given Age, Concession, Other hackspace member
 # Ignoring Children for now as the register form adds those after the main member
 
@@ -992,47 +1072,10 @@ sub membership_status_update : Chained('base') :PathPart('membership_status_upda
     # Number of current / active members
     # Number of recent "leavers" / out of date members
 
-    my $people = $c->model('AccessDB::Person');
-    my %data = ();
-
-    my $income;
-    my $now = DateTime->now()->subtract(days => 1);
-    my $four_weeks = $now->clone->subtract('days' => 27);
-    
-    while (my $member = $people->next() ) {
-        my @flags = ();
-        push @flags, 'valid_members' if $member->is_valid;
-        push @flags, 'child' if $member->parent;
-
-        if(!$member->parent) {
-            push @flags, 'concession' if $member->concessionary_rate;
-            push @flags, 'otherspace' if $member->member_of_other_hackspace;
-            push @flags, 'full' if !$member->member_of_other_hackspace && ! $member->concessionary_rate;
-
-            push @flags, 'ex_members' if $member->end_date && !$member->is_valid;
-            push @flags, 'overdue_members' if !$member->end_date && !$member->is_valid;
-
-            push @flags, 'adult';
-            push @flags, 'count';
-        }
-        my $v_until = $member->valid_until;
-        push @flags, 'recent_expired' if !$member->end_date && $v_until && $v_until < $now && $v_until >= $four_weeks;
-        
-        $income += $member->dues if $member->is_valid;
-
-        for my $f (@flags) {
-            if($f eq 'recent_expired') {
-                my %cols = $member->get_columns;
-                push @{ $data{$f}{people} }, { %cols{qw/id parent_id name member_of_other_hackspace created_date end_date/}, concessionary_rate => $member->concessionary_rate, valid_until => $v_until->ymd };
-            }
-            for my $g (@flags) {
-                $data{$f}{$g}++;
-            }
-        }
-    }
+    my $data = $c->model('AccessDB::Person')->membership_stats();
 
     use Data::Dumper;
-    $c->log->debug(Dumper(\%data));
+    $c->log->debug(Dumper($data));
     $c->stash->{email} = {
 #            to => 'jess@jandj.me.uk', #'info@swindon-makerspace.org',
             to => $c->config->{emails}{cc},
@@ -1041,9 +1084,9 @@ sub membership_status_update : Chained('base') :PathPart('membership_status_upda
             body => "
 Dear Directors,
 
-Current members: " . $data{valid_members}{count} . " - (" . join(', ', map { "$_: " . ($data{valid_members}{$_} || 0) } (qw/full concession otherspace adult child/)) . "), 
-Ex members: " . ($data{ex_members}{count} || 0) . " - (" . join(', ', map { "$_: " . ($data{ex_members}{$_} || 0) } (qw/full concession otherspace/)) . "), 
-Overdue members: " . $data{overdue_members}{count} ." - (" . join(', ', map { "$_: " . ($data{overdue_members}{$_} || 0) } (qw/full concession otherspac/)) . "), 
+Current members: " . $data->{valid_members}{count} . " - (" . join(', ', map { "$_: " . ($data->{valid_members}{$_} || 0) } (qw/full concession otherspace adult child/)) . "), 
+Ex members: " . ($data->{ex_members}{count} || 0) . " - (" . join(', ', map { "$_: " . ($data->{ex_members}{$_} || 0) } (qw/full concession otherspace/)) . "), 
+Overdue members: " . $data->{overdue_members}{count} ." - (" . join(', ', map { "$_: " . ($data->{overdue_members}{$_} || 0) } (qw/full concession otherspac/)) . "), 
 Recently: 
 " . join("\n", map { sprintf("%03d: %40s: %20s: %s", 
                                    $_->{id},
@@ -1054,9 +1097,9 @@ Recently:
                                         ? 'otherspace' 
                                         : 'full' )
                                    ),
-                                   $_->{valid_until}) } (@{ $data{recent_expired}{people} }) ) .",
+                                   $_->{valid_until}) } (@{ $data->{recent_expired}{people} }) ) .",
 
-Income expected: £" . sprintf("%0.2f", $income/100) . "
+Income expected: £" . sprintf("%0.2f", $data->{income}/100) . "
 
 Regards,
 
@@ -1065,7 +1108,7 @@ The Access System.
     };
 
     $c->forward($c->view('Email'));   
-    $c->stash->{json} = \%data;
+    $c->stash->{json} = $data;
     $c->forward('View::JSON');
 
 }

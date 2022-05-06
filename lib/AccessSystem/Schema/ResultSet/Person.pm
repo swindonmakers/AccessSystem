@@ -154,4 +154,49 @@ sub get_person_from_hash {
     return 0;
 }
 
+sub membership_stats {
+    my ($self) = @_;
+
+    my %data = ();
+    my $income;
+    my $now = DateTime->now()->subtract(days => 1);
+    my $four_weeks = $now->clone->subtract('days' => 27);
+
+    while (my $member = $self->next() ) {
+        my @flags = ();
+        push @flags, 'valid_members' if $member->is_valid;
+        push @flags, 'child' if $member->parent;
+
+        if(!$member->parent) {
+            push @flags, 'concession' if $member->concessionary_rate;
+            push @flags, 'otherspace' if $member->member_of_other_hackspace;
+            push @flags, 'full' if !$member->member_of_other_hackspace && ! $member->concessionary_rate;
+
+            push @flags, 'ex_members' if $member->end_date && !$member->is_valid;
+            push @flags, 'overdue_members' if !$member->end_date && !$member->is_valid;
+
+            push @flags, 'adult';
+            push @flags, 'count';
+        }
+        my $v_until = $member->valid_until;
+        push @flags, 'recent_expired' if !$member->end_date && $v_until && $v_until < $now && $v_until >= $four_weeks;
+
+        $income += $member->dues if $member->is_valid;
+
+        for my $f (@flags) {
+            if($f eq 'recent_expired') {
+                my %cols = $member->get_columns;
+                push @{ $data{$f}{people} }, { %cols{qw/id parent_id name member_of_other_hackspace created_date end_date/}, concessionary_rate => $member->concessionary_rate, valid_until => $v_until->ymd };
+            }
+            for my $g (@flags) {
+                $data{$f}{$g}++;
+            }
+        }
+    }
+
+    $data{income} = $income;
+
+    return \%data;
+}
+
 1;
