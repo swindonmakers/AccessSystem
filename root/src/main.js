@@ -20,6 +20,10 @@
         }
       });
     });
+
+    jQuery('#associated_button').click(function() {
+      jQuery('.associated_hide').toggle();
+    });
   });
 </script>
     

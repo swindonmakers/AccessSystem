@@ -116,9 +116,23 @@ __PACKAGE__->add_columns(
         size => 1024,
         is_nullable => 0,
     },
+    how_found_us => {
+        data_type => 'varchar',
+        size => 50,
+        is_nullable => 1,
+    },
     github_user => {
         data_type => 'varchar',
         size => 255,
+        is_nullable => 1,
+    },
+    telegram_username => {
+        data_type => 'varchar',
+        size => 255,
+        is_nullable => 1,
+    },
+    telegram_chatid => {
+        data_type => 'integer',
         is_nullable => 1,
     },
     google_id => {
@@ -140,6 +154,15 @@ __PACKAGE__->add_columns(
         data_type => 'boolean',
         default_value => 0,
         is_nullable => 0,
+    },
+    voucher_code => {
+        data_type => 'varchar',
+        size => 50,
+        is_nullable => 1,
+    },
+    voucher_start => {
+        data_type => 'datetime',
+        is_nullable => 1,
     },
     created_date => {
         data_type => 'datetime',
@@ -274,6 +297,11 @@ sub dues {
     my $dues = $self->normal_dues;
     if($self->payment_override && $self->payment_override > $dues) {
         $dues = $self->payment_override;
+    }
+    # voucher code gives 20% off first 3 months
+    if($self->voucher_code
+       && $self->voucher_start > DateTime->now()->add(months => 3)) {
+        $dues = $dues * 0.8;
     }
 
     return $dues;
@@ -459,11 +487,6 @@ sub create_payment {
         return 1;
     }
 
-    if($self->balance_p < $self->dues) {
-        warn "Member " . $self->bank_ref . " balance not enough for another month.\n";
-        return;
-    }
-
     my $now = DateTime->now;
     # Figure out what sort of payment this is, if valid_until is
     # empty, then its a first payment or renewal payment - use the
@@ -473,8 +496,18 @@ sub create_payment {
     # Check for first payment / renewed payment, queue up email:
     if(!$valid_date) {
         # first payment ever
+        # this is the start of their voucher
+        if($self->voucher_code) {
+            $self->update({ voucher_start => DateTime->now()});
+        }
         $self->create_communication('new_payment.tt');
     }
+    # work this out after voucher setting cos it changes the dues
+    if($self->balance_p < $self->dues) {
+        warn "Member " . $self->bank_ref . " balance not enough for another month.\n";
+        return;
+    }
+
     if($valid_date && $valid_date < $now) {
         # renewed payments
         $self->create_communication('renewed_payment.tt');

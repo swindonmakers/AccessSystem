@@ -45,6 +45,16 @@ sub validate {
     $self->field('payment_override')
         ->add_error('Voluntary payment amount must be more than suggested amount (' . $temp->normal_dues / 100 . ')')
         if($self->field('payment_override')->is_active()  && $self->field('payment_override')->value() < $temp->normal_dues);
+
+    my $vcode = lc $self->item->voucher_code;
+    if (not $vcode) {
+        # voucher code is optional, so OK, nop.
+    } elsif ($vcode =~ /festival/ or lc $vcode =~ /tomorrow/) {
+        # OK, nop
+    } else {
+        $self->field('voucher_code')
+            ->add_error('Unrecognised voucher');
+    }
 }
 
 sub field_add_defaults {
@@ -82,7 +92,7 @@ has_field name => field_add_defaults {
     messages => {
         required => 'Please enter your name (forename and surname)',
     },
-    help_string => 'Forename and surname, as it should appear on tree-mail'
+    help_string => 'Forename and surname, as it should appear in a letter'
 };
 
 has_field email => field_add_defaults {
@@ -108,7 +118,7 @@ has_field opt_in => field_add_defaults {
     messages => {
 #       required => 'Please read and agree to the Membership Guide',
     },
-    help_string => 'Free puppies and kittens! Occassionally we send out updates about thngs happening at the Makerspace, opt_in to get these non-membership specific emails..',
+    help_string => 'Occassionally we send out updates about thngs happening at the Makerspace, opt_in to get these non-membership specific emails.',
 };
 
 # has_field analytics_use => field_add_defaults {
@@ -149,28 +159,65 @@ has_field address => field_add_defaults {
     help_string => 'As it would appear on an envelope, for the membership register.',
 };
 
+has_field how_found_us => field_add_defaults {
+    type => 'Select',
+    required => 1,
+    widget => 'RadioGroup',
+    options => [ 
+                 { value => 'google search', label => 'Google Search' },
+                 { value => 'twitter', label => 'Twitter' },
+                 { value => 'facebook', label => 'Facebook' },
+                 { value => 'other social media', label => 'Other Social Media' },
+                 { value => 'event/conference', label => 'Event or Conference' },
+                 { value => 'referred by friend/family', label => 'Referred by Field or Family' },
+                 { value => 'other', label => 'Other' },
+        ],
+    label => 'How did you find us?*',
+    wrapper_attr => { id => 'field-how-found-us' },
+    help_string => 'How/where did you find out about the Makerspace?',
+};
+
+has_field associated_button => (
+    type => 'Button',
+    value => 'Change/Show Associated Accounts',
+    label => '',
+    element_attr => { style => 'background-color: #eabf83;' },
+    );
+
 has_field github_user => field_add_defaults {
     type => 'Text',
     required => 0,
     maxlength => 255,
-    wrapper_attr => { id => 'field-github-user', },
+    wrapper_attr => { id => 'field-github-user', class => 'associated associated_hide', style => "display:none"},
     tags         => { no_errors => 1 },
     messages => {
         required => 'Please enter a github username',
     },
-    help_string => 'A github username, this will allow us to give you access to our code repositories and wiki.',
+    help_string => '(Optional) A github username, this will allow us to give you access to our code repositories and wiki.',
+};
+
+has_field telegram_username => field_add_defaults {
+    type => 'Text',
+    required => 0,
+    maxlength => 255,
+    wrapper_attr => { id => 'field-telegram-username', class => 'associated associated_hide', style => "display:none"},
+    tags         => { no_errors => 1 },
+    messages => {
+        required => 'Please enter a telegram screen name',
+    },
+    help_string => '(Optional) Your Telegram username, used to tag you by a bot (for inductions etc)',
 };
 
 has_field google_id => field_add_defaults {
     type => 'Text',
     required => 0,
     maxlength => 255,
-    wrapper_attr => { id => 'field-google-id', },
+    wrapper_attr => { id => 'field-google-id', class => 'associated associated_hide', style => "display:none"},
     tags         => { no_errors => 1 },
     messages => {
         required => 'Please enter a google id/email address',
     },
-    help_string => 'Your google account email address, (even if the same as your usual email address) - this will be used for access to our Google Drive documents.',
+    help_string => '(Optional) Your google account email address, (even if the same as your usual email address) - this will be used for access to our Google Drive documents.',
 };
 
 has_field payment_button => (
@@ -199,7 +246,7 @@ has_field concessionary_rate_override => field_add_defaults {
     label => 'Concessionary Rate',
     wrapper_attr => { id => 'field-concessionary-rate-override', class => 'payment payment_hide', style => "display:none"  },
     tags => { no_errors => 1 },
-    help_string => 'Do you qualify for our reduced payment rate? Choose what best matches your situation, you will need to show documentation to a director to prove your status.',
+    help_string => 'Do you qualify for our reduced payment rate? Choose what best matches your situation, please show documentation to a director to prove your status.',
 };
 
 has_field member_of_other_hackspace => field_add_defaults {
@@ -221,6 +268,14 @@ has_field payment_override => field_add_defaults {
     deflation => sub { return $_[0] / 100 },
     apply => [ { transform => sub { return $_[0] * 100 } } ],
     help_string => 'You are welcome to overpay for use of the space, indicate here how much you would like to pay monthly.',
+};
+
+has_field voucher_code => field_add_defaults {
+    type => 'Text',
+    required => 0,
+    label => 'Voucher Code',
+    wrapper_attr => { id => 'field-voucher-code', class => 'payment_hide', style => "display:none" },
+    help_string => 'If you have a voucher, enter the code, or location you got it, here.',
 };
 
 ## required checks if this is true as well as set, defaults to 0/1
