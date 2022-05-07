@@ -5,6 +5,7 @@ use feature 'signatures';
 use Mojo::Base 'Telegram::Bot::Brain';
 use Config::General;
 use LWP::Simple;
+use LWP::UserAgent;
 use lib 'lib';
 use AccessSystem::Schema;
 
@@ -56,15 +57,21 @@ Left this month: " . ($data->{recent_expired}{count} || 0) ." - (" . join(', ', 
     if($message->text =~ m{^/identify}) {
         if($message->text =~ m{^/identify ([ -~]+\@[ -~]+)$}) {
             my $email = $1;
-            print STDERR "Email: $email\n";
+            # print STDERR "Email: $email\n";
             my $members = $self->db->resultset('Person')->search_rs({
                 '-and' => [
                     end_date => undef,
                     \ ['LOWER(email) = ?', lc($email)],
                    ]});
             if($members->count == 1) {
-                my $url = 'https://inside.swindon-makerspace.org/confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
-                print STDERR "Calling: $url\n";
+                my $url = 'http://localhost:3000/confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
+                # print STDERR "Calling: $url\n";
+		my $ua = LWP::UserAgent->new();
+		my $resp = $ua->get($url);
+		if (!$resp->is_success) {
+		    print STDERR "Failed: ", $resp->status_line, " ", $resp->content, "\n";
+
+		}
                 # my $member = $members->first;
                 # if(!$member->telegram_chatid) {
                 #     $member->update({ telegram_chatid => $message->from->id, telegram_username => $message->from->username });
@@ -84,9 +91,10 @@ Left this month: " . ($data->{recent_expired}{count} || 0) ." - (" . join(', ', 
     }
 
     if ($message->text =~ m!/doorcode!) {
-        if ($self->member($message)->is_valid) {
+	my $member = $self->member($message);
+        if ($member && $member->is_valid) {
             $message->reply("Use NNNN on the keypad by either external door of BSS House to get in at night.");
-        } elsif ($self->member($message)) {
+        } elsif ($member) {
             $message->reply("I know who you are, but you don't seem to be paid up, sorry");
         } else {
             $message->reply("I don't know who you are.  Please use /identify and then try again");
