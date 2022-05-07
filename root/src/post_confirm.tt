@@ -1,0 +1,9 @@
+[% WRAPPER wrapper.tt %]
+
+<p>Thanks for confirming your telegram chatid</p>
+
+<p>Now you can use your telegram account to manage your membership</p>
+
+<p>You can now close this tab</p>
+
+[% END %]
