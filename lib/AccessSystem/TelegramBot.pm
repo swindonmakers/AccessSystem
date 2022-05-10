@@ -55,17 +55,32 @@ sub member ($self, $message) {
     return $self->db->resultset('Person')->find({ telegram_chatid => $message->from->id });
 }
 
-sub authorize ($self, $message) {
+=head1 authorize
+   
+   return unless $self->authorize($message);
+
+Check if the sender of the C<$message> is a currently valid member.
+
+   return unless $self->authorize($message, 'invalid_ok');
+
+Check if we know who this is, but allow the command to continue if they aren't paid up.
+
+=cut
+
+sub authorize ($self, $message, @tags) {
     my $member = $self->member($message);
+    my %tags = map {$_ => 1} @tags;
 
     if (!$member) {
         $message->reply("I don't know who you are.  Please use /identify and then try again.");
         return undef;
     }
 
+    return 1 if $tags{invalid_ok};
+
     if (!$member->is_valid) {
         $message->reply("I know who you are, but your membership has expired, as of ".$member->valid_until."."
-        # . "  If you need payment details again, please use the /bankinfo command.  ");
+        . "  If you need payment details again, please use the /bankinfo command.  "
         );
         return undef;
     }
@@ -79,7 +94,7 @@ sub read_message {
         memberstats => qr{^/memberstats},
         identify    => qr{^/identify},
         doorcode    => qr{^/doorcode},
-        # bankinfo    => qr{^/bankinfo},
+        bankinfo    => qr{^/bankinfo},
         tools       => qr{^/tools$},
         add_tool    => qr{^/add_tool},
         help        => qr{^/(help|start)},
@@ -97,6 +112,29 @@ sub read_message {
         return $self->resolve_callback($message);
     }
     $message->reply(qq<I don't know that command, sorry.  Try /help ?>);
+}
+
+sub bankinfo {
+    my ($self, $message) = @_;
+
+    return unless $self->authorize($message, 'invalid_ok');
+
+    my $member = $self->member($message);
+
+    my $dues = sprintf('%.2f', $member->dues / 100);
+    my $bank_ref = $member->bank_ref;
+
+    my $text = <<"END";
+Monthly fee: $dues/month</li>
+To: Swindon Makerspace
+Bank: Barclays
+Sort Code: 20-84-58
+Account: 83789160
+Ref: $bank_ref
+END
+
+    $message->reply($text);
+
 }
 
 sub memberstats {
