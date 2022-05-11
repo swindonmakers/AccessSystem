@@ -34,7 +34,7 @@ has 'db' => sub {
 has _mainconfig => undef;
 has 'mainconfig' => sub ($self) {
     if (!$self->_mainconfig) {
-        $self->_mainconfig(Config::General->new("$ENV{BOT_HOME}/accesssystem_api.conf")->getall());
+        $self->_mainconfig({Config::General->new("$ENV{BOT_HOME}/accesssystem_api.conf")->getall()});
     }
 
     if (wantarray) {
@@ -91,13 +91,15 @@ sub authorize ($self, $message, @tags) {
 sub read_message {
     my ($self, $message) = @_;
     my %methods = (
-        memberstats => qr{^/memberstats},
-        identify    => qr{^/identify},
-        doorcode    => qr{^/doorcode},
-        bankinfo    => qr{^/bankinfo},
-        tools       => qr{^/tools$},
-        add_tool    => qr{^/add_tool},
-        help        => qr{^/(help|start)},
+        memberstats   => qr{^/memberstats},
+        identify      => qr{^/identify},
+        doorcode      => qr{^/doorcode},
+        tools         => qr{^/tools$},
+        add_tool      => qr{^/add_tool},
+        induct_member => qr{^/induct\s},
+        inducted_on   => qr{^/inducted_on\s},
+        inductions    => qr{^/inductions\s},
+        help          => qr{^/(help|start)},
         );
 
     print STDERR ref $message;
@@ -111,12 +113,12 @@ sub read_message {
         print STDERR "Calling resolve\n";
         return $self->resolve_callback($message);
     }
-    $message->reply(qq<I don't know that command, sorry.  Try /help ?>);
+    if ($message->text =~ m{^/}) {
+        $message->reply(qq<I don't know that command, sorry.>);
+    }
 }
 
-sub bankinfo {
-    my ($self, $message) = @_;
-
+sub bankinfo ($self, $message) {
     return unless $self->authorize($message, 'invalid_ok');
 
     my $member = $self->member($message);
@@ -134,69 +136,56 @@ Ref: $bank_ref
 END
 
     $message->reply($text);
-
 }
 
-sub memberstats {
-    my ($self, $message) = @_;
-    
-    if($message->text =~ m{^/memberstats}) {
-        my $data = $self->db->resultset('Person')->membership_stats;
-        my $msg_text = "
+sub memberstats ($self, $message) {
+    my $data = $self->db->resultset('Person')->membership_stats;
+    my $msg_text = "
 Current members: " . ($data->{valid_members}{count} || 0) . " - (" . join(', ', map { "$_: " . ($data->{valid_members}{$_} || 0) } (qw/full concession otherspace adult child/)) . "),
 Ex members: " . ($data->{ex_members}{count} || 0) . " - (" . join(', ', map { "$_: " . ($data->{ex_members}{$_} || 0) } (qw/full concession otherspace/)) . "),
 Overdue members: " . ($data->{overdue_members}{count} || 0) ." - (" . join(', ', map { "$_: " . ($data->{overdue_members}{$_} || 0) } (qw/full concession otherspace/)) . "),
 Left this month: " . ($data->{recent_expired}{count} || 0) ." - (" . join(', ', map { "$_: " . ($data->{recent_expired}{$_} || 0) } (qw/full concession otherspace/)) . ")";
 
-        $message->reply($msg_text);
+    $message->reply($msg_text);
 
-        return;
-    }
+    return;
 }
 
-sub identify {
-    my ($self, $message) = @_;
-    
-    if($message->text =~ m{^/identify}) {
-        if($message->text =~ m{^/identify ([ -~]+\@[ -~]+)$}) {
-            my $email = $1;
-            # print STDERR "Email: $email\n";
-            my $members = $self->db->resultset('Person')->search_rs({
-                '-and' => [
-                    end_date => undef,
-                    \ ['LOWER(email) = ?', lc($email)],
-                   ]});
-            if($members->count == 1) {
-                my $url = 'http://localhost:3000/confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
-                # print STDERR "Calling: $url\n";
-                my $ua = LWP::UserAgent->new();
-                my $resp = $ua->get($url);
-                if (!$resp->is_success) {
-                    print STDERR "Failed: ", $resp->status_line, " ", $resp->content, "\n";
+sub identify ($self, $message) {
+    if($message->text =~ m{^/identify ([ -~]+\@[ -~]+)$}) {
+        my $email = $1;
+        # print STDERR "Email: $email\n";
+        my $members = $self->db->resultset('Person')->search_rs({
+            '-and' => [
+                end_date => undef,
+                \ ['LOWER(email) = ?', lc($email)],
+                ]});
+        if($members->count == 1) {
+            my $url = 'http://localhost:3000/confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
+            # print STDERR "Calling: $url\n";
+            my $ua = LWP::UserAgent->new();
+            my $resp = $ua->get($url);
+            if (!$resp->is_success) {
+                print STDERR "Failed: ", $resp->status_line, " ", $resp->content, "\n";
 
-                }
-                # my $member = $members->first;
-                # if(!$member->telegram_chatid) {
-                #     $member->update({ telegram_chatid => $message->from->id, telegram_username => $message->from->username });
-                #     $message->reply('Set your telegram chatid to ' . $message->from->id);
-                # } else {
-                #     $message->reply('Your telegram chatid is already set! Ask a director to unset it');
-                # }
-                $message->reply("You should have an email to confirm your membership/telegram mashup");
-            } else {
-                $message->reply("I can't find a member with that email address, try again or check https://inside.swindon-makerspace.org/profile");
             }
+            # my $member = $members->first;
+            # if(!$member->telegram_chatid) {
+            #     $member->update({ telegram_chatid => $message->from->id, telegram_username => $message->from->username });
+            #     $message->reply('Set your telegram chatid to ' . $message->from->id);
+            # } else {
+            #     $message->reply('Your telegram chatid is already set! Ask a director to unset it');
+            # }
+            $message->reply("You should have an email to confirm your membership/telegram mashup");
         } else {
-            $message->reply("That didn't look like an email address, try again?");
+            $message->reply("I can't find a member with that email address, try again or check https://inside.swindon-makerspace.org/profile");
         }
-
-       return;
+    } else {
+        $message->reply("That didn't look like an email address, try again?");
     }
 }
 
-sub doorcode {
-    my ($self, $message) = @_;
-    
+sub doorcode ($self, $message) {
     return unless $self->authorize($message);
 
     my $doorcode = $self->mainconfig->{code_a};
@@ -225,7 +214,8 @@ Add a new makerspace tool (especially if it requires induction)
 =cut
 
 sub add_tool ($self, $message) {
-    print "Add tool\n";
+    return unless $self->authorize($message);
+
     if ($message->text =~ m{/add_tool ([\w\d ]+)$}) {
         my $name = $1;
         print "Name: $name\n";
@@ -250,8 +240,101 @@ sub add_tool ($self, $message) {
                 ]]
             })
         });
+    } else {
+        return $message->reply("Try /add_tool <name of tool, letters, numbers and whitespace allowed>");
     }
 }
+
+=head2 induct_member
+
+Create an "allowed" link between a member and a tool
+
+=cut
+
+sub induct_member ($self, $message) {
+    return unless $self->authorize($message);
+
+    #                        /induct James Mastros on Point of Sale
+    if ($message->text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
+        my ($name, $tool_name) = ($1, $2);
+        my $member = $self->member($message);
+        my $tool = $self->db->resultset('Tool')->find({name => $tool_name});
+        if (!$tool) {
+            return $message->reply("I can't find a tool named $tool_name");
+        }
+        if ($tool && $member) {
+            if (!$member->allowed->find({ tool_id => $tool->id, is_admin => 1})) {
+                return $message->reply("You're not allowed to induct people on the $tool_name");
+            }
+            my $person = $self->db->resultset('Person')->find({name => $name});
+            if (!$person) {
+                return $message->reply("I can't find a person named $name");
+            }
+            if (!$person->is_valid) {
+                return $message->reply("I found $name but they aren't a paid-up member");
+            }
+            $person->create_related('allowed', { tool_id => $tool->id });
+            return $message->reply("Ok, inducted $name on $tool_name");
+        }   
+    }
+    return $message->reply("Try /induct <person name> on <tool name> or /help");
+}
+
+=head inductees
+
+Who is inducted on this thing?
+
+=cut
+
+sub inducted_on ($self, $message) {
+    return unless $self->authorize($message);
+
+    if ($message->text =~ m{^/inducted_on\s([\w\s\d]+)$}) {
+        my $tool_name = $1;
+        my $tool = $self->db->resultset('Tool')->find(
+            {
+                name => $tool_name,
+            },
+            {
+                prefetch=> {'allowed_people' => 'person'},
+            });
+        if (!$tool) {
+            return $message->reply("I can't find a tool named $tool_name");
+        }
+        my $str = join("\n", map { $_->person->name } ($tool->allowed_people));
+        if (!$str) {
+            $str = 'Nobody !?';
+        }
+        return $message->reply("Inducted on $tool_name:\n$str");
+    }
+}
+
+=head2 inductions
+
+What can this person use?
+
+=cut
+
+sub inductions ($self, $message) {
+    return unless $self->authorize($message);
+
+    if ($message->text =~ m{^/inductions\s([\w\s]+)$}) {
+        my $name = $1;
+        my $person = $self->db->resultset('Person')->find(
+            { name => $name },
+            { prefetch => {'allowed' => 'tool'}});
+        if (!$person) {
+            return $message->reply("I can't find a person named $name");
+        }
+
+        my $str = join("\n", map { $_->tool->name } ($person->allowed));
+        if (!$str) {
+            $str = 'Nothing !?';
+        }
+        return $message->reply("Inductions for $name:\n$str");        
+    }
+}
+    
 
 sub resolve_callback ($self, $callback) {
     my $waiting = $self->waiting_on_response->{$callback->from->id};
@@ -279,7 +362,7 @@ sub resolve_callback ($self, $callback) {
 sub help {
     my ($self, $message) = @_;
     if ($message->text =~ m!^/(help|start)!) {
-        $message->reply("I know /identify <your email address>, /memberstats, /doorcode");
+        $message->reply("I know /identify <your email address>, /memberstats, /doorcode, /tools, /add_tool, /induct, /inducted_on, /inductions");
     }
 }
 1;
