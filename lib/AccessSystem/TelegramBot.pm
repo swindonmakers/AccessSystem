@@ -25,11 +25,23 @@ has _db => undef;
 has 'db' => sub {
     my ($self) = @_;
     if(!$self->_db) {
-        my %mainconf = Config::General->new("$ENV{BOT_HOME}/accesssystem_api.conf")->getall();
-        my $db_info = $mainconf{'Model::AccessDB'}{connect_info};
+        my $db_info = $self->mainconfig->{'Model::AccessDB'}{connect_info};
         $self->_db(AccessSystem::Schema->connect($db_info->{dsn}, $db_info->{user}, $db_info->{password}));
     }
     return $self->_db();
+};
+
+has _mainconfig => undef;
+has 'mainconfig' => sub ($self) {
+    if (!$self->_mainconfig) {
+        $self->_mainconfig(Config::General->new("$ENV{BOT_HOME}/accesssystem_api.conf")->getall());
+    }
+
+    if (wantarray) {
+        return %{$self->_mainconfig};
+    } else {
+        return $self->_mainconfig;
+    }
 };
 
 has waiting_on_response => sub { return {}; };
@@ -43,12 +55,46 @@ sub member ($self, $message) {
     return $self->db->resultset('Person')->find({ telegram_chatid => $message->from->id });
 }
 
+=head1 authorize
+   
+   return unless $self->authorize($message);
+
+Check if the sender of the C<$message> is a currently valid member.
+
+   return unless $self->authorize($message, 'invalid_ok');
+
+Check if we know who this is, but allow the command to continue if they aren't paid up.
+
+=cut
+
+sub authorize ($self, $message, @tags) {
+    my $member = $self->member($message);
+    my %tags = map {$_ => 1} @tags;
+
+    if (!$member) {
+        $message->reply("I don't know who you are.  Please use /identify and then try again.");
+        return undef;
+    }
+
+    return 1 if $tags{invalid_ok};
+
+    if (!$member->is_valid) {
+        $message->reply("I know who you are, but your membership has expired, as of ".$member->valid_until."."
+        . "  If you need payment details again, please use the /bankinfo command.  "
+        );
+        return undef;
+    }
+
+    return 1;
+}
+
 sub read_message {
     my ($self, $message) = @_;
     my %methods = (
         memberstats => qr{^/memberstats},
         identify    => qr{^/identify},
         doorcode    => qr{^/doorcode},
+        bankinfo    => qr{^/bankinfo},
         tools       => qr{^/tools$},
         add_tool    => qr{^/add_tool},
         help        => qr{^/(help|start)},
@@ -65,7 +111,30 @@ sub read_message {
         print STDERR "Calling resolve\n";
         return $self->resolve_callback($message);
     }
-    $message->reply(qq<I don't know that command, sorry.>);
+    $message->reply(qq<I don't know that command, sorry.  Try /help ?>);
+}
+
+sub bankinfo {
+    my ($self, $message) = @_;
+
+    return unless $self->authorize($message, 'invalid_ok');
+
+    my $member = $self->member($message);
+
+    my $dues = sprintf('%.2f', $member->dues / 100);
+    my $bank_ref = $member->bank_ref;
+
+    my $text = <<"END";
+Monthly fee: $dues/month</li>
+To: Swindon Makerspace
+Bank: Barclays
+Sort Code: 20-84-58
+Account: 83789160
+Ref: $bank_ref
+END
+
+    $message->reply($text);
+
 }
 
 sub memberstats {
@@ -100,12 +169,12 @@ sub identify {
             if($members->count == 1) {
                 my $url = 'http://localhost:3000/confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
                 # print STDERR "Calling: $url\n";
-		my $ua = LWP::UserAgent->new();
-		my $resp = $ua->get($url);
-		if (!$resp->is_success) {
-		    print STDERR "Failed: ", $resp->status_line, " ", $resp->content, "\n";
+                my $ua = LWP::UserAgent->new();
+                my $resp = $ua->get($url);
+                if (!$resp->is_success) {
+                    print STDERR "Failed: ", $resp->status_line, " ", $resp->content, "\n";
 
-		}
+                }
                 # my $member = $members->first;
                 # if(!$member->telegram_chatid) {
                 #     $member->update({ telegram_chatid => $message->from->id, telegram_username => $message->from->username });
@@ -128,16 +197,11 @@ sub identify {
 sub doorcode {
     my ($self, $message) = @_;
     
-    if ($message->text =~ m!/doorcode!) {
-	my $member = $self->member($message);
-        if ($member && $member->is_valid) {
-            $message->reply("Use NNNN on the keypad by either external door of BSS House to get in at night.");
-        } elsif ($member) {
-            $message->reply("I know who you are, but you don't seem to be paid up, sorry");
-        } else {
-            $message->reply("I don't know who you are.  Please use /identify and then try again");
-        }
-    }
+    return unless $self->authorize($message);
+
+    my $doorcode = $self->mainconfig->{code_a};
+
+    $message->reply("Use $doorcode on the keypad by either external door of BSS House to get in at night.");
 }
 
 =head2 tools
