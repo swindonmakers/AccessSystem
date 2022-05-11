@@ -91,13 +91,15 @@ sub authorize ($self, $message, @tags) {
 sub read_message {
     my ($self, $message) = @_;
     my %methods = (
-        memberstats => qr{^/memberstats},
-        identify    => qr{^/identify},
-        doorcode    => qr{^/doorcode},
-        bankinfo    => qr{^/bankinfo},
-        tools       => qr{^/tools$},
-        add_tool    => qr{^/add_tool},
-        help        => qr{^/(help|start)},
+        memberstats   => qr{^/memberstats},
+        identify      => qr{^/identify},
+        doorcode      => qr{^/doorcode},
+        tools         => qr{^/tools$},
+        add_tool      => qr{^/add_tool},
+        induct_member => qr{^/induct\s},
+        inducted_on   => qr{^/inducted_on\s},
+        inductions    => qr{^/inductions\s},
+        help          => qr{^/(help|start)},
         );
 
     print STDERR ref $message;
@@ -111,7 +113,9 @@ sub read_message {
         print STDERR "Calling resolve\n";
         return $self->resolve_callback($message);
     }
-    $message->reply(qq<I don't know that command, sorry.  Try /help ?>);
+    if ($message->text =~ m{^/}) {
+        $message->reply(qq<I don't know that command, sorry.>);
+    }
 }
 
 sub bankinfo {
@@ -134,7 +138,6 @@ Ref: $bank_ref
 END
 
     $message->reply($text);
-
 }
 
 sub memberstats {
@@ -253,6 +256,95 @@ sub add_tool ($self, $message) {
     }
 }
 
+=head2 induct_member
+
+Create an "allowed" link between a member and a tool
+
+=cut
+
+sub induct_member ($self, $message) {
+    ## User calling this should be authorised with Telegram, paid up
+    ## AND be an admin on the tool
+    #                        /induct James Mastros on Point of Sale
+    if ($message->text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
+        my ($name, $tool_name) = ($1, $2);
+        my $member = $self->member($message);
+        my $tool = $self->db->resultset('Tool')->find({name => $tool_name});
+        if (!$tool) {
+            return $message->reply("I can't find a tool named $tool_name");
+        }
+        if ($tool && $member) {
+            if (!$member->allowed->find({ tool_id => $tool->id, is_admin => 1})) {
+                return $message->reply("You're not allowed to induct people on the $tool_name");
+            }
+            my $person = $self->db->resultset('Person')->find({name => $name});
+            if (!$person) {
+                return $message->reply("I can't find a person named $name");
+            }
+            if (!$person->is_valid) {
+                return $message->reply("I found $name but they aren't a paid-up member");
+            }
+            $person->create_related('allowed', { tool_id => $tool->id });
+            return $message->reply("Ok, inducted $name on $tool_name");
+        }   
+    }
+    return $message->reply("Try /induct <person name> on <tool name> or /help");
+}
+
+=head inductees
+
+Who is inducted on this thing?
+
+=cut
+
+sub inducted_on ($self, $message) {
+    ## Calling user should be authorised (and paid up?)
+    if ($message->text =~ m{^/inducted_on\s([\w\s\d]+)$}) {
+        my $tool_name = $1;
+        my $tool = $self->db->resultset('Tool')->find(
+            {
+                name => $tool_name,
+            },
+            {
+                prefetch=> {'allowed_people' => 'person'},
+            });
+        if (!$tool) {
+            return $message->reply("I can't find a tool named $tool_name");
+        }
+        my $str = join("\n", map { $_->person->name } ($tool->allowed_people));
+        if (!$str) {
+            $str = 'Nobody !?';
+        }
+        return $message->reply("Inducted on $tool_name:\n$str");
+    }
+}
+
+=head2 inductions
+
+What can this person use?
+
+=cut
+
+sub inductions ($self, $message) {
+    ## Calling user should be authorised (and paid up?)
+    if ($message->text =~ m{^/inductions\s([\w\s]+)$}) {
+        my $name = $1;
+        my $person = $self->db->resultset('Person')->find(
+            { name => $name },
+            { prefetch => {'allowed' => 'tool'}});
+        if (!$person) {
+            return $message->reply("I can't find a person named $name");
+        }
+
+        my $str = join("\n", map { $_->tool->name } ($person->allowed));
+        if (!$str) {
+            $str = 'Nothing !?';
+        }
+        return $message->reply("Inductions for $name:\n$str");        
+    }
+}
+    
+
 sub resolve_callback ($self, $callback) {
     my $waiting = $self->waiting_on_response->{$callback->from->id};
     if (!$waiting) {
@@ -279,7 +371,7 @@ sub resolve_callback ($self, $callback) {
 sub help {
     my ($self, $message) = @_;
     if ($message->text =~ m!^/(help|start)!) {
-        $message->reply("I know /identify <your email address>, /memberstats, /doorcode");
+        $message->reply("I know /identify <your email address>, /memberstats, /doorcode, /tools, /add_tool, /induct, /inducted_on, /inductions");
     }
 }
 1;
