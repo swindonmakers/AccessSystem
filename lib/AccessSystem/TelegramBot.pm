@@ -34,7 +34,7 @@ has 'db' => sub {
 has _mainconfig => undef;
 has 'mainconfig' => sub ($self) {
     if (!$self->_mainconfig) {
-        $self->_mainconfig(Config::General->new("$ENV{BOT_HOME}/accesssystem_api.conf")->getall());
+        $self->_mainconfig({Config::General->new("$ENV{BOT_HOME}/accesssystem_api.conf")->getall()});
     }
 
     if (wantarray) {
@@ -118,9 +118,7 @@ sub read_message {
     }
 }
 
-sub bankinfo {
-    my ($self, $message) = @_;
-
+sub bankinfo ($self, $message) {
     return unless $self->authorize($message, 'invalid_ok');
 
     my $member = $self->member($message);
@@ -140,66 +138,54 @@ END
     $message->reply($text);
 }
 
-sub memberstats {
-    my ($self, $message) = @_;
-    
-    if($message->text =~ m{^/memberstats}) {
-        my $data = $self->db->resultset('Person')->membership_stats;
-        my $msg_text = "
+sub memberstats ($self, $message) {
+    my $data = $self->db->resultset('Person')->membership_stats;
+    my $msg_text = "
 Current members: " . ($data->{valid_members}{count} || 0) . " - (" . join(', ', map { "$_: " . ($data->{valid_members}{$_} || 0) } (qw/full concession otherspace adult child/)) . "),
 Ex members: " . ($data->{ex_members}{count} || 0) . " - (" . join(', ', map { "$_: " . ($data->{ex_members}{$_} || 0) } (qw/full concession otherspace/)) . "),
 Overdue members: " . ($data->{overdue_members}{count} || 0) ." - (" . join(', ', map { "$_: " . ($data->{overdue_members}{$_} || 0) } (qw/full concession otherspace/)) . "),
 Left this month: " . ($data->{recent_expired}{count} || 0) ." - (" . join(', ', map { "$_: " . ($data->{recent_expired}{$_} || 0) } (qw/full concession otherspace/)) . ")";
 
-        $message->reply($msg_text);
+    $message->reply($msg_text);
 
-        return;
-    }
+    return;
 }
 
-sub identify {
-    my ($self, $message) = @_;
-    
-    if($message->text =~ m{^/identify}) {
-        if($message->text =~ m{^/identify ([ -~]+\@[ -~]+)$}) {
-            my $email = $1;
-            # print STDERR "Email: $email\n";
-            my $members = $self->db->resultset('Person')->search_rs({
-                '-and' => [
-                    end_date => undef,
-                    \ ['LOWER(email) = ?', lc($email)],
-                   ]});
-            if($members->count == 1) {
-                my $url = 'http://localhost:3000/confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
-                # print STDERR "Calling: $url\n";
-                my $ua = LWP::UserAgent->new();
-                my $resp = $ua->get($url);
-                if (!$resp->is_success) {
-                    print STDERR "Failed: ", $resp->status_line, " ", $resp->content, "\n";
+sub identify ($self, $message) {
+    if($message->text =~ m{^/identify ([ -~]+\@[ -~]+)$}) {
+        my $email = $1;
+        # print STDERR "Email: $email\n";
+        my $members = $self->db->resultset('Person')->search_rs({
+            '-and' => [
+                end_date => undef,
+                \ ['LOWER(email) = ?', lc($email)],
+                ]});
+        if($members->count == 1) {
+            my $url = 'http://localhost:3000/confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
+            # print STDERR "Calling: $url\n";
+            my $ua = LWP::UserAgent->new();
+            my $resp = $ua->get($url);
+            if (!$resp->is_success) {
+                print STDERR "Failed: ", $resp->status_line, " ", $resp->content, "\n";
 
-                }
-                # my $member = $members->first;
-                # if(!$member->telegram_chatid) {
-                #     $member->update({ telegram_chatid => $message->from->id, telegram_username => $message->from->username });
-                #     $message->reply('Set your telegram chatid to ' . $message->from->id);
-                # } else {
-                #     $message->reply('Your telegram chatid is already set! Ask a director to unset it');
-                # }
-                $message->reply("You should have an email to confirm your membership/telegram mashup");
-            } else {
-                $message->reply("I can't find a member with that email address, try again or check https://inside.swindon-makerspace.org/profile");
             }
+            # my $member = $members->first;
+            # if(!$member->telegram_chatid) {
+            #     $member->update({ telegram_chatid => $message->from->id, telegram_username => $message->from->username });
+            #     $message->reply('Set your telegram chatid to ' . $message->from->id);
+            # } else {
+            #     $message->reply('Your telegram chatid is already set! Ask a director to unset it');
+            # }
+            $message->reply("You should have an email to confirm your membership/telegram mashup");
         } else {
-            $message->reply("That didn't look like an email address, try again?");
+            $message->reply("I can't find a member with that email address, try again or check https://inside.swindon-makerspace.org/profile");
         }
-
-       return;
+    } else {
+        $message->reply("That didn't look like an email address, try again?");
     }
 }
 
-sub doorcode {
-    my ($self, $message) = @_;
-    
+sub doorcode ($self, $message) {
     return unless $self->authorize($message);
 
     my $doorcode = $self->mainconfig->{code_a};
@@ -228,7 +214,8 @@ Add a new makerspace tool (especially if it requires induction)
 =cut
 
 sub add_tool ($self, $message) {
-    print "Add tool\n";
+    return unless $self->authorize($message);
+
     if ($message->text =~ m{/add_tool ([\w\d ]+)$}) {
         my $name = $1;
         print "Name: $name\n";
@@ -253,6 +240,8 @@ sub add_tool ($self, $message) {
                 ]]
             })
         });
+    } else {
+        return $message->reply("Try /add_tool <name of tool, letters, numbers and whitespace allowed>");
     }
 }
 
@@ -263,8 +252,8 @@ Create an "allowed" link between a member and a tool
 =cut
 
 sub induct_member ($self, $message) {
-    ## User calling this should be authorised with Telegram, paid up
-    ## AND be an admin on the tool
+    return unless $self->authorize($message);
+
     #                        /induct James Mastros on Point of Sale
     if ($message->text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
         my ($name, $tool_name) = ($1, $2);
@@ -298,7 +287,8 @@ Who is inducted on this thing?
 =cut
 
 sub inducted_on ($self, $message) {
-    ## Calling user should be authorised (and paid up?)
+    return unless $self->authorize($message);
+
     if ($message->text =~ m{^/inducted_on\s([\w\s\d]+)$}) {
         my $tool_name = $1;
         my $tool = $self->db->resultset('Tool')->find(
@@ -326,7 +316,8 @@ What can this person use?
 =cut
 
 sub inductions ($self, $message) {
-    ## Calling user should be authorised (and paid up?)
+    return unless $self->authorize($message);
+
     if ($message->text =~ m{^/inductions\s([\w\s]+)$}) {
         my $name = $1;
         my $person = $self->db->resultset('Person')->find(
