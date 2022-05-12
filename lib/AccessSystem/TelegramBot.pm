@@ -72,7 +72,7 @@ sub authorize ($self, $message, @tags) {
     my %tags = map {$_ => 1} @tags;
 
     if (!$member) {
-        $message->reply("I don't know who you are.  Please use /identify and then try again.");
+        $message->reply("I don't know who you are.  Please use /identify <your email address> and then try again.");
         return undef;
     }
 
@@ -88,8 +88,7 @@ sub authorize ($self, $message, @tags) {
     return 1;
 }
 
-sub read_message {
-    my ($self, $message) = @_;
+sub read_message ($self, $message) {
     my %methods = (
         memberstats   => qr{^/memberstats},
         identify      => qr{^/identify},
@@ -102,8 +101,8 @@ sub read_message {
         help          => qr{^/(help|start)},
         );
 
-    print STDERR ref $message;
     if (ref $message eq 'Telegram::Bot::Object::Message') {
+        print STDERR $message->text, "\n";
         foreach my $method (keys %methods) {
             if ($message->text =~ /$methods{$method}/) {
                 return $self->$method($message);
@@ -161,7 +160,7 @@ sub identify ($self, $message) {
                 \ ['LOWER(email) = ?', lc($email)],
                 ]});
         if($members->count == 1) {
-            my $url = 'http://localhost:3000/confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
+            my $url = 'https://inside.swindon-makerspace.org/confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
             # print STDERR "Calling: $url\n";
             my $ua = LWP::UserAgent->new();
             my $resp = $ua->get($url);
@@ -169,13 +168,6 @@ sub identify ($self, $message) {
                 print STDERR "Failed: ", $resp->status_line, " ", $resp->content, "\n";
 
             }
-            # my $member = $members->first;
-            # if(!$member->telegram_chatid) {
-            #     $member->update({ telegram_chatid => $message->from->id, telegram_username => $message->from->username });
-            #     $message->reply('Set your telegram chatid to ' . $message->from->id);
-            # } else {
-            #     $message->reply('Your telegram chatid is already set! Ask a director to unset it');
-            # }
             $message->reply("You should have an email to confirm your membership/telegram mashup");
         } else {
             $message->reply("I can't find a member with that email address, try again or check https://inside.swindon-makerspace.org/profile");
@@ -362,7 +354,8 @@ sub resolve_callback ($self, $callback) {
 sub help {
     my ($self, $message) = @_;
     if ($message->text =~ m!^/(help|start)!) {
-        $message->reply("I know /identify <your email address>, /memberstats, /doorcode, /tools, /add_tool, /induct, /inducted_on, /inductions");
+        $message->reply(join("\n", "I know /identify <your email address>",
+                             "/memberstats", "/doorcode", "/tools", "/add_tool <tool", "/induct <name> on <tool>", "/inducted_on <tool>", "/inductions <member name>"));
     }
 }
 1;
