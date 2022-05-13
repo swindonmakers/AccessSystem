@@ -88,16 +88,26 @@ sub authorize ($self, $message, @tags) {
     return 1;
 }
 
+=head1 tool
+
+Given a bunch of text representing a tool, either return a tool row object, or reply to the message with a keyboard for them to pick it next time.
+
+=cut
+
+#sub tool ($self, $message) {
+#
+#}
+
 sub read_message ($self, $message) {
     my %methods = (
         memberstats   => qr{^/memberstats},
         identify      => qr{^/identify},
         doorcode      => qr{^/doorcode},
-        tools         => qr{^/tools$},
+        tools         => qr{^/tools},
         add_tool      => qr{^/add_tool},
-        induct_member => qr{^/induct\s},
-        inducted_on   => qr{^/inducted_on\s},
-        inductions    => qr{^/inductions\s},
+        induct_member => qr{^/induct\b},
+        inducted_on   => qr{^/inducted_on\b},
+        inductions    => qr{^/inductions\b},
         help          => qr{^/(help|start)},
         );
 
@@ -355,7 +365,8 @@ sub help {
     my ($self, $message) = @_;
     if ($message->text =~ m!^/(help|start)!) {
         $message->reply(join("\n", "I know /identify <your email address>",
-                             "/memberstats", "/doorcode", "/tools", "/add_tool <tool", "/induct <name> on <tool>", "/inducted_on <tool>", "/inductions <member name>"));
+                             "/memberstats", "/doorcode", "/tools", "/add_tool <tool>", "/induct <name> on <tool>", "/inducted_on <tool>", "/inductions <member name>"));
     }
 }
+
 1;
