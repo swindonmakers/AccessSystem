@@ -215,7 +215,7 @@ Add a new makerspace tool (especially if it requires induction)
 
 =cut
 
-sub add_tool ($self, $message, $args) {
+sub add_tool ($self, $message, $args = undef) {
     return unless $self->authorize($message);
 
     if (!$args) {
@@ -235,14 +235,14 @@ sub add_tool ($self, $message, $args) {
                         Telegram::Bot::Object::InlineKeyboardButton->new({
                             text => 'Yes',
                             callback_data => "add_tool|$name|Yes",
-                                                                         }),
+                        }),
                         Telegram::Bot::Object::InlineKeyboardButton->new({
                             text => 'No',
                             callback_data => "add_tool|$name|No",
-                                                                         }),
-                                        ]]
-                                                                                 })
-                                          });
+                        }),
+                    ]]
+                })
+            });
         } else {
             return $message->reply("Try /add_tool <name of tool, letters, numbers and whitespace allowed>");
         }
@@ -358,11 +358,12 @@ sub resolve_callback ($self, $callback) {
         return $callback->answer('Arghhh');
     }
     my @args = split(/\|/, $callback->data);
-    if ($waiting->{action} eq $args[0] && $waiting->{name} eq $args[1]
-        && $self->can('$args[0]')) {
+    print STDERR Data::Dumper::Dumper(\@args);
+    print STDERR $self->can('$args[0]') ? "I can\n" : "I can't\n";
+    if ($waiting->{action} eq $args[0] && $waiting->{name} eq $args[1]) {
         delete $self->waiting_on_response->{$callback->from->id};
         my $method = $args[0];
-        $self->$method($callback, \@args);
+        return $self->$method($callback, \@args);
     }
     return $callback->answer('Confused!');
 }
