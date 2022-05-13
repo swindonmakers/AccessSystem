@@ -119,7 +119,7 @@ sub read_message ($self, $message) {
             }
         }
     } elsif (ref $message eq 'Telegram::Bot::Object::CallbackQuery') {
-        print STDERR "Calling resolve\n";
+        # print STDERR "Calling resolve\n";
         return $self->resolve_callback($message);
     }
     if ($message->text =~ m{^/}) {
@@ -215,35 +215,48 @@ Add a new makerspace tool (especially if it requires induction)
 
 =cut
 
-sub add_tool ($self, $message) {
+sub add_tool ($self, $message, $args) {
     return unless $self->authorize($message);
 
-    if ($message->text =~ m{/add_tool ([\w\d ]+)$}) {
-        my $name = $1;
-        print "Name: $name\n";
-        # Each user can only have one response they're waiting on at a time?
-        $self->waiting_on_response()->{$message->from->id} = {
-            'action' => 'add_tool',
-                'name' => $name
-        };
-        $message->_brain->sendMessage({
-            chat_id => $message->chat->id,
-            text => "Adding $1 ... \nDoes it need induction?",
-            reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new({
-                inline_keyboard => [[
-                    Telegram::Bot::Object::InlineKeyboardButton->new({
-                        text => 'Yes',
-                        callback_data => "add_tool|$name|Yes",
-                    }),
-                    Telegram::Bot::Object::InlineKeyboardButton->new({
-                        text => 'No',
-                        callback_data => "add_tool|$name|No",
-                    }),
-                ]]
-            })
-        });
+    if (!$args) {
+        if ($message->text =~ m{/add_tool ([\w\d ]+)$}) {
+            my $name = $1;
+            print "Name: $name\n";
+            # Each user can only have one response they're waiting on at a time?
+            $self->waiting_on_response()->{$message->from->id} = {
+                'action' => 'add_tool',
+                    'name' => $name
+            };
+            $message->_brain->sendMessage({
+                chat_id => $message->chat->id,
+                text => "Adding $1 ... \nDoes it need induction?",
+                reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new({
+                    inline_keyboard => [[
+                        Telegram::Bot::Object::InlineKeyboardButton->new({
+                            text => 'Yes',
+                            callback_data => "add_tool|$name|Yes",
+                                                                         }),
+                        Telegram::Bot::Object::InlineKeyboardButton->new({
+                            text => 'No',
+                            callback_data => "add_tool|$name|No",
+                                                                         }),
+                                        ]]
+                                                                                 })
+                                          });
+        } else {
+            return $message->reply("Try /add_tool <name of tool, letters, numbers and whitespace allowed>");
+        }
     } else {
-        return $message->reply("Try /add_tool <name of tool, letters, numbers and whitespace allowed>");
+        # Done with callbacks, create
+        my $tool = $self->db->resultset('Tool')->update_or_create({
+            name => $args->[1],
+            requires_induction => $args->[2] eq 'Yes' ? 1 : 0,
+            team => '',
+        });
+        if (!$tool) {
+            return $message->answer('Failed');
+        }
+        return $message->answer('Created');
     }
 }
 
@@ -345,17 +358,11 @@ sub resolve_callback ($self, $callback) {
         return $callback->answer('Arghhh');
     }
     my @args = split(/\|/, $callback->data);
-    if ($waiting->{action} eq $args[0] && $waiting->{name} eq $args[1]) {
+    if ($waiting->{action} eq $args[0] && $waiting->{name} eq $args[1]
+        && $self->can('$args[0]')) {
         delete $self->waiting_on_response->{$callback->from->id};
-        my $tool = $self->db->resultset('Tool')->update_or_create({
-            name => $args[1],
-            requires_induction => $args[2] eq 'Yes' ? 1 : 0,
-            # team?
-        });
-        if (!$tool) {
-            return $callback->answer('Failed');
-        }
-        return $callback->answer('Created');
+        my $method = $args[0];
+        $self->$method($callback, \@args);
     }
     return $callback->answer('Confused!');
 }
