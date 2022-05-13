@@ -168,7 +168,7 @@ sub identify ($self, $message) {
                 print STDERR "Failed: ", $resp->status_line, " ", $resp->content, "\n";
 
             }
-            $message->reply("You should have an email to confirm your membership/telegram mashup");
+            $message->reply("You should receive an email to confirm your membership/telegram mashup");
         } else {
             $message->reply("I can't find a member with that email address, try again or check https://inside.swindon-makerspace.org/profile");
         }
