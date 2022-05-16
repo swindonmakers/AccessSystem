@@ -8,6 +8,7 @@ use Telegram::Bot::Object::InlineKeyboardButton;
 use Config::General;
 use LWP::Simple;
 use LWP::UserAgent;
+use JSON 'decode_json';
 use lib "$ENV{BOT_HOME}/lib";
 use AccessSystem::Schema;
 
@@ -76,7 +77,7 @@ sub authorize ($self, $message, @tags) {
         return undef;
     }
 
-    return 1 if $tags{invalid_ok};
+    return $member if $tags{invalid_ok};
 
     if (!$member->is_valid) {
         $message->reply("I know who you are, but your membership has expired, as of ".$member->valid_until."."
@@ -84,8 +85,12 @@ sub authorize ($self, $message, @tags) {
         );
         return undef;
     }
+    if ($message->chat->type ne 'private' && $tags{private}) {
+        $message->reply("This command should be done in a private chat");
+        return undef;
+    }
 
-    return 1;
+    return $member;
 }
 
 =head1 tool
@@ -108,6 +113,9 @@ sub read_message ($self, $message) {
         induct_member => qr{^/induct\b},
         inducted_on   => qr{^/inducted_on\b},
         inductions    => qr{^/inductions\b},
+        balance       => qr{^/balance},
+        prices        => qr{^/prices},
+        pay           => qr{^/pay},
         help          => qr{^/(help|start)},
         );
 
@@ -248,6 +256,7 @@ sub add_tool ($self, $message, $args = undef) {
         }
     } else {
         # Done with callbacks, create
+        delete $self->waiting_on_response->{$message->from->id};
         my $tool = $self->db->resultset('Tool')->update_or_create({
             name => $args->[1],
             requires_induction => $args->[2] eq 'Yes' ? 1 : 0,
@@ -349,19 +358,157 @@ sub inductions ($self, $message) {
         return $message->reply("Inductions for $name:\n$str");        
     }
 }
+
+=head2 balance
+
+Amount this member has in their makerspace account.
+
+=cut
+
+sub balance ($self, $message) {
+    my $member = $self->authorize($message, 'private');
+    return if !$member;
+
+    my $balance = $member->balance_p / 100;
+    return $message->reply("Your balance: " . sprintf("%.2f", $balance));
+}
+
+=head2 prices
+
+=cut
+
+sub prices ($self, $message) {
+    return unless $self->authorize($message, 'invalid_ok');
+
+    my $ua = LWP::UserAgent->new();
+    my $resp = $ua->get("https://inside.swindon-makerspace.org/assets/json/prices.json");
+    if (!$resp->is_success) {
+        print STDERR "Failed fetching prices ", $resp->status_line, "\n";
+        return $message->reply("Missing price list, poke the directors?");
+    }
+    my $prices = decode_json($resp->decoded_content)->{prices};
     
+    my $reply = '`';
+    foreach my $p (keys %{ $prices }) {
+        $reply .= sprintf("%-25s £%.2fp\n", $p, $prices->{$p}/100);
+    }
+    $reply .= '`';
+
+    return $message->_brain->sendMessage({
+        chat_id => $message->chat->id,
+        text => $reply,
+        parse_mode => 'MarkdownV2',
+    });
+}
+
+=head2 pay
+
+Members to pay for items bought from the space, from their balance.
+
+Display "keyboard" of products, keep doing so, collecting products
+picked + total value, until "review" is chosen, then display chosen
+items + total to finish.
+
+=cut
+
+sub pay ($self, $message, $args = undef) {
+#    my $member = $self->authorize($message, 'invalid_ok');
+    my $member = $self->authorize($message, 'private');
+    if (!$member) {
+        return;
+    }
+
+    # current prices
+    my $ua = LWP::UserAgent->new();
+    my $resp = $ua->get("https://inside.swindon-makerspace.org/assets/json/prices.json");
+    if (!$resp->is_success) {
+        print STDERR "Failed fetching prices ", $resp->status_line, "\n";
+        return $message->reply("Missing price list, poke the directors?");
+    }
+    my $prices = decode_json($resp->decoded_content)->{prices};
+    my $total = 0;
+    my @products = ();
+    # been around once, collect the data and add the new choice
+    if ($args) {
+        my $waiting = $self->waiting_on_response->{$message->from->id};
+        if (exists $prices->{$args->[1]}) {
+            $total = $waiting->{total} + $prices->{$args->[1]};
+            @products = (@{ $waiting->{products} }, $args->[1]);
+            $self->waiting_on_response->{$message->from->id}{total} = $total;
+            $self->waiting_on_response->{$message->from->id}{products} = \@products;
+            # its a callbackquery
+            $message = $message->message;
+        } elsif ($args->[1] eq 'cancel') {
+            ## ended selections - cancel whole thing
+            delete $self->waiting_on_response->{$message->from->id};
+            return $message->answer('Canceled');
+        } elsif ($args->[1] eq 'paying') {
+            ## ended selections create transaction
+            delete $self->waiting_on_response->{$message->from->id};
+            my ($status, $msg) = $member->add_debit($waiting->{total},
+                                                    join(",",@{$waiting->{products}}));
+            return $message->answer($msg);
+        }
+    } else {
+        $self->waiting_on_response->{$message->from->id} = {
+            action => 'pay',
+            total => $total,
+            products => \@products,
+        };
+    }
+    ## keyboard of prices
+    my $inline = $self->payment_keyboard($prices);
+    return $message->_brain->sendMessage({
+        chat_id => $message->chat->id,
+        text    => "Current selection: ". join(", ", @products) . sprintf("\nTotal: %.2f", $total /100),
+        reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new({
+            inline_keyboard => $inline,
+        })
+    });
+}
+
+sub payment_keyboard ($self, $prices) {
+    my @products = sort keys %$prices;
+    my @inline_keyb = ();
+    for (my $i = 0; $i <= $#products; $i += 2) {
+        push @inline_keyb, [
+            Telegram::Bot::Object::InlineKeyboardButton->new({
+                text => $products[$i],
+                callback_data => "pay|$products[$i]",
+            }),
+            ($i+1 <= $#products ?
+             Telegram::Bot::Object::InlineKeyboardButton->new({
+                 text => $products[$i+1],
+                 callback_data => "pay|$products[$i+1]",
+             })
+             : ()),
+        ];
+    }
+    push @inline_keyb, [
+        Telegram::Bot::Object::InlineKeyboardButton->new({
+            text => 'Pay',
+            callback_data => "pay|paying",
+        }),
+        Telegram::Bot::Object::InlineKeyboardButton->new({
+            text => 'Cancel',
+            callback_data => "pay|cancel",
+        }),
+    ];
+
+    return \@inline_keyb;
+}
 
 sub resolve_callback ($self, $callback) {
     my $waiting = $self->waiting_on_response->{$callback->from->id};
     if (!$waiting) {
         $callback->_brain->sendMessage({'chat_id' => $callback->message->chat->id, text => 'Confusion in the bot-brain, what are you responding to?'});
-        return $callback->answer('Arghhh');
+        return $callback->_brain->answerCallbackQuery({callback_query_id => $callback->id, text => 'Arghhh!', cache_time => 36000});
     }
     my @args = split(/\|/, $callback->data);
     print STDERR Data::Dumper::Dumper(\@args);
     print STDERR $self->can('$args[0]') ? "I can\n" : "I can't\n";
-    if ($waiting->{action} eq $args[0] && $waiting->{name} eq $args[1]) {
-        delete $self->waiting_on_response->{$callback->from->id};
+    if ($waiting->{action} eq $args[0]) {
+        # delete $self->waiting_on_response->{$callback->from->id};
         my $method = $args[0];
         return $self->$method($callback, \@args);
     }
@@ -373,7 +520,7 @@ sub help {
     my ($self, $message) = @_;
     if ($message->text =~ m!^/(help|start)!) {
         $message->reply(join("\n", "I know /identify <your email address>",
-                             "/memberstats", "/doorcode", "/tools", "/add_tool <tool>", "/induct <name> on <tool>", "/inducted_on <tool>", "/inductions <member name>"));
+                             "/memberstats", "/doorcode", "/tools", "/add_tool <tool>", "/induct <name> on <tool>", "/inducted_on <tool>", "/inductions <member name>", "/balance", "/prices", "/pay"));
     }
 }
 
