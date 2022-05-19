@@ -97,7 +97,7 @@ foreach my $person (@people) {
 }
 # All changed members:
 print "Updating " . scalar @updates . " people statuses in Sendinblue\n";
-print STDERR Dumper(\@updates);
+# print STDERR Dumper(\@updates);
 $sb->update_contacts(\@updates);
 
 # New members:
@@ -125,7 +125,7 @@ my $ended_people = $db_people->search({ end_date => { '!=' => undef }});;
 my @gone_people = grep { $ended_people->search({email => lc($_->{email})})->count >= 1} @people;
 
 print "Would remove " . scalar @gone_people . " members who left from Sendinblue\n";
-print STDERR Dumper(\@gone_people);
+# print STDERR Dumper(\@gone_people);
 exit;
 foreach my $person (@gone_people) {
     $sb->delete_contact($person);
