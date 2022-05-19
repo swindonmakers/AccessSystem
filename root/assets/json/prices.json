@@ -1,0 +1,16 @@
+{
+    "prices":
+    {
+        "disposable cup": 5,
+        "can (diet)": 30,
+        "can (full)": 40,
+        "ribena"    : 75,
+        "pot noodles": 100,
+        "crisps"    : 40,
+        "small choc bar": 25,
+        "large choc bar": 40,
+        "pork scratchings": 50,
+        "beef jerky": 50,
+        "laser job": 100
+    }
+}
