@@ -93,21 +93,36 @@ sub authorize ($self, $message, @tags) {
     return $member;
 }
 
-=head1 tool
+=head1 find_tool
 
 Given a bunch of text representing a tool, either return a tool row object, or reply to the message with a keyboard for them to pick it next time.
 
 =cut
 
-#sub tool ($self, $message) {
-#
-#}
+sub find_tool ($self, $name) {
+    my $tools_rs = $self->db->resultset('Tool')->search_rs({name => $name});
+    if ($tools_rs->count == 1) {
+        return ('success', $tools_rs->first);
+    }
+    $tools_rs = $self->db->resultset('Tool')->search_rs({ name => { '-ilike' => "${name}%"}});
+    if ($tools_rs->count == 1) {
+        return ('success', $tools_rs->first);
+    }
+    ## found more than one?
+    if ($tools_rs->count > 1) {
+        
+    } else {
+        return ('fail', []);
+    }
+
+}
 
 sub read_message ($self, $message) {
     my %methods = (
         memberstats   => qr{^/memberstats},
         identify      => qr{^/identify},
         doorcode      => qr{^/doorcode},
+        bankinfo      => qr{^/bankinfo},
         tools         => qr{^/tools},
         add_tool      => qr{^/add_tool},
         induct_member => qr{^/induct\b},
@@ -282,7 +297,7 @@ sub induct_member ($self, $message) {
     if ($message->text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
         my ($name, $tool_name) = ($1, $2);
         my $member = $self->member($message);
-        my $tool = $self->db->resultset('Tool')->find({name => $tool_name});
+        my ($status, $result) = $self->find_tool($tool_name);
         if (!$tool) {
             return $message->reply("I can't find a tool named $tool_name");
         }
@@ -442,7 +457,7 @@ sub pay ($self, $message, $args = undef) {
             ## ended selections - cancel whole thing
             delete $self->waiting_on_response->{$message->from->id};
             return $message->answer('Canceled');
-        } elsif ($args->[1] eq 'paying') {
+        } elsif ($args->[1] eq 'pay') {
             ## ended selections create transaction
             delete $self->waiting_on_response->{$message->from->id};
             my ($status, $msg) = $member->add_debit($waiting->{total},
@@ -457,7 +472,9 @@ sub pay ($self, $message, $args = undef) {
         };
     }
     ## keyboard of prices
-    my $inline = $self->payment_keyboard($prices);
+    #    my $inline = $self->payment_keyboard($prices);
+    my $keyboard_prices = [ map { sprintf("%s - %2.f", $_, $prices->{$_}) => $_ } (keys %$prices)]
+    my $inline = $self->generic_keyboard($keyboard_prices, , 2, ['Pay', 'Cancel']);
     return $message->_brain->sendMessage({
         chat_id => $message->chat->id,
         text    => "Current selection: ". join(", ", @products) . sprintf("\nTotal: %.2f", $total /100),
@@ -494,6 +511,31 @@ sub payment_keyboard ($self, $prices) {
             callback_data => "pay|cancel",
         }),
     ];
+
+    return \@inline_keyb;
+}
+
+# generic_keyboard('pay', {'foo 0.40' => 'foo', 'bar 1.00' => 'bar'}, 2, ['Pay', 'Cancel'])
+sub generic_keyboard ($self, $method, $values, $colcount, $endbuttons) {
+    my @items = sort keys %$values;
+    my @inline_keyb = ();
+    
+    for (my $i = 0; $i <= $#items; $i += $colcount) {
+        push @inline_keyb, [ map {
+            Telegram::Bot::Object::InlineKeyboardButton->new(
+                {
+                    text => $items[$i+$_],
+                    callback_data => $values{$items[$i+$_]},
+                }) } (0..$colcount-1)
+            ];
+    }
+    push @inline_keyb, [ map { 
+        Telegram::Bot::Object::InlineKeyboardButton->new(
+            {
+                text => $_,
+                callback_data => sprintf("$method|%s", $lc($_)),
+            }) } (@$endbuttons)
+        ];
 
     return \@inline_keyb;
 }
