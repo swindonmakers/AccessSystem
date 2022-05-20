@@ -1,5 +1,5 @@
 package AccessSystem::TelegramBot;
-
+no warnings 'experimental';
 use feature 'signatures';
 
 use Mojo::Base 'Telegram::Bot::Brain';
@@ -65,6 +65,10 @@ Check if the sender of the C<$message> is a currently valid member.
    return unless $self->authorize($message, 'invalid_ok');
 
 Check if we know who this is, but allow the command to continue if they aren't paid up.
+
+   'private'
+
+Only allowed via private message.
 
 =cut
 
@@ -297,7 +301,8 @@ sub induct_member ($self, $message) {
     if ($message->text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
         my ($name, $tool_name) = ($1, $2);
         my $member = $self->member($message);
-        my ($status, $result) = $self->find_tool($tool_name);
+        my ($status, $tool) = $self->find_tool($tool_name);
+
         if (!$tool) {
             return $message->reply("I can't find a tool named $tool_name");
         }
@@ -473,8 +478,8 @@ sub pay ($self, $message, $args = undef) {
     }
     ## keyboard of prices
     #    my $inline = $self->payment_keyboard($prices);
-    my $keyboard_prices = [ map { sprintf("%s - %2.f", $_, $prices->{$_}) => $_ } (keys %$prices)]
-    my $inline = $self->generic_keyboard($keyboard_prices, , 2, ['Pay', 'Cancel']);
+    my $keyboard_prices = { map { sprintf("%s - %.2f", $_, $prices->{$_}/100) => $_ } (keys %$prices)};
+    my $inline = $self->generic_keyboard('pay', $keyboard_prices, 2, ['Pay', 'Cancel']);
     return $message->_brain->sendMessage({
         chat_id => $message->chat->id,
         text    => "Current selection: ". join(", ", @products) . sprintf("\nTotal: %.2f", $total /100),
@@ -515,25 +520,42 @@ sub payment_keyboard ($self, $prices) {
     return \@inline_keyb;
 }
 
+
+=head1 generic_keyboard
+
+
+
+=end
+
 # generic_keyboard('pay', {'foo 0.40' => 'foo', 'bar 1.00' => 'bar'}, 2, ['Pay', 'Cancel'])
-sub generic_keyboard ($self, $method, $values, $colcount, $endbuttons) {
-    my @items = sort keys %$values;
-    my @inline_keyb = ();
-    
-    for (my $i = 0; $i <= $#items; $i += $colcount) {
-        push @inline_keyb, [ map {
-            Telegram::Bot::Object::InlineKeyboardButton->new(
-                {
-                    text => $items[$i+$_],
-                    callback_data => $values{$items[$i+$_]},
-                }) } (0..$colcount-1)
-            ];
+sub generic_keyboard ($self, $method, $values, $colcount, $endbuttons, $order=undef) {
+    my @items;
+    if (defined $order) {
+        @items = @$order;
+    } else {
+        @items = sort keys %$values;
     }
+    my @inline_keyb = ([]);
+    
+    for my $item (@items) {
+        push @{$inline_keyb[-1]}, Telegram::Bot::Object::InlineKeyboardButton->new(
+            {
+                text => $item,
+                callback_data => "$method|$values->{$item}",
+            }
+        );
+        # start new row.
+        if (@{$inline_keyb[-1]} == $colcount) {
+            push @inline_keyb, [];
+        }
+    }
+
+    # endbuttons always gets it's own row.
     push @inline_keyb, [ map { 
         Telegram::Bot::Object::InlineKeyboardButton->new(
             {
                 text => $_,
-                callback_data => sprintf("$method|%s", $lc($_)),
+                callback_data => sprintf("$method|%s", lc($_)),
             }) } (@$endbuttons)
         ];
 
