@@ -8,6 +8,7 @@ use Telegram::Bot::Object::InlineKeyboardButton;
 use Config::General;
 use LWP::Simple;
 use LWP::UserAgent;
+use Text::Fuzzy;
 use JSON 'decode_json';
 use lib "$ENV{BOT_HOME}/lib";
 use AccessSystem::Schema;
@@ -103,21 +104,37 @@ Given a bunch of text representing a tool, either return a tool row object, or r
 
 =cut
 
-sub find_tool ($self, $name) {
+sub find_tool ($self, $name, $method) {
     my $tools_rs = $self->db->resultset('Tool')->search_rs({name => $name});
     if ($tools_rs->count == 1) {
         return ('success', $tools_rs->first);
     }
-    $tools_rs = $self->db->resultset('Tool')->search_rs({ name => { '-ilike' => "${name}%"}});
+    $tools_rs = $self->db->resultset('Tool')->search_rs({ name => { '-like' => "%${name}%"}});
     if ($tools_rs->count == 1) {
         return ('success', $tools_rs->first);
     }
-    ## found more than one?
-    if ($tools_rs->count > 1) {
-        
-    } else {
-        return ('fail', []);
+
+    $tools_rs = $self->db->resultset('Tool');
+
+    my $fuzzy = Text::Fuzzy->new(lc $name);
+    $fuzzy->transpositions_ok(1);
+    my @possibles = map { 
+        +{row => $_, 
+            dist => $fuzzy->distance(lc $_->name), 
+            name => $_->name
+        } } $tools_rs->all;
+    @possibles = sort {$a->{dist} <=> $b->{dist} or $a->{name} cmp $b->{name}} @possibles;
+
+    my $keyboard_items = {};
+    my $keyboard_order = [];
+    print STDERR "in find_tool: \n";
+    for (@possibles) {
+        my $text = "$_->{name} -- $_->{dist}";
+        $keyboard_items->{$text} = "tool|$_->{name}";
+        push @$keyboard_order, $text;
     }
+
+    return ('keyboard', $self->generic_keyboard($method, $keyboard_items, 2, ['Cancel'], $keyboard_order));
 
 }
 
@@ -290,38 +307,91 @@ sub add_tool ($self, $message, $args = undef) {
 
 =head2 induct_member
 
-Create an "allowed" link between a member and a tool
+Create an "allowed" link between a member and a tool.
+
+The "member name" and "tool name" supplied by the original message do
+not need to be exact names as in the database. To enable them to be
+partial matches, we call L</find_tool> which will either return us the
+correct tool object, or an inline keyboard for the user to pick.
+
+After the keyboard has been selected from, we call induct_member again
+with the results ($args) and attempt to complete.
 
 =cut
 
-sub induct_member ($self, $message) {
+sub induct_member ($self, $message, $args = undef) {
     return unless $self->authorize($message);
 
     #                        /induct James Mastros on Point of Sale
-    if ($message->text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
+    my ($tool, $person, $p_status, $person_or_keyb, $t_status, $tool_or_keyb);
+    my $member = $self->member($message);
+    return if !$member;
+    ## callback answers only display as brief pops or (with show_alert
+    ## => 1) as modal confirm boxes, kinda ugly - need a method for
+    ## "use $callback->message->reply and then send empty answer.
+    my $reply = ref $message =~ /Message/ ? 'reply' : 'answer';
+    if (!$args && $message->text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
         my ($name, $tool_name) = ($1, $2);
-        my $member = $self->member($message);
-        my ($status, $tool) = $self->find_tool($tool_name);
 
-        if (!$tool) {
-            return $message->reply("I can't find a tool named $tool_name");
+        ($p_status, $person_or_keyb) = ('success', $self->db->resultset('Person')->find({name => $name}));
+        ($t_status, $tool_or_keyb) = $self->find_tool($tool_name, 'induct_member');
+        if ($p_status eq 'success') {
+            $person = $person_or_keyb;
+            $self->waiting_on_response->{$message->from->id}{person} = $person;
         }
-        if ($tool && $member) {
-            if (!$member->allowed->find({ tool_id => $tool->id, is_admin => 1})) {
-                return $message->reply("You're not allowed to induct people on the $tool_name");
-            }
-            my $person = $self->db->resultset('Person')->find({name => $name});
-            if (!$person) {
-                return $message->reply("I can't find a person named $name");
-            }
-            if (!$person->is_valid) {
-                return $message->reply("I found $name but they aren't a paid-up member");
-            }
-            $person->create_related('allowed', { tool_id => $tool->id });
-            return $message->reply("Ok, inducted $name on $tool_name");
-        }   
+        if ($t_status eq 'success') {
+            $tool = $tool_or_keyb;
+            $self->waiting_on_response->{$message->from->id}{tool} = $tool;
+        }
     }
-    return $message->reply("Try /induct <person name> on <tool name> or /help");
+    if ($args) {
+        ## We've (maybe) figured out which person/tool the user meant?
+        ## check callback / waiting data to see if we have both yet
+        my $waiting = $self->waiting_on_response->{$message->from->id};
+        ## for find_tool / find_person args are induct_member|tool|<name>
+        if ($args->[1] eq 'tool') {
+            $tool = $self->db->resultset('Tool')->find({name => $args->[2]});
+            $waiting->{tool} = $tool;
+        } elsif ($args->[1] eq 'person') {
+            $person = $self->db->resultset('Person')->find({name => $args->[2]});
+            $waiting->{person} = $person;
+        }
+        $tool ||= $waiting->{tool};
+        $person ||= $waiting->{person};
+    }
+    if ($tool && $person) {
+        ## we're done here, actually try and do the induction
+        # should we do this check before the find_person loop?
+        if (!$member->allowed->find({ tool_id => $tool->id, is_admin => 1})) {
+            return $message->$reply("You're not allowed to induct people on the " . $tool->name);
+        }
+        # do this in find_person?
+        if (!$person->is_valid) {
+            return $message->$reply("I found " . $person->name ." but they aren't a paid-up member");
+        }
+        $person->create_related('allowed', { tool_id => $tool->id });
+        return $message->$reply("Ok, inducted " . $person->name ." on " . $tool->name);
+    }
+
+    ## repeat this for person when we've done find_person:
+    if ($t_status eq 'keyboard') {
+        ## didnt find an exact match, user gets to pick:
+        my $waiting = $self->waiting_on_response->{$message->from->id} || {};
+        $waiting->{action} = 'induct_member';
+        $waiting->{type} = 'tool';
+        $self->waiting_on_response->{$message->from->id} = $waiting;
+
+        return $message->_brain->sendMessage(
+            {
+                chat_id => $message->chat->id,
+                text    => "No exact match for tool, pick one:",
+                reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new(
+                    {
+                        inline_keyboard => $tool_or_keyb,
+                    })
+            });
+    }
+    return $message->$reply("Try /induct <person name> on <tool name> or /help");
 }
 
 =head inductees
@@ -489,43 +559,21 @@ sub pay ($self, $message, $args = undef) {
     });
 }
 
-sub payment_keyboard ($self, $prices) {
-    my @products = sort keys %$prices;
-    my @inline_keyb = ();
-    for (my $i = 0; $i <= $#products; $i += 2) {
-        push @inline_keyb, [
-            Telegram::Bot::Object::InlineKeyboardButton->new({
-                text => $products[$i],
-                callback_data => "pay|$products[$i]",
-            }),
-            ($i+1 <= $#products ?
-             Telegram::Bot::Object::InlineKeyboardButton->new({
-                 text => $products[$i+1],
-                 callback_data => "pay|$products[$i+1]",
-             })
-             : ()),
-        ];
-    }
-    push @inline_keyb, [
-        Telegram::Bot::Object::InlineKeyboardButton->new({
-            text => 'Pay',
-            callback_data => "pay|paying",
-        }),
-        Telegram::Bot::Object::InlineKeyboardButton->new({
-            text => 'Cancel',
-            callback_data => "pay|cancel",
-        }),
-    ];
-
-    return \@inline_keyb;
-}
 
 
 =head1 generic_keyboard
 
+Send a "keyboard" of buttons to the user, so they can make one choice.
 
+Arguments:
 
-=end
+    "method" (string) = name of the method for the callback to pass data to
+    "values" (hashref) = key/value pairs, button text as the key, callback data as the value
+    "colcount" (integer) = number of columns of buttons on the keyboard
+    "endbuttons" (arrayref) = names for non-data buttons, lc versions will be used for the callback
+    "order" (arrayref, optional) = list of keys from "values", in the order they should be displayed.  Results are ill-defined if not all keys in the "values" hashref are in the "order" hashref.  If not provided, the items will be alphabetized.
+
+=cut
 
 # generic_keyboard('pay', {'foo 0.40' => 'foo', 'bar 1.00' => 'bar'}, 2, ['Pay', 'Cancel'])
 sub generic_keyboard ($self, $method, $values, $colcount, $endbuttons, $order=undef) {
@@ -536,8 +584,11 @@ sub generic_keyboard ($self, $method, $values, $colcount, $endbuttons, $order=un
         @items = sort keys %$values;
     }
     my @inline_keyb = ([]);
-    
+
+    # print STDERR Data::Dumper::Dumper($values);
+    print STDERR Data::Dumper::Dumper(\@items);
     for my $item (@items) {
+#        print STDERR "generic_keyboard item=$item, method=$method, data=$values->{$item}";
         push @{$inline_keyb[-1]}, Telegram::Bot::Object::InlineKeyboardButton->new(
             {
                 text => $item,
