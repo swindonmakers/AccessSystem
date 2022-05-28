@@ -41,6 +41,8 @@ Technologies
 
 * Barclayscrape - Pull current transactions from a Barclays bank account
 
+* Telegram::Bot::Brain - A Mojo based module to create a Telegram bot.
+
 INSTALL
 -------
 
@@ -52,25 +54,58 @@ INSTALL
 
 * Checkout this git repo, cd into the repo directory.
 
-* Install dependencies for this system: carton install --cached
+* Install dependencies for this system: carton install --deployment
 
+CONFIGURATION
+-------------
+
+Create a file *accesssystem_api.conf*, using *accesssystem_api.conf.example* as a template. This is an Apache style config file.
+
+Main things to add/edit:
+
+* dsn, user, password - Database connection string, see (https://metacpan.org/pod/DBI)[DBI docs] for details.
+* cc - for emails, add yours here for testing emails (else they are CC'd to info@swindon-makerspace.org)
+* namespace - if running this not in a / path, add the proxied path here
+* OneAll - logins for the /profile etc pages, details from your oneall account
 
 RUN
 ---
 
-This respository contains two pieces of software, the first is a thin layer over (https://metacpan.org/pod/RapidApp)[RadpiApp]. To run this, use the script:
+This respository contains two main pieces of software, the first is a thin layer over (https://metacpan.org/pod/RapidApp)[RadpiApp]. To run this, use the script:
 
-carton exec perl script/accesssystem_server.pl --port 3001
+CATALYST_HOME=$PWD carton exec perl script/accesssystem_server.pl --port 3001
 
 Which will start a service on http://localhost:3001/admin
 
 To run the API, use the script:
 
-carton exec perl script/accesssystem_api_server.pl --port 3000
+CATALYST_HOME=$PWD carton exec perl script/accesssystem_api_server.pl --port 3000
 
 Which will start a service on http://localhost:3000/
 
 NB: There is no index page on the API server, see below for details
+
+Telegram bot
+------------
+
+To run the telegram bot, you will need to contact @BotFather on telegram and setup your own test bot, it will give you an API key.
+
+The bot does not require Catalyst or RapidApp, it does require two config files:
+
+* accesssystem_api.conf - the Model::AccessDB section
+* keys.conf - create a keys.conf with the following:
+
+    <Telegram::Bot>
+        api <yourbotapikey>
+    </Telegram::Bot>
+
+Currently the bot requires a patch/branch of the Telegram::Bot::Brain code, checkout (or clone and checkout) the following repository/branch:
+
+git clone git@github.com:castaway/Telegram-Bot.git
+cd Telegram-Bot
+git checkout castaway/implement_callback_queries
+
+To run: BOT_HOME=$PWD carton exec perl -I <path to checkout>/lib script/access_telegram.pl
 
 API/UI
 ------

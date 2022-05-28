@@ -1,11 +1,27 @@
 <Model::AccessDB>
   <connect_info>
     dsn dbi:SQLite:db/test.db
+    # dsn  dbi:Pg:database=mydb;host=localhost;port=1234
+    # user XXX
+    # password YYY
   </connect_info>
 </Model::AccessDB>
 <HTML::FormHandlerX::Field::noCAPTCHA>
   site_key 6LdHZx0TAAAAAMuUdG-NScgCCbJ_HMyL1bdeM9vp
   secret_key 6LdHZx0TAAAAAEAnQyttqqhDkEVXfUcsnDLPGmvi
 </HTML::FormHandlerX::Field::noCAPTCHA>
+<emails>
+  cc fred@bloggs.com
+</emails>
+<Controller::Root>
+  namespace accesssystem
+</Controller::Root>
+<OneAll>
+  subdomain <yourdomain>
+  domain <yourdomain>.api.oneall.com
+  public_key <yourpubkey>
+  private_key <yourpriavtekey>
+  callback_url <yourdomain>/accesssystem/oneall_login_callback
+</OneAll>
 
 
