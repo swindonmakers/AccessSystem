@@ -4,9 +4,35 @@ use strict;
 use warnings;
 
 use Digest::MD5 qw(md5_hex);
+use Try::Tiny;
 use DateTime;
 
 use base 'DBIx::Class::ResultSet';
+
+sub find_person {
+    my ($self, $input) = @_;
+
+    my $person = $self->find({ name => $input });
+    if ($person) {
+        return $person;
+    }
+    my $people = $self->search_rs({ name => { '-like' => $input }});
+    if ($people->count == 1) {
+        return $people->first;
+    }
+    try {
+        # Pg syntax, but not other databases, sigh
+        my $pgpeople = $self->search_rs({ name => { '-ilike' => $input }});
+        if ($pgpeople->count == 1) {
+            $people = $pgpeople;
+            return $pgpeople->first;
+        }
+    } catch {
+        print "This is not Pg: $_\n";
+    };
+    warn "Add more people-finding magic here: $input failed\n";
+    return undef;
+}
 
 sub allowed_to_thing {
     my ($self, $token, $thing_guid) = @_;

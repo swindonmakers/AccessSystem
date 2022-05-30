@@ -34,3 +34,5 @@ requires 'Mojo::Base';
 requires 'Telegram::Bot::Brain';
 requires 'DBIx::Class::InflateColumn::Serializer::JSON';
 requires 'Text::Fuzzy';
+requires 'Try::Tiny';
+g
