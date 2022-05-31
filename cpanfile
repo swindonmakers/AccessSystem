@@ -35,3 +35,5 @@ requires 'Telegram::Bot::Brain';
 requires 'DBIx::Class::InflateColumn::Serializer::JSON';
 requires 'Text::Fuzzy';
 requires 'Try::Tiny';
+requires 'Text::CSV_XS';
+
