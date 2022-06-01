@@ -443,7 +443,7 @@ sub inductions ($self, $message) {
             return $message->reply("I can't find a person named $name");
         }
 
-        my $str = join("\n", map { $_->tool->name } ($person->allowed));
+        my $str = join("\n", map { $_->tool->name . ($_->is_admin ? ' (inductor)' : '') } ($person->allowed));
         if (!$str) {
             $str = 'Nothing !?';
         }
