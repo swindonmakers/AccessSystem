@@ -329,7 +329,9 @@ sub induct_member ($self, $message, $args = undef) {
     ## callback answers only display as brief pops or (with show_alert
     ## => 1) as modal confirm boxes, kinda ugly - need a method for
     ## "use $callback->message->reply and then send empty answer.
-    my $reply = ref $message =~ /Message/ ? 'reply' : 'answer';
+    my $reply = ref $message =~ /Callback/ ? 'answer' : 'reply';
+    print STDERR ref $message;
+    print STDERR " $reply\n";
     if (!$args && $message->text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
@@ -369,8 +371,8 @@ sub induct_member ($self, $message, $args = undef) {
         if (!$person->is_valid) {
             return $message->$reply("I found " . $person->name ." but they aren't a paid-up member");
         }
-        $person->create_related('allowed', { tool_id => $tool->id });
-        return $message->$reply("Ok, inducted " . $person->name ." on " . $tool->name);
+        $person->find_or_create_related('allowed', { tool_id => $tool->id, is_admin => 0 });
+        return $message->reply("Ok, inducted " . $person->name ." on " . $tool->name);
     }
 
     ## repeat this for person when we've done find_person:
