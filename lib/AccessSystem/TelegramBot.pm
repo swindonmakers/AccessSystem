@@ -1,5 +1,5 @@
 package AccessSystem::TelegramBot;
-no warnings 'experimental';
+no warnings 'experimental::signatures';
 use feature 'signatures';
 
 use Mojo::Base 'Telegram::Bot::Brain';
@@ -138,27 +138,75 @@ sub find_tool ($self, $name, $method) {
 
 }
 
+
+# sub help {
+#     my ($self, $message) = @_;
+#     if ($message->text =~ m!^/(help|start)!) {
+#         $message->reply(join("\n", "I know /identify <your email address>",
+#                              "/memberstats", "/doorcode", "/tools", "/add_tool <tool>", "/induct <name> on <tool>", "/inducted_on <tool>", "/inductions <member name>", "/balance", "/prices", "/pay"));
+#     }
+# }
+
 sub read_message ($self, $message) {
     my %methods = (
-        memberstats   => qr{^/memberstats},
-        identify      => qr{^/identify},
-        doorcode      => qr{^/doorcode},
-        bankinfo      => qr{^/bankinfo},
-        tools         => qr{^/tools},
-        add_tool      => qr{^/add_tool},
-        induct_member => qr{^/induct\b},
-        inducted_on   => qr{^/inducted_on\b},
-        inductions    => qr{^/inductions\b},
-        balance       => qr{^/balance},
-        prices        => qr{^/prices},
-        pay           => qr{^/pay},
-        help          => qr{^/(help|start)},
+        memberstats   => {
+            match => qr{^/memberstats},
+            help  => '/memberstats',
+        },
+        identify      => {
+            match => qr{^/identify},
+            help  => '/identify <your email address>',
+        },
+        doorcode      => {
+            match => qr{^/doorcode},
+            help  => '/doorcode',
+        },
+        bankinfo      => {
+            match => qr{^/bankinfo},
+            help  => '',
+
+        },
+        tools         => {
+            match => qr{^/tools},
+            help  => '/tools',
+        },
+        add_tool      => {
+            match => qr{^/add_tool},
+            help  => '/add_tool <tool>',
+        },
+        induct_member => {
+            match => qr{^/induct\b},,
+            help  => '/induct <name> on <tool>',
+        },
+        inducted_on   => {
+            match => qr{^/inducted_on\b},
+            help  => '/inducted_on <tool>',
+        },
+        inductions    => {
+            match => qr{^/inductions\b},
+            help  => '/inductions <member name>',
+        },
+        balance       => {
+            match => qr{^/balance},
+            help  => '/balance',
+        },
+        prices        => {
+            match => qr{^/prices},
+            help  => '/prices',
+        },
+        pay           => {
+            match => qr{^/pay},
+            help  => '/pay',
+        },
         );
 
     if (ref $message eq 'Telegram::Bot::Object::Message') {
-        print STDERR $message->text, "\n";
+        print STDERR $message->text, "\n" if ($message->text =~ q{^/});
+        if ($message->text =~ qr{^/(help|start)}) {
+            return $message->reply(join("\n", "I know: ", map {$methods{$_}->{help}} (sort keys %methods) ));
+        }
         foreach my $method (keys %methods) {
-            if ($message->text =~ /$methods{$method}/) {
+            if ($message->text =~ /$methods{$method}{match}/) {
                 return $self->$method($message);
             }
         }
@@ -632,13 +680,5 @@ sub resolve_callback ($self, $callback) {
     return $callback->answer('Confused!');
 }
 
-
-sub help {
-    my ($self, $message) = @_;
-    if ($message->text =~ m!^/(help|start)!) {
-        $message->reply(join("\n", "I know /identify <your email address>",
-                             "/memberstats", "/doorcode", "/tools", "/add_tool <tool>", "/induct <name> on <tool>", "/inducted_on <tool>", "/inductions <member name>", "/balance", "/prices", "/pay"));
-    }
-}
 
 1;
