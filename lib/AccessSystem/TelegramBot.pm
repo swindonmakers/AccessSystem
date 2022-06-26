@@ -138,15 +138,6 @@ sub find_tool ($self, $name, $method) {
 
 }
 
-
-# sub help {
-#     my ($self, $message) = @_;
-#     if ($message->text =~ m!^/(help|start)!) {
-#         $message->reply(join("\n", "I know /identify <your email address>",
-#                              "/memberstats", "/doorcode", "/tools", "/add_tool <tool>", "/induct <name> on <tool>", "/inducted_on <tool>", "/inductions <member name>", "/balance", "/prices", "/pay"));
-#     }
-# }
-
 sub read_message ($self, $message) {
     my %methods = (
         memberstats   => {
@@ -185,6 +176,10 @@ sub read_message ($self, $message) {
         inductions    => {
             match => qr{^/inductions\b},
             help  => '/inductions <member name>',
+        },
+        make_inductor => {
+            match => qr{^/make_inductor\b},
+            help  => '/make_inductor <member name> on <tool name>',
         },
         balance       => {
             match => qr{^/balance},
@@ -480,10 +475,13 @@ What can this person use?
 =cut
 
 sub inductions ($self, $message) {
-    return unless $self->authorize($message);
+    return unless my $member = $self->authorize($message);
 
-    if ($message->text =~ m{^/inductions\s([\w\s]+)$}) {
+    if ($message->text =~ m{^/inductions(?:\s([\w\s]+))?$}) {
         my $name = $1;
+        if (!$name) {
+            $name = $member->name;
+        }
         my $person = $self->db->resultset('Person')->find(
             { name => $name },
             { prefetch => {'allowed' => 'tool'}});
@@ -497,6 +495,101 @@ sub inductions ($self, $message) {
         }
         return $message->reply("Inductions for $name:\n$str");        
     }
+}
+
+=head2 make_inductor
+
+=cut
+
+sub make_inductor ($self, $message, $args = undef) {
+    return unless $self->authorize($message);
+
+    my $reply = ref($message) =~ /Callback/ ? 'answer' : 'reply';
+    my ($tool, $person, $p_status, $person_or_keyb, $t_status, $tool_or_keyb);
+
+    # Requestor is a valid member of the makerspace (paid up)
+    my $member = $self->member($message);
+    return if !$member;
+
+    # Something's very wrong if we have no Door .. 
+    my $door = $self->db->resultset('Tool')->find({ name => 'The Door' });
+    return if !$door;
+
+    ## Must be an admin, or existing inductor
+    my $allowed = $member->allowed->find({ tool_id => $door->id });
+    return if !$allowed;
+    # if (!$allowed->is_admin) {
+    #     return $message->$reply("You're not allowed to do that");
+    # }
+
+    if (!$args && $message->text =~ m{^/make_inductor\s([\w\s]+)\son\s([\w\s\d]+)$}) {
+        my ($name, $tool_name) = ($1, $2);
+
+        # Find the target person:
+        ($p_status, $person_or_keyb) = ('success', $self->db->resultset('Person')->find({name => $name}));
+        # Find the tool (or return a status which will display buttons)
+        ($t_status, $tool_or_keyb) = $self->find_tool($tool_name, 'make_inductor');
+        if ($p_status eq 'success') {
+            $person = $person_or_keyb;
+            $self->waiting_on_response->{$message->from->id}{person} = $person;
+        }
+        if ($t_status eq 'success') {
+            $tool = $tool_or_keyb;
+            $self->waiting_on_response->{$message->from->id}{tool} = $tool;
+        }
+
+    }
+    # args is the response from a button display, extract and set tool/person
+    if ($args) {
+        ## We've (maybe) figured out which person/tool the user meant?
+        ## check callback / waiting data to see if we have both yet
+        my $waiting = $self->waiting_on_response->{$message->from->id};
+
+        ## for find_tool / find_person args are induct_member|tool|<name>
+        if ($args->[1] eq 'tool') {
+            $tool = $self->db->resultset('Tool')->find({name => $args->[2]});
+            $waiting->{tool} = $tool;
+        } elsif ($args->[1] eq 'person') {
+            $person = $self->db->resultset('Person')->find({name => $args->[2]});
+            $waiting->{person} = $person;
+        }
+        $tool ||= $waiting->{tool};
+        $person ||= $waiting->{person};
+    }
+    if ($tool && $person) {
+        ## got all the details, actually try and do the induction
+        if (!$person->is_valid) {
+            return $message->$reply("I found " . $person->name ." but they aren't a paid-up member");
+        }
+        my $member_inductor = $member->allowed->find({ tool_id => $tool->id });
+        if (!$allowed || !$member_inductor->is_admin) {
+            # member is not a director, and not an inductor on the tool
+            return $message->$reply("You're not allowed to do that");
+        }
+        my $inducted = $person->find_or_create_related('allowed', { tool_id => $tool->id });
+        $inducted->update({ is_admin => 1 });
+        return $message->$reply("Ok, made " . $person->name ." an inductor on " . $tool->name);
+    }
+
+    # we didn't find an exact tool, display buttons to pick from instead
+    # (the buttons callback will re-run this whole method with $args set)
+    if ($t_status eq 'keyboard') {
+        my $waiting = $self->waiting_on_response->{$message->from->id} || {};
+        $waiting->{action} = 'make_inductor';
+        $waiting->{type} = 'tool';
+        $self->waiting_on_response->{$message->from->id} = $waiting;
+
+        return $message->_brain->sendMessage(
+            {
+                chat_id => $message->chat->id,
+                text    => "No exact match for tool, pick one:",
+                reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new(
+                    {
+                        inline_keyboard => $tool_or_keyb,
+                    })
+            });
+    }
+    return $message->$reply("Try /make_inductor <person name> on <tool name> or /help");
 }
 
 =head2 balance
@@ -671,7 +764,7 @@ sub resolve_callback ($self, $callback) {
     }
     my @args = split(/\|/, $callback->data);
     print STDERR Data::Dumper::Dumper(\@args);
-    print STDERR $self->can('$args[0]') ? "I can\n" : "I can't\n";
+    print STDERR $self->can("$args[0]") ? "I can\n" : "I can't\n";
     if ($waiting->{action} eq $args[0]) {
         # delete $self->waiting_on_response->{$callback->from->id};
         my $method = $args[0];
