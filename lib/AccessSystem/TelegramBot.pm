@@ -505,25 +505,30 @@ sub make_inductor ($self, $message, $args = undef) {
     return unless $self->authorize($message);
 
     my $reply = ref($message) =~ /Callback/ ? 'answer' : 'reply';
-    print STDERR ref $message;
-    print STDERR " $reply\n";
     my ($tool, $person, $p_status, $person_or_keyb, $t_status, $tool_or_keyb);
+
+    # Requestor is a valid member of the makerspace (paid up)
     my $member = $self->member($message);
     return if !$member;
+
+    # Something's very wrong if we have no Door .. 
     my $door = $self->db->resultset('Tool')->find({ name => 'The Door' });
     return if !$door;
+
+    ## Must be an admin, or existing inductor
     my $allowed = $member->allowed->find({ tool_id => $door->id });
     return if !$allowed;
-    if (!$allowed->is_admin) {
-        return $message->$reply("You're not allowed to do that");
-    }
+    # if (!$allowed->is_admin) {
+    #     return $message->$reply("You're not allowed to do that");
+    # }
 
     if (!$args && $message->text =~ m{^/make_inductor\s([\w\s]+)\son\s([\w\s\d]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
+        # Find the target person:
         ($p_status, $person_or_keyb) = ('success', $self->db->resultset('Person')->find({name => $name}));
+        # Find the tool (or return a status which will display buttons)
         ($t_status, $tool_or_keyb) = $self->find_tool($tool_name, 'make_inductor');
-        print "Looking for tool\n";
         if ($p_status eq 'success') {
             $person = $person_or_keyb;
             $self->waiting_on_response->{$message->from->id}{person} = $person;
@@ -534,10 +539,12 @@ sub make_inductor ($self, $message, $args = undef) {
         }
 
     }
+    # args is the response from a button display, extract and set tool/person
     if ($args) {
         ## We've (maybe) figured out which person/tool the user meant?
         ## check callback / waiting data to see if we have both yet
         my $waiting = $self->waiting_on_response->{$message->from->id};
+
         ## for find_tool / find_person args are induct_member|tool|<name>
         if ($args->[1] eq 'tool') {
             $tool = $self->db->resultset('Tool')->find({name => $args->[2]});
@@ -550,18 +557,23 @@ sub make_inductor ($self, $message, $args = undef) {
         $person ||= $waiting->{person};
     }
     if ($tool && $person) {
-        ## we're done here, actually try and do the induction
+        ## got all the details, actually try and do the induction
         if (!$person->is_valid) {
             return $message->$reply("I found " . $person->name ." but they aren't a paid-up member");
+        }
+        my $member_inductor = $member->allowed->find({ tool_id => $tool->id });
+        if (!$allowed || !$member_inductor->is_admin) {
+            # member is not a director, and not an inductor on the tool
+            return $message->$reply("You're not allowed to do that");
         }
         my $inducted = $person->find_or_create_related('allowed', { tool_id => $tool->id });
         $inducted->update({ is_admin => 1 });
         return $message->$reply("Ok, made " . $person->name ." an inductor on " . $tool->name);
     }
 
-    ## repeat this for person when we've done find_person:
+    # we didn't find an exact tool, display buttons to pick from instead
+    # (the buttons callback will re-run this whole method with $args set)
     if ($t_status eq 'keyboard') {
-        ## didnt find an exact match, user gets to pick:
         my $waiting = $self->waiting_on_response->{$message->from->id} || {};
         $waiting->{action} = 'make_inductor';
         $waiting->{type} = 'tool';
