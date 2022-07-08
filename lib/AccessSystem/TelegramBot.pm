@@ -562,12 +562,12 @@ sub make_inductor ($self, $message, $args = undef) {
             return $message->$reply("I found " . $person->name ." but they aren't a paid-up member");
         }
         my $member_inductor = $member->allowed->find({ tool_id => $tool->id });
-        if (!$allowed || !$member_inductor->is_admin) {
+        if (!$allowed->is_admin && ($member_inductor && !$member_inductor->is_admin)) {
             # member is not a director, and not an inductor on the tool
             return $message->$reply("You're not allowed to do that");
         }
-        my $inducted = $person->find_or_create_related('allowed', { tool_id => $tool->id });
-        $inducted->update({ is_admin => 1 });
+        my $inducted = $person->find_or_create_related('allowed', { tool_id => $tool->id, is_admin => 1 });
+        # $inducted->update({ is_admin => 1 });
         return $message->$reply("Ok, made " . $person->name ." an inductor on " . $tool->name);
     }
 
