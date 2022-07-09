@@ -62,7 +62,7 @@ for my $n (1..$#machines) {
 
     my $tool_row;
     if ($create_tools) {
-        $tool_row = $schema->resultset('Tool')->find_or_create({name => $_, requires_induction => 1});
+        $tool_row = $schema->resultset('Tool')->find_or_create({name => $_, requires_induction => 1, team => 'Unknown'});
     } else {
         $tool_row = $schema->resultset('Tool')->find({name => $_});
         if (!$tool_row) {

@@ -43,7 +43,7 @@ CREATE TABLE people (
   how_found_us character varying(50),
   github_user character varying(255),
   telegram_username character varying(255),
-  telegram_chatid integer,
+  telegram_chatid bigint,
   google_id character varying(255),
   concessionary_rate_override character varying(255) DEFAULT '',
   payment_override float,

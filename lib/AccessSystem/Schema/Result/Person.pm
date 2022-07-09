@@ -132,7 +132,7 @@ __PACKAGE__->add_columns(
         is_nullable => 1,
     },
     telegram_chatid => {
-        data_type => 'integer',
+        data_type => 'bigint',
         is_nullable => 1,
     },
     google_id => {
