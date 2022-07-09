@@ -460,7 +460,17 @@ sub inducted_on ($self, $message) {
         if (!$tool) {
             return $message->reply("I can't find a tool named $tool_name");
         }
-        my $str = join("\n", map { $_->person->name } ($tool->allowed_people));
+        my $str = join("\n", map {
+            $_->person->name . ($_->is_admin ? ' (inductor)' : '')
+                       }
+            ($tool->allowed_people->search(
+                 {}, {
+                     order_by => [
+                         { '-desc' => 'me.is_admin'},
+                         {'-asc' => 'person.name'}],
+                     prefetch => 'person'} )
+            )
+        );
         if (!$str) {
             $str = 'Nobody !?';
         }
