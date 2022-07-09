@@ -257,15 +257,20 @@ sub identify ($self, $message) {
                 \ ['LOWER(email) = ?', lc($email)],
                 ]});
         if($members->count == 1) {
-            my $url = 'https://inside.swindon-makerspace.org/confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
-            # print STDERR "Calling: $url\n";
-            my $ua = LWP::UserAgent->new();
-            my $resp = $ua->get($url);
-            if (!$resp->is_success) {
-                print STDERR "Failed: ", $resp->status_line, " ", $resp->content, "\n";
-
+            if (!$members->first->telegram_chatid) {
+                my $url = 'https://inside.swindon-makerspace.org/confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
+                # print STDERR "Calling: $url\n";
+                my $ua = LWP::UserAgent->new();
+                my $resp = $ua->get($url);
+                if (!$resp->is_success) {
+                    print STDERR "Failed: ", $resp->status_line, " ", $resp->content, "\n";
+                    $message->reply("I attempted to email you but.. that didn't work, go poke Jess R about that");
+                } else {
+                    $message->reply("You should receive an email to confirm your membership/telegram mashup");
+                }
+            } else {
+                $message->reply("It appears you're already identified, if it's not working regardless, poke Jess R");
             }
-            $message->reply("You should receive an email to confirm your membership/telegram mashup");
         } else {
             $message->reply("I can't find a member with that email address, try again or check https://inside.swindon-makerspace.org/profile");
         }
