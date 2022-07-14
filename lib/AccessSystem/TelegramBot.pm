@@ -375,7 +375,6 @@ with the results ($args) and attempt to complete.
 sub induct_member ($self, $text, $message, $args = undef) {
     return unless $self->authorize($message);
 
-    #                        /induct James Mastros on Point of Sale
     my ($tool, $person, $p_status, $person_or_keyb, $t_status, $tool_or_keyb);
     my $member = $self->member($message);
     return if !$member;
@@ -383,9 +382,8 @@ sub induct_member ($self, $text, $message, $args = undef) {
     ## => 1) as modal confirm boxes, kinda ugly - need a method for
     ## "use $callback->message->reply and then send empty answer.
     my $reply = ref($message) =~ /Callback/ ? 'answer' : 'reply';
-    print STDERR ref $message;
-    print STDERR " $reply\n";
-    if (!$args && $text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
+    #                                  /induct James Mastros on Point of Sale
+    if (!$args && $message->text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
         ($p_status, $person_or_keyb) = ('success', $self->db->resultset('Person')->find_person($name));
@@ -424,8 +422,16 @@ sub induct_member ($self, $text, $message, $args = undef) {
         if (!$person->is_valid) {
             return $message->$reply("I found " . $person->name ." but they aren't a paid-up member");
         }
-        $person->find_or_create_related('allowed', { tool_id => $tool->id, is_admin => 0 });
-        return $message->$reply("Ok, inducted " . $person->name ." on " . $tool->name);
+        my $p_allowed = $person->find_or_create_related('allowed', { tool_id => $tool->id, is_admin => 0 });
+        $p_allowed->discard_changes();
+        # send a confirmation email or telegram msg
+        if ($p_allowed->pending_acceptance) {
+            $self->confirm_induction($message, $p_allowed);
+            return $message->$reply("Ok, inducted " . $person->name ." on " . $tool->name . ' (they should have a confirmation message)');
+        } else {
+            print "No need to confirm, already accepted\n";
+            return $message->$reply('It looks like ' . $person->name . ' is already inducted on that and accepted it');
+        }
     }
 
     ## repeat this for person when we've done find_person:
@@ -509,7 +515,7 @@ sub inductions ($self, $text, $message) {
             return $message->reply("I can't find a person named $name");
         }
 
-        my $str = join("\n", map { $_->tool->name . ($_->is_admin ? ' (inductor)' : '') } ($person->allowed));
+        my $str = join("\n", map { $_->tool->name . ($_->pending ? ' (pending)' : ''). ($_->is_admin ? ' (inductor)' : '') } ($person->allowed));
         if (!$str) {
             $str = 'Nothing !?';
         }
@@ -787,12 +793,63 @@ sub resolve_callback ($self, $callback) {
     print STDERR Data::Dumper::Dumper(\@args);
     print STDERR $self->can("$args[0]") ? "I can\n" : "I can't\n";
     if ($waiting->{action} eq $args[0]) {
-        # delete $self->waiting_on_response->{$callback->from->id};
+        my @w_args = @{ $waiting->{args} || [] };
         my $method = $args[0];
-        return $self->$method($waiting->{text}, $callback, \@args);
+        return $self->$method($callback, @w_args, \@args);
     }
     return $callback->answer('Confused!');
 }
 
+sub confirm_induction ($self, $message, $allowed, $args = undef) {
+    # if inductee has identified with telegram? if so send an inline keyboard
+    print "Confirm induction\n";
+    if (!$args) {
+        print "No args\n";
+        my $in_chat = $allowed->person->telegram_chatid
+            ? $message->_brain->getChatMember($message->chat->id, $allowed->person->telegram_chatid)
+            : undef;
+        print "Called getChatMember with " . $allowed->person->telegram_chatid . "\n";
+        if ($message->chat->type ne 'private'
+            && $in_chat
+            && $in_chat->status =~ /^creator|adminstrator|member|restricted$/) {
+            ## Not a direct message and target is in the chat..
+            print "Found person in this chat\n";
+            $self->waiting_on_response()->{$allowed->person->telegram_chatid} = {
+                'action' => 'confirm_induction',
+                    'args' => [ $allowed ],
+            };
+
+            return $message->_brain->sendMessage({
+                chat_id => $message->chat->id,
+                text    => '@' . $allowed->person->telegram_username . ' Please confirm that you understand the safety induction for using the ' . $allowed->tool->name . ' and take responsibility for your actions while using it.',
+                reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new({
+                    inline_keyboard => [[
+                        Telegram::Bot::Object::InlineKeyboardButton->new({
+                            text => 'I confirm',
+                            callback_data => "confirm_induction|Yes",
+                        }),
+                        Telegram::Bot::Object::InlineKeyboardButton->new({
+                            text => 'I have not been inducted',
+                            callback_data => "confirm_induction|No",
+                        }),
+                    ]]
+                })
+            });
+        } else {
+            # send an email
+            print "Didn't find them in this chat!?\n";
+        }
+    } else {
+        # args (result of a telegram confirmation)
+        delete $self->waiting_on_response->{$message->from->id};
+        if ($args->[1] eq 'Yes') {
+            $allowed->update({ pending_acceptance => 'false'});
+            return $message->answer('Ok, confirmed');
+        } else {
+            $allowed->delete();
+            return $message->answer('Ok, induction deleted');
+        }
+    }
+}
 
 1;

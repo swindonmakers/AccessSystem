@@ -20,6 +20,10 @@ __PACKAGE__->add_columns(
     is_admin => {
         data_type => 'boolean',
     },
+    pending_acceptance => {
+        data_type => 'boolean',
+        default_value => 'true',
+    },
     added_on => {
         data_type => 'datetime',
         set_on_create => 1,
@@ -31,6 +35,20 @@ __PACKAGE__->uuid_columns(qw/tool_id/);
 __PACKAGE__->set_primary_key('person_id', 'tool_id');
 __PACKAGE__->belongs_to('person', 'AccessSystem::Schema::Result::Person', 'person_id');
 __PACKAGE__->belongs_to('tool', 'AccessSystem::Schema::Result::Tool', 'tool_id');
+
+sub pending {
+    my ($self) = @_;
+
+    print "Type: " . $self->result_source->schema->storage->sqlt_type . "\n";
+    if ($self->result_source->schema->storage->sqlt_type =~ /sqlite/i) {
+        if ($self->pending_acceptance eq 'true') {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+    return $self->pending_acceptance;
+}
 
 1;
 
