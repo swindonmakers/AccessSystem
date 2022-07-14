@@ -582,7 +582,7 @@ sub make_inductor ($self, $message, $args = undef) {
             return $message->$reply("You're not allowed to do that");
         }
         my $inducted = $person->find_or_create_related('allowed', { tool_id => $tool->id, is_admin => 1 });
-        # $inducted->update({ is_admin => 1 });
+        $inducted->update({ is_admin => 1 });
         return $message->$reply("Ok, made " . $person->name ." an inductor on " . $tool->name);
     }
 
