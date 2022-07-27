@@ -97,10 +97,11 @@ for my $row (@$csv_aoa) {
         } elsif ($val eq 'x') {
             # Won't overwrite an existing admin premission, which I think is what we want.
             $person_row->find_or_create_related('allowed', { tool_id => $machine_row->id, is_admin => 0 });
-        } elsif ($val =~ '^(owner|loan|inductor).*') {
+        } elsif ($val =~ /^(owner|loan|inductor).*/s) {
             # Some strange bits appear against Damian, thus the .*
             # Won't overwrite an existing not-admin premission, which I'm not sure about.
-            $person_row->find_or_create_related('allowed', { tool_id => $machine_row->id, is_admin => 1 });
+            my $allowed = $person_row->find_or_create_related('allowed', { tool_id => $machine_row->id, is_admin => 1 });
+            $allowed->update({ is_admin => 1 });
         } else {
             die "Unhandled induction val '$val' for $person_name / ".$machine_row->name;
         }

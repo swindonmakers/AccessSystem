@@ -18,18 +18,21 @@ sub find_person {
     }
     my $people = $self->search_rs({ name => { '-like' => $input }});
     if ($people->count == 1) {
-        return $people->first;
+        $person = $people->first;
     }
+    return $person if $person;
     try {
         # Pg syntax, but not other databases, sigh
         my $pgpeople = $self->search_rs({ name => { '-ilike' => $input }});
         if ($pgpeople->count == 1) {
             $people = $pgpeople;
-            return $pgpeople->first;
+            $person = $pgpeople->first;
         }
     } catch {
         print "This is not Pg: $_\n";
     };
+    return $person if $person;
+    
     warn "Add more people-finding magic here: $input failed\n";
     return undef;
 }
