@@ -635,6 +635,85 @@ sub post_confirm: Chained('base'): PathPart('post_confirm'): Arg(0) {
     $c->stash->{template} = 'post_confirm.tt';
 }
 
+sub send_induction_acceptance: Chained('base'): PathPart('send_induction_acceptance'): Args(0) {
+    my ($self, $c) = @_;
+
+    my $tool_id = $c->req->params->{tool};
+    my $person_id = $c->req->params->{person};
+    my $allowed = $c->model('AccessDB::Allowed')->search_rs({
+        tool_id => $tool_id,
+        person_id => $person_id,
+        pending_acceptance => 'true'
+    });
+    my $success = 0;
+    my $msg = '';
+    if ($allowed->count == 1) {
+        my $allowed_row = $allowed->first;
+        my $member = $allowed_row->person;
+        my $token = Data::GUID->new->as_string();
+        $member->confirmations->create({
+            token => $token,
+            storage => {
+                tool_id => $tool_id,
+                person_id => $person_id,
+                },
+        });
+        $c->stash->{email} = {
+                to => $member->email,
+                cc => $c->config->{email}{cc},
+                from => 'info@swindon-makerspace.org',
+                subject => 'Swindon Makerspace Induction Confirmation',
+                body => "
+Dear " . $member->name . ",
+
+You have been inducted on the ". $allowed_row->tool->name . "Please confirm that you understand the safety induction for using the tool, and that you take responsibility for your actions while using it.
+
+Follow this link to confirm: " . $c->uri_for('confirm_induction', { token => $token }) . "
+
+Regards,
+
+Swindon Makerspace
+",
+        };
+        ## Store the comms:
+        $member->communications_rs->create({
+            type => 'induction_confirm',
+            content => $c->stash->{email}{body},
+        });
+        $c->forward($c->view('Email'));
+        $success = 1;
+   } else {
+        $msg = "I can't find a member with that email address, or there are more than one of them!";
+    }
+    $c->stash(
+        json => {
+            ( $msg ? (error => $msg) : () ),
+                success => $success,
+        });
+    $c->forward($c->view('JSON'));
+    my $token = $c->req->params->{token};
+}
+
+sub confirm_induction: Chained('base'): PathPart('confirm_induction'): Args(0) {
+    my ($self, $c) = @_;
+   
+    my $token = $c->req->params->{token};
+    my $confirm = $c->model('AccessDB::Confirm')->find({ token => $token });
+    if ($confirm) {
+        my $induction_update = $confirm->storage;
+        $confirm->person->allowed->find({ tool_id => $induction_update->{tool_id}})->update({ pending_acceptance => 'false'});
+        $confirm->delete();
+    }
+    return $c->res->redirect($c->uri_for('post_confirm'));
+}
+
+# sub post_confirm: Chained('base'): PathPart('post_confirm'): Arg(0) {
+#     my ($self, $c) = @_;
+
+#     $c->stash->{current_page} = 'post_confirm';
+#     $c->stash->{template} = 'post_confirm.tt';
+# }
+
 # Mini api - get possible dues given Age, Concession, Other hackspace member
 # Ignoring Children for now as the register form adds those after the main member
 

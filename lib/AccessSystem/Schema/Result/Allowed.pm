@@ -39,7 +39,6 @@ __PACKAGE__->belongs_to('tool', 'AccessSystem::Schema::Result::Tool', 'tool_id')
 sub pending {
     my ($self) = @_;
 
-    print "Type: " . $self->result_source->schema->storage->sqlt_type . "\n";
     if ($self->result_source->schema->storage->sqlt_type =~ /sqlite/i) {
         if ($self->pending_acceptance eq 'true') {
             return 1;

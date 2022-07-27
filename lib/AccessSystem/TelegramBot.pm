@@ -47,6 +47,9 @@ has 'mainconfig' => sub ($self) {
 };
 
 has bot_name => '';
+has 'base_url' => sub ($self) {
+    return $self->mainconfig->{base_url};
+};
 
 has waiting_on_response => sub { return {}; };
 
@@ -130,7 +133,7 @@ sub find_tool ($self, $name, $method, $args = undef) {
     my $keyboard_items = {};
     my $keyboard_order = [];
     print STDERR "in find_tool: \n";
-    for (@possibles) {
+    for (@possibles[0..5]) {
         my $text = "$_->{name} -- $_->{dist}";
         $keyboard_items->{$text} = "tool|$_->{name}";
         push @$keyboard_order, $text;
@@ -263,7 +266,7 @@ sub identify ($self, $text, $message) {
                 ]});
         if($members->count == 1) {
             if (!$members->first->telegram_chatid) {
-                my $url = 'https://inside.swindon-makerspace.org/confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
+                my $url = $self->base_url . 'confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
                 # print STDERR "Calling: $url\n";
                 my $ua = LWP::UserAgent->new();
                 my $resp = $ua->get($url);
@@ -277,7 +280,7 @@ sub identify ($self, $text, $message) {
                 $message->reply("It appears you're already identified, if it's not working regardless, poke Jess R");
             }
         } else {
-            $message->reply("I can't find a member with that email address, try again or check https://inside.swindon-makerspace.org/profile");
+            $message->reply("I can't find a member with that email address, try again or check " . $self->base_url . "profile");
         }
     } else {
         $message->reply("That didn't look like an email address, try again?");
@@ -641,7 +644,7 @@ sub prices ($self, $text, $message) {
     return unless $self->authorize($message, 'invalid_ok');
 
     my $ua = LWP::UserAgent->new();
-    my $resp = $ua->get("https://inside.swindon-makerspace.org/assets/json/prices.json");
+    my $resp = $ua->get($self->base_url . "assets/json/prices.json");
     if (!$resp->is_success) {
         print STDERR "Failed fetching prices ", $resp->status_line, "\n";
         return $message->reply("Missing price list, poke the directors?");
@@ -680,7 +683,7 @@ sub pay ($self, $text, $message, $args = undef) {
 
     # current prices
     my $ua = LWP::UserAgent->new();
-    my $resp = $ua->get("https://inside.swindon-makerspace.org/assets/json/prices.json");
+    my $resp = $ua->get($self->base_url . "assets/json/prices.json");
     if (!$resp->is_success) {
         print STDERR "Failed fetching prices ", $resp->status_line, "\n";
         return $message->reply("Missing price list, poke the directors?");
@@ -802,6 +805,7 @@ sub resolve_callback ($self, $callback) {
 
 sub confirm_induction ($self, $message, $allowed, $args = undef) {
     # if inductee has identified with telegram? if so send an inline keyboard
+    my $reply = ref($message) =~ /Callback/ ? 'answer' : 'reply';
     print "Confirm induction\n";
     if (!$args) {
         print "No args\n";
@@ -838,6 +842,16 @@ sub confirm_induction ($self, $message, $allowed, $args = undef) {
         } else {
             # send an email
             print "Didn't find them in this chat!?\n";
+            my $url = $self->base_url . 'send_induction_acceptance?tool=' . $allowed->tool->id . '&person='.$allowed->person->id;
+            print "Send email using: $url\n";
+            my $ua = LWP::UserAgent->new();
+            my $resp = $ua->get($url);
+            if (!$resp->is_success) {
+                print STDERR "Failed: ", $resp->status_line, " ", $resp->content, "\n";
+                $message->$reply("I attempted to send an email but.. that didn't work, go poke Jess R about that");
+            } else {
+                $message->$reply('Email sent to ' . $allowed->person->name);
+            }
         }
     } else {
         # args (result of a telegram confirmation)
