@@ -66,7 +66,7 @@ if(!$ENV{CATALYST_HOME}) {
 my $OVERLAP_DAYS = 14;
 
 # Read config to get db connection info:
-my %config = Config::General->new("$ENV{CATALYST_HOME}/accesssystem_api.conf")->getall;
+my %config = Config::General->new("$ENV{CATALYST_HOME}/accesssystem_api_local.conf")->getall;
 my $schema = AccessSystem::Schema->connect(
     $config{'Model::AccessDB'}{connect_info}{dsn},
     $config{'Model::AccessDB'}{connect_info}{user},
