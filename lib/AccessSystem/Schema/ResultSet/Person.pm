@@ -10,20 +10,20 @@ use DateTime;
 use base 'DBIx::Class::ResultSet';
 
 sub find_person {
-    my ($self, $input) = @_;
+    my ($self, $input, $args) = @_;
 
-    my $person = $self->find({ name => $input });
+    my $person = $self->find({ 'me.name' => $input }, $args);
     if ($person) {
         return $person;
     }
-    my $people = $self->search_rs({ name => { '-like' => $input }});
+    my $people = $self->search_rs({ 'me.name' => { '-like' => $input }}, $args);
     if ($people->count == 1) {
         $person = $people->first;
     }
     return $person if $person;
     try {
         # Pg syntax, but not other databases, sigh
-        my $pgpeople = $self->search_rs({ name => { '-ilike' => $input }});
+        my $pgpeople = $self->search_rs({ 'me.name' => { '-ilike' => $input }}, $args);
         if ($pgpeople->count == 1) {
             $people = $pgpeople;
             $person = $pgpeople->first;

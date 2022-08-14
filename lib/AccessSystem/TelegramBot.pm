@@ -106,12 +106,12 @@ Given a bunch of text representing a tool, either return a tool row object, or r
 
 =cut
 
-sub find_tool ($self, $name, $method) {
-    my $tools_rs = $self->db->resultset('Tool')->search_rs({name => $name});
+sub find_tool ($self, $name, $method, $args = undef) {
+    my $tools_rs = $self->db->resultset('Tool')->search_rs({'me.name' => $name}, $args);
     if ($tools_rs->count == 1) {
         return ('success', $tools_rs->first);
     }
-    $tools_rs = $self->db->resultset('Tool')->search_rs({ name => { '-like' => "%${name}%"}});
+    $tools_rs = $self->db->resultset('Tool')->search_rs({ 'me.name' => { '-like' => "%${name}%"}}, $args);
     if ($tools_rs->count == 1) {
         return ('success', $tools_rs->first);
     }
@@ -388,7 +388,7 @@ sub induct_member ($self, $text, $message, $args = undef) {
     if (!$args && $text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
-        ($p_status, $person_or_keyb) = ('success', $self->db->resultset('Person')->find({name => $name}));
+        ($p_status, $person_or_keyb) = ('success', $self->db->resultset('Person')->find_person($name));
         ($t_status, $tool_or_keyb) = $self->find_tool($tool_name, 'induct_member');
         if ($p_status eq 'success') {
             $person = $person_or_keyb;
@@ -460,14 +460,11 @@ sub inducted_on ($self, $text, $message) {
 
     if ($text =~ m{^/inducted_on\s([\w\s\d]+)$}) {
         my $tool_name = $1;
-        my $tool = $self->db->resultset('Tool')->find(
-            {
-                name => $tool_name,
-            },
+        my ($status, $tool) = $self->find_tool($tool_name, 'inducted_on',
             {
                 prefetch=> {'allowed_people' => 'person'},
             });
-        if (!$tool) {
+        if ($status ne 'success') {
             return $message->reply("I can't find a tool named $tool_name");
         }
         my $str = join("\n", map {
@@ -487,7 +484,7 @@ sub inducted_on ($self, $text, $message) {
         if (!$str) {
             $str = 'Nobody !?';
         }
-        return $message->reply("Inducted on $tool_name:\n$str");
+        return $message->reply("Inducted on " . $tool->name . ":\n$str");
     }
 }
 
@@ -505,8 +502,7 @@ sub inductions ($self, $text, $message) {
         if (!$name) {
             $name = $member->name;
         }
-        my $person = $self->db->resultset('Person')->find(
-            { name => $name },
+        my $person = $self->db->resultset('Person')->find_person($name,
             { prefetch => {'allowed' => 'tool'}});
         if (!$person) {
             return $message->reply("I can't find a person named $name");
@@ -516,7 +512,7 @@ sub inductions ($self, $text, $message) {
         if (!$str) {
             $str = 'Nothing !?';
         }
-        return $message->reply("Inductions for $name:\n$str");        
+        return $message->reply("Inductions for " . $person->name . ":\n$str");        
     }
 }
 
@@ -549,7 +545,7 @@ sub make_inductor ($self, $text, $message, $args = undef) {
         my ($name, $tool_name) = ($1, $2);
 
         # Find the target person:
-        ($p_status, $person_or_keyb) = ('success', $self->db->resultset('Person')->find({name => $name}));
+        ($p_status, $person_or_keyb) = ('success', $self->db->resultset('Person')->find_person($name));
         # Find the tool (or return a status which will display buttons)
         ($t_status, $tool_or_keyb) = $self->find_tool($tool_name, 'make_inductor');
         if ($p_status eq 'success') {
