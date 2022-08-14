@@ -36,7 +36,7 @@ has 'db' => sub {
 has _mainconfig => undef;
 has 'mainconfig' => sub ($self) {
     if (!$self->_mainconfig) {
-        $self->_mainconfig({Config::General->new("$ENV{BOT_HOME}/accesssystem_api.conf")->getall()});
+        $self->_mainconfig({Config::General->new("$ENV{BOT_HOME}/accesssystem_api_local.conf")->getall()});
     }
 
     if (wantarray) {
@@ -45,6 +45,8 @@ has 'mainconfig' => sub ($self) {
         return $self->_mainconfig;
     }
 };
+
+has bot_name => '';
 
 has waiting_on_response => sub { return {}; };
 
@@ -155,7 +157,6 @@ sub read_message ($self, $message) {
         bankinfo      => {
             match => qr{^/bankinfo},
             help  => '',
-
         },
         tools         => {
             match => qr{^/tools},
@@ -182,15 +183,15 @@ sub read_message ($self, $message) {
             help  => '/make_inductor <member name> on <tool name>',
         },
         balance       => {
-            match => qr{^/balance},
-            help  => '/balance',
+            match => qr{^/balance\b},
+            help  => '/balance\b',
         },
         prices        => {
-            match => qr{^/prices},
+            match => qr{^/prices\b},
             help  => '/prices',
         },
         pay           => {
-            match => qr{^/pay},
+            match => qr{^/pay\b},
             help  => '/pay',
         },
         );
@@ -202,19 +203,23 @@ sub read_message ($self, $message) {
         }
         foreach my $method (keys %methods) {
             if ($message->text =~ /$methods{$method}{match}/) {
-                return $self->$method($message);
+                my $message_text = $message->text;
+                my $replace = '\@' . $self->bot_name;
+                $message_text =~ s/$replace//;
+                return $self->$method($message_text, $message);
             }
         }
     } elsif (ref $message eq 'Telegram::Bot::Object::CallbackQuery') {
         # print STDERR "Calling resolve\n";
         return $self->resolve_callback($message);
     }
-    if ($message->text =~ m{^/}) {
-        $message->reply(qq<I don't know that command, sorry.>);
-    }
+    # This turns out to be just annoying..
+    # if ($message->text =~ m{^/}) {
+    #     $message->reply(qq<I don't know that command, sorry.>);
+    # }
 }
 
-sub bankinfo ($self, $message) {
+sub bankinfo ($self, $text, $message) {
     return unless $self->authorize($message, 'invalid_ok');
 
     my $member = $self->member($message);
@@ -234,7 +239,7 @@ END
     $message->reply($text);
 }
 
-sub memberstats ($self, $message) {
+sub memberstats ($self, $text, $message) {
     my $data = $self->db->resultset('Person')->membership_stats;
     my $msg_text = "
 Current members: " . ($data->{valid_members}{count} || 0) . " - (" . join(', ', map { "$_: " . ($data->{valid_members}{$_} || 0) } (qw/full concession otherspace adult child/)) . "),
@@ -247,8 +252,8 @@ Left this month: " . ($data->{recent_expired}{count} || 0) ." - (" . join(', ', 
     return;
 }
 
-sub identify ($self, $message) {
-    if($message->text =~ m{^/identify ([ -~]+\@[ -~]+)$}) {
+sub identify ($self, $text, $message) {
+    if($text =~ m{^/identify ([ -~]+\@[ -~]+)$}) {
         my $email = $1;
         # print STDERR "Email: $email\n";
         my $members = $self->db->resultset('Person')->search_rs({
@@ -279,7 +284,7 @@ sub identify ($self, $message) {
     }
 }
 
-sub doorcode ($self, $message) {
+sub doorcode ($self, $text, $message) {
     return unless $self->authorize($message);
 
     my $doorcode = $self->mainconfig->{code_a};
@@ -293,7 +298,7 @@ Output a list of tool names.
 
 =cut
 
-sub tools ($self, $message) {
+sub tools ($self, $text, $message) {
     my $tools = $self->db->resultset('Tool');
     $tools->result_class('DBIx::Class::ResultClass::HashRefInflator');
 
@@ -307,11 +312,11 @@ Add a new makerspace tool (especially if it requires induction)
 
 =cut
 
-sub add_tool ($self, $message, $args = undef) {
+sub add_tool ($self, $text, $message, $args = undef) {
     return unless $self->authorize($message);
 
     if (!$args) {
-        if ($message->text =~ m{/add_tool ([\w\d ]+)$}) {
+        if ($text =~ m{/add_tool ([\w\d ]+)$}) {
             my $name = $1;
             print "Name: $name\n";
             # Each user can only have one response they're waiting on at a time?
@@ -367,7 +372,7 @@ with the results ($args) and attempt to complete.
 
 =cut
 
-sub induct_member ($self, $message, $args = undef) {
+sub induct_member ($self, $text, $message, $args = undef) {
     return unless $self->authorize($message);
 
     #                        /induct James Mastros on Point of Sale
@@ -380,7 +385,7 @@ sub induct_member ($self, $message, $args = undef) {
     my $reply = ref $message =~ /Callback/ ? 'answer' : 'reply';
     print STDERR ref $message;
     print STDERR " $reply\n";
-    if (!$args && $message->text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
+    if (!$args && $text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
         ($p_status, $person_or_keyb) = ('success', $self->db->resultset('Person')->find({name => $name}));
@@ -450,10 +455,10 @@ Who is inducted on this thing?
 
 =cut
 
-sub inducted_on ($self, $message) {
+sub inducted_on ($self, $text, $message) {
     return unless $self->authorize($message);
 
-    if ($message->text =~ m{^/inducted_on\s([\w\s\d]+)$}) {
+    if ($text =~ m{^/inducted_on\s([\w\s\d]+)$}) {
         my $tool_name = $1;
         my $tool = $self->db->resultset('Tool')->find(
             {
@@ -466,7 +471,10 @@ sub inducted_on ($self, $message) {
             return $message->reply("I can't find a tool named $tool_name");
         }
         my $str = join("\n", map {
-            $_->person->name . ($_->is_admin ? ' (inductor)' : '')
+            (
+             $_->person->is_valid ?
+             ($_->person->name . ($_->is_admin ? ' (inductor)' : ''))
+             : ())
                        }
             ($tool->allowed_people->search(
                  {}, {
@@ -489,10 +497,10 @@ What can this person use?
 
 =cut
 
-sub inductions ($self, $message) {
+sub inductions ($self, $text, $message) {
     return unless my $member = $self->authorize($message);
 
-    if ($message->text =~ m{^/inductions(?:\s([\w\s]+))?$}) {
+    if ($text =~ m{^/inductions(?:\s([\w\s]+))?$}) {
         my $name = $1;
         if (!$name) {
             $name = $member->name;
@@ -516,7 +524,7 @@ sub inductions ($self, $message) {
 
 =cut
 
-sub make_inductor ($self, $message, $args = undef) {
+sub make_inductor ($self, $text, $message, $args = undef) {
     return unless $self->authorize($message);
 
     my $reply = ref($message) =~ /Callback/ ? 'answer' : 'reply';
@@ -537,7 +545,7 @@ sub make_inductor ($self, $message, $args = undef) {
     #     return $message->$reply("You're not allowed to do that");
     # }
 
-    if (!$args && $message->text =~ m{^/make_inductor\s([\w\s]+)\son\s([\w\s\d]+)$}) {
+    if (!$args && $text =~ m{^/make_inductor\s([\w\s]+)\son\s([\w\s\d]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
         # Find the target person:
@@ -613,7 +621,7 @@ Amount this member has in their makerspace account.
 
 =cut
 
-sub balance ($self, $message) {
+sub balance ($self, $text, $message) {
     my $member = $self->authorize($message, 'private');
     return if !$member;
 
@@ -625,7 +633,7 @@ sub balance ($self, $message) {
 
 =cut
 
-sub prices ($self, $message) {
+sub prices ($self, $text, $message) {
     return unless $self->authorize($message, 'invalid_ok');
 
     my $ua = LWP::UserAgent->new();
@@ -659,7 +667,7 @@ items + total to finish.
 
 =cut
 
-sub pay ($self, $message, $args = undef) {
+sub pay ($self, $text, $message, $args = undef) {
 #    my $member = $self->authorize($message, 'invalid_ok');
     my $member = $self->authorize($message, 'private');
     if (!$member) {
