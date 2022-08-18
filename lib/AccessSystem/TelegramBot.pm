@@ -434,6 +434,7 @@ sub induct_member ($self, $text, $message, $args = undef) {
         my $waiting = $self->waiting_on_response->{$message->from->id} || {};
         $waiting->{action} = 'induct_member';
         $waiting->{type} = 'tool';
+        $waiting->{text} = $text;
         $self->waiting_on_response->{$message->from->id} = $waiting;
 
         return $message->_brain->sendMessage(
@@ -596,6 +597,7 @@ sub make_inductor ($self, $text, $message, $args = undef) {
         my $waiting = $self->waiting_on_response->{$message->from->id} || {};
         $waiting->{action} = 'make_inductor';
         $waiting->{type} = 'tool';
+        $waiting->{text} = 'text';
         $self->waiting_on_response->{$message->from->id} = $waiting;
 
         return $message->_brain->sendMessage(
@@ -787,7 +789,7 @@ sub resolve_callback ($self, $callback) {
     if ($waiting->{action} eq $args[0]) {
         # delete $self->waiting_on_response->{$callback->from->id};
         my $method = $args[0];
-        return $self->$method($callback, \@args);
+        return $self->$method($waiting->{text}, $callback, \@args);
     }
     return $callback->answer('Confused!');
 }
