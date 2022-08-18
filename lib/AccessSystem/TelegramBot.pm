@@ -36,7 +36,7 @@ has 'db' => sub {
 has _mainconfig => undef;
 has 'mainconfig' => sub ($self) {
     if (!$self->_mainconfig) {
-        $self->_mainconfig({Config::General->new("$ENV{BOT_HOME}/accesssystem_api.conf")->getall()});
+        $self->_mainconfig({Config::General->new("$ENV{BOT_HOME}/accesssystem_api_local.conf")->getall()});
     }
 
     if (wantarray) {
@@ -195,7 +195,7 @@ sub read_message ($self, $message) {
         },
         );
 
-    if (ref $message eq 'Telegram::Bot::Object::Message') {
+    if (ref($message) eq 'Telegram::Bot::Object::Message') {
         print STDERR $message->text, "\n" if ($message->text =~ q{^/});
         if ($message->text =~ qr{^/(help|start)}) {
             return $message->reply(join("\n", "I know: ", map {$methods{$_}->{help}} (sort keys %methods) ));
@@ -205,7 +205,7 @@ sub read_message ($self, $message) {
                 return $self->$method($message);
             }
         }
-    } elsif (ref $message eq 'Telegram::Bot::Object::CallbackQuery') {
+    } elsif (ref($message) eq 'Telegram::Bot::Object::CallbackQuery') {
         # print STDERR "Calling resolve\n";
         return $self->resolve_callback($message);
     }
@@ -377,7 +377,7 @@ sub induct_member ($self, $message, $args = undef) {
     ## callback answers only display as brief pops or (with show_alert
     ## => 1) as modal confirm boxes, kinda ugly - need a method for
     ## "use $callback->message->reply and then send empty answer.
-    my $reply = ref $message =~ /Callback/ ? 'answer' : 'reply';
+    my $reply = ref($message) =~ /Callback/ ? 'answer' : 'reply';
     print STDERR ref $message;
     print STDERR " $reply\n";
     if (!$args && $message->text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
@@ -420,7 +420,7 @@ sub induct_member ($self, $message, $args = undef) {
             return $message->$reply("I found " . $person->name ." but they aren't a paid-up member");
         }
         $person->find_or_create_related('allowed', { tool_id => $tool->id, is_admin => 0 });
-        return $message->reply("Ok, inducted " . $person->name ." on " . $tool->name);
+        return $message->$reply("Ok, inducted " . $person->name ." on " . $tool->name);
     }
 
     ## repeat this for person when we've done find_person:
