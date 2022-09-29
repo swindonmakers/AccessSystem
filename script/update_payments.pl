@@ -125,7 +125,7 @@ sub import_payments {
     foreach my $trn (@$transactions) {
         next if(fiddle_payment($trn));
         next if($trn->{trnamt} <= 0);
-        next if($trn->{name} !~ /SM(\d+)/i);
+        next if($trn->{name} !~ /SM\s?(\d+)/i);
 
         # Is it a payment for/by a known member?
         my $id = $1;
