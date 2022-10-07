@@ -806,13 +806,11 @@ sub resolve_callback ($self, $callback) {
 sub confirm_induction ($self, $message, $allowed, $args = undef) {
     # if inductee has identified with telegram? if so send an inline keyboard
     my $reply = ref($message) =~ /Callback/ ? 'answer' : 'reply';
-    print "Confirm induction\n";
     if (!$args) {
         print "No args\n";
         my $in_chat = $allowed->person->telegram_chatid
             ? $message->_brain->getChatMember($message->chat->id, $allowed->person->telegram_chatid)
             : undef;
-        print "Called getChatMember with " . $allowed->person->telegram_chatid . "\n";
         if ($message->chat->type ne 'private'
             && $in_chat
             && $in_chat->status =~ /^creator|adminstrator|member|restricted$/) {
@@ -857,7 +855,7 @@ sub confirm_induction ($self, $message, $allowed, $args = undef) {
         # args (result of a telegram confirmation)
         delete $self->waiting_on_response->{$message->from->id};
         if ($args->[1] eq 'Yes') {
-            $allowed->update({ pending_acceptance => 'false'});
+            $allowed->update({ pending_acceptance => 'false', accepted_on => DateTime->now() });
             return $message->answer('Ok, confirmed');
         } else {
             $allowed->delete();

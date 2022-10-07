@@ -24,6 +24,10 @@ __PACKAGE__->add_columns(
         data_type => 'boolean',
         default_value => 'true',
     },
+    accepted_on => {
+        data_type => 'datetime',
+        is_nullable => 1,
+    },
     added_on => {
         data_type => 'datetime',
         set_on_create => 1,
