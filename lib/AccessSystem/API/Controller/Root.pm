@@ -625,13 +625,14 @@ sub confirm_email: Chained('base'): PathPart('confirm_email'): Args(0) {
         $confirm->person->update($user_update);
         $confirm->delete();
     }
-    return $c->res->redirect($c->uri_for('post_confirm'));
+    return $c->res->redirect($c->uri_for('post_confirm', { type => 'telegram' }));
 }
 
 sub post_confirm: Chained('base'): PathPart('post_confirm'): Arg(0) {
     my ($self, $c) = @_;
 
     $c->stash->{current_page} = 'post_confirm';
+    $c->stash->{type} = $c->req->params->{type};
     $c->stash->{template} = 'post_confirm.tt';
 }
 
@@ -704,18 +705,8 @@ sub confirm_induction: Chained('base'): PathPart('confirm_induction'): Args(0) {
         $confirm->person->allowed->find({ tool_id => $induction_update->{tool_id}})->update({ pending_acceptance => 'false'});
         $confirm->delete();
     }
-    return $c->res->redirect($c->uri_for('post_confirm'));
+    return $c->res->redirect($c->uri_for('post_confirm', { type => 'induction' }));
 }
-
-# sub post_confirm: Chained('base'): PathPart('post_confirm'): Arg(0) {
-#     my ($self, $c) = @_;
-
-#     $c->stash->{current_page} = 'post_confirm';
-#     $c->stash->{template} = 'post_confirm.tt';
-# }
-
-# Mini api - get possible dues given Age, Concession, Other hackspace member
-# Ignoring Children for now as the register form adds those after the main member
 
 sub get_dues: Chained('base'): PathPart('get_dues'): Args(0) {
     my ($self, $c) = @_;
