@@ -702,7 +702,7 @@ sub confirm_induction: Chained('base'): PathPart('confirm_induction'): Args(0) {
     my $confirm = $c->model('AccessDB::Confirm')->find({ token => $token });
     if ($confirm) {
         my $induction_update = $confirm->storage;
-        $confirm->person->allowed->find({ tool_id => $induction_update->{tool_id}})->update({ pending_acceptance => 'false'});
+        $confirm->person->allowed->find({ tool_id => $induction_update->{tool_id}})->update({ pending_acceptance => 'false', accepted_on => DateTime->now()});
         $confirm->delete();
     }
     return $c->res->redirect($c->uri_for('post_confirm', { type => 'induction' }));
