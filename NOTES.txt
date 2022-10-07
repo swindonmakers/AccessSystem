@@ -1,3 +1,46 @@
+*.05.2022:
+
+Telegram bot:
+
+* added commands for listing/creating inductions
+* added commands for balance / paying for snacks etc
+
+TODO:
+* Make /inductions <no args> list own inductions
+* Use https://core.telegram.org/bots/api#forcereply to prompt for missing args (especially useful if command run from botfather prompt list)
+* Add "inductors <tool>" (summary if no arg?)
+* Make everything cope somehow with no args?
+
+
+24.03.2022:
+
+Sendinblue / accesssystem:
+
+* Make sendinblue newsletter signup form? - https://help.sendinblue.com/hc/en-us/articles/360019485320
+* Import/link back to accesssystem!? (aka upgrade from subscriber to member)
+* Export members from accessystem to sendinblue, when make changes, pay, sign up etc!
+
+* subscribe/ unsubscribe using topics (aka not from entire thing):
+** unsub page (links to sub page)
+https://help.sendinblue.com/hc/en-us/articles/208772629
+
+* create one contact list per "topic"
+
+* ALL members (past/present/paying or not) now in "All People"
+** to make sub lists https://help.sendinblue.com/hc/en-us/articles/208771609
+
+04.09.2021:
+
+Rob McK + yearly payments
+
+1) patch that checks if balance >= year (dues+12+0.1), if so set payment amount to that, and expiry date to one year's time
+2) create transaction/payment as before but with diff amount/time
+
+recalculate (after change to transactions+payments):
+Rob paid 270 (year) in Dec 2019, so should have gotten date of Dec 2020, then another year in May 2020 (in 2 sep payments, accidentally)
+
+Adjusted to end Jan 2022
+
 
 13.07.2018:
 
