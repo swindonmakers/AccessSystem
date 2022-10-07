@@ -47,6 +47,9 @@ has 'mainconfig' => sub ($self) {
 };
 
 has bot_name => '';
+has 'base_url' => sub ($self) {
+    return $self->mainconfig->{base_url};
+};
 
 has waiting_on_response => sub { return {}; };
 
@@ -130,7 +133,7 @@ sub find_tool ($self, $name, $method, $args = undef) {
     my $keyboard_items = {};
     my $keyboard_order = [];
     print STDERR "in find_tool: \n";
-    for (@possibles) {
+    for (@possibles[0..5]) {
         my $text = "$_->{name} -- $_->{dist}";
         $keyboard_items->{$text} = "tool|$_->{name}";
         push @$keyboard_order, $text;
@@ -263,7 +266,7 @@ sub identify ($self, $text, $message) {
                 ]});
         if($members->count == 1) {
             if (!$members->first->telegram_chatid) {
-                my $url = 'https://inside.swindon-makerspace.org/confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
+                my $url = $self->base_url . 'confirm_telegram?chatid=' . $message->from->id . '&email=' . lc($email) . '&username=' . $message->from->username;
                 # print STDERR "Calling: $url\n";
                 my $ua = LWP::UserAgent->new();
                 my $resp = $ua->get($url);
@@ -277,7 +280,7 @@ sub identify ($self, $text, $message) {
                 $message->reply("It appears you're already identified, if it's not working regardless, poke Jess R");
             }
         } else {
-            $message->reply("I can't find a member with that email address, try again or check https://inside.swindon-makerspace.org/profile");
+            $message->reply("I can't find a member with that email address, try again or check " . $self->base_url . "profile");
         }
     } else {
         $message->reply("That didn't look like an email address, try again?");
@@ -375,7 +378,6 @@ with the results ($args) and attempt to complete.
 sub induct_member ($self, $text, $message, $args = undef) {
     return unless $self->authorize($message);
 
-    #                        /induct James Mastros on Point of Sale
     my ($tool, $person, $p_status, $person_or_keyb, $t_status, $tool_or_keyb);
     my $member = $self->member($message);
     return if !$member;
@@ -383,9 +385,8 @@ sub induct_member ($self, $text, $message, $args = undef) {
     ## => 1) as modal confirm boxes, kinda ugly - need a method for
     ## "use $callback->message->reply and then send empty answer.
     my $reply = ref($message) =~ /Callback/ ? 'answer' : 'reply';
-    print STDERR ref $message;
-    print STDERR " $reply\n";
-    if (!$args && $text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
+    #                                  /induct James Mastros on Point of Sale
+    if (!$args && $message->text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
         ($p_status, $person_or_keyb) = ('success', $self->db->resultset('Person')->find_person($name));
@@ -424,8 +425,16 @@ sub induct_member ($self, $text, $message, $args = undef) {
         if (!$person->is_valid) {
             return $message->$reply("I found " . $person->name ." but they aren't a paid-up member");
         }
-        $person->find_or_create_related('allowed', { tool_id => $tool->id, is_admin => 0 });
-        return $message->$reply("Ok, inducted " . $person->name ." on " . $tool->name);
+        my $p_allowed = $person->find_or_create_related('allowed', { tool_id => $tool->id, is_admin => 0 });
+        $p_allowed->discard_changes();
+        # send a confirmation email or telegram msg
+        if ($p_allowed->pending_acceptance) {
+            $self->confirm_induction($message, $p_allowed);
+            return $message->$reply("Ok, inducted " . $person->name ." on " . $tool->name . ' (they should have a confirmation message)');
+        } else {
+            print "No need to confirm, already accepted\n";
+            return $message->$reply('It looks like ' . $person->name . ' is already inducted on that and accepted it');
+        }
     }
 
     ## repeat this for person when we've done find_person:
@@ -509,7 +518,7 @@ sub inductions ($self, $text, $message) {
             return $message->reply("I can't find a person named $name");
         }
 
-        my $str = join("\n", map { $_->tool->name . ($_->is_admin ? ' (inductor)' : '') } ($person->allowed));
+        my $str = join("\n", map { $_->tool->name . ($_->pending ? ' (pending)' : ''). ($_->is_admin ? ' (inductor)' : '') } ($person->allowed));
         if (!$str) {
             $str = 'Nothing !?';
         }
@@ -635,7 +644,7 @@ sub prices ($self, $text, $message) {
     return unless $self->authorize($message, 'invalid_ok');
 
     my $ua = LWP::UserAgent->new();
-    my $resp = $ua->get("https://inside.swindon-makerspace.org/assets/json/prices.json");
+    my $resp = $ua->get($self->base_url . "assets/json/prices.json");
     if (!$resp->is_success) {
         print STDERR "Failed fetching prices ", $resp->status_line, "\n";
         return $message->reply("Missing price list, poke the directors?");
@@ -674,7 +683,7 @@ sub pay ($self, $text, $message, $args = undef) {
 
     # current prices
     my $ua = LWP::UserAgent->new();
-    my $resp = $ua->get("https://inside.swindon-makerspace.org/assets/json/prices.json");
+    my $resp = $ua->get($self->base_url . "assets/json/prices.json");
     if (!$resp->is_success) {
         print STDERR "Failed fetching prices ", $resp->status_line, "\n";
         return $message->reply("Missing price list, poke the directors?");
@@ -787,12 +796,74 @@ sub resolve_callback ($self, $callback) {
     print STDERR Data::Dumper::Dumper(\@args);
     print STDERR $self->can("$args[0]") ? "I can\n" : "I can't\n";
     if ($waiting->{action} eq $args[0]) {
-        # delete $self->waiting_on_response->{$callback->from->id};
+        my @w_args = @{ $waiting->{args} || [] };
         my $method = $args[0];
-        return $self->$method($waiting->{text}, $callback, \@args);
+        return $self->$method($callback, @w_args, \@args);
     }
     return $callback->answer('Confused!');
 }
 
+sub confirm_induction ($self, $message, $allowed, $args = undef) {
+    # if inductee has identified with telegram? if so send an inline keyboard
+    my $reply = ref($message) =~ /Callback/ ? 'answer' : 'reply';
+    print "Confirm induction\n";
+    if (!$args) {
+        print "No args\n";
+        my $in_chat = $allowed->person->telegram_chatid
+            ? $message->_brain->getChatMember($message->chat->id, $allowed->person->telegram_chatid)
+            : undef;
+        print "Called getChatMember with " . $allowed->person->telegram_chatid . "\n";
+        if ($message->chat->type ne 'private'
+            && $in_chat
+            && $in_chat->status =~ /^creator|adminstrator|member|restricted$/) {
+            ## Not a direct message and target is in the chat..
+            print "Found person in this chat\n";
+            $self->waiting_on_response()->{$allowed->person->telegram_chatid} = {
+                'action' => 'confirm_induction',
+                    'args' => [ $allowed ],
+            };
+
+            return $message->_brain->sendMessage({
+                chat_id => $message->chat->id,
+                text    => '@' . $allowed->person->telegram_username . ' Please confirm that you understand the safety induction for using the ' . $allowed->tool->name . ' and take responsibility for your actions while using it.',
+                reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new({
+                    inline_keyboard => [[
+                        Telegram::Bot::Object::InlineKeyboardButton->new({
+                            text => 'I confirm',
+                            callback_data => "confirm_induction|Yes",
+                        }),
+                        Telegram::Bot::Object::InlineKeyboardButton->new({
+                            text => 'I have not been inducted',
+                            callback_data => "confirm_induction|No",
+                        }),
+                    ]]
+                })
+            });
+        } else {
+            # send an email
+            print "Didn't find them in this chat!?\n";
+            my $url = $self->base_url . 'send_induction_acceptance?tool=' . $allowed->tool->id . '&person='.$allowed->person->id;
+            print "Send email using: $url\n";
+            my $ua = LWP::UserAgent->new();
+            my $resp = $ua->get($url);
+            if (!$resp->is_success) {
+                print STDERR "Failed: ", $resp->status_line, " ", $resp->content, "\n";
+                $message->$reply("I attempted to send an email but.. that didn't work, go poke Jess R about that");
+            } else {
+                $message->$reply('Email sent to ' . $allowed->person->name);
+            }
+        }
+    } else {
+        # args (result of a telegram confirmation)
+        delete $self->waiting_on_response->{$message->from->id};
+        if ($args->[1] eq 'Yes') {
+            $allowed->update({ pending_acceptance => 'false'});
+            return $message->answer('Ok, confirmed');
+        } else {
+            $allowed->delete();
+            return $message->answer('Ok, induction deleted');
+        }
+    }
+}
 
 1;
