@@ -110,16 +110,14 @@ Given a bunch of text representing a tool, either return a tool row object, or r
 =cut
 
 sub find_tool ($self, $name, $method, $args = undef) {
-    my $tools_rs = $self->db->resultset('Tool')->search_rs({'me.name' => $name}, $args);
-    if ($tools_rs->count == 1) {
-        return ('success', $tools_rs->first);
-    }
-    $tools_rs = $self->db->resultset('Tool')->search_rs({ 'me.name' => { '-like' => "%${name}%"}}, $args);
-    if ($tools_rs->count == 1) {
+    my ($tool, $tools_rs) = $self->db->resultset('Tool')->find_tool($name);
+    if ($tool) {
         return ('success', $tools_rs->first);
     }
 
-    $tools_rs = $self->db->resultset('Tool');
+    if ($tools_rs->count == 0) {
+        $tools_rs = $self->db->resultset('Tool');
+    }
 
     my $fuzzy = Text::Fuzzy->new(lc $name);
     $fuzzy->transpositions_ok(1);
@@ -134,6 +132,7 @@ sub find_tool ($self, $name, $method, $args = undef) {
     my $keyboard_order = [];
     print STDERR "in find_tool: \n";
     for (@possibles[0..5]) {
+        last if !$_;
         my $text = "$_->{name} -- $_->{dist}";
         $keyboard_items->{$text} = "tool|$_->{name}";
         push @$keyboard_order, $text;
@@ -303,7 +302,10 @@ Output a list of tool names.
 
 sub tools ($self, $text, $message) {
     my $tools = $self->db->resultset('Tool');
-    $tools->result_class('DBIx::Class::ResultClass::HashRefInflator');
+    my $name_match = '%';
+    if ($text =~ m{/tools ([\w\d\s]+)}) {
+        (undef, $tools) = $tools->find_tool($1, undef, 'DBIx::Class::ResultClass::HashRefInflator');
+    }
 
     my $tool_str = join("\n", map { $_->{name} . ($_->{requires_induction} ? ' (induction)' : '') } ($tools->all));
     $message->reply($tool_str);
@@ -325,7 +327,8 @@ sub add_tool ($self, $text, $message, $args = undef) {
             # Each user can only have one response they're waiting on at a time?
             $self->waiting_on_response()->{$message->from->id} = {
                 'action' => 'add_tool',
-                    'name' => $name
+                    'name' => $name,
+                    'text' => $text,
             };
             $message->_brain->sendMessage({
                 chat_id => $message->chat->id,
@@ -381,12 +384,8 @@ sub induct_member ($self, $text, $message, $args = undef) {
     my ($tool, $person, $p_status, $person_or_keyb, $t_status, $tool_or_keyb);
     my $member = $self->member($message);
     return if !$member;
-    ## callback answers only display as brief pops or (with show_alert
-    ## => 1) as modal confirm boxes, kinda ugly - need a method for
-    ## "use $callback->message->reply and then send empty answer.
-    my $reply = ref($message) =~ /Callback/ ? 'answer' : 'reply';
     #                                  /induct James Mastros on Point of Sale
-    if (!$args && $message->text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
+    if (!$args && $text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
         ($p_status, $person_or_keyb) = ('success', $self->db->resultset('Person')->find_person($name));
@@ -419,21 +418,21 @@ sub induct_member ($self, $text, $message, $args = undef) {
         ## we're done here, actually try and do the induction
         # should we do this check before the find_person loop?
         if (!$member->allowed->find({ tool_id => $tool->id, is_admin => 1})) {
-            return $message->$reply("You're not allowed to induct people on the " . $tool->name);
+            return $message->reply("You're not allowed to induct people on the " . $tool->name);
         }
         # do this in find_person?
         if (!$person->is_valid) {
-            return $message->$reply("I found " . $person->name ." but they aren't a paid-up member");
+            return $message->reply("I found " . $person->name ." but they aren't a paid-up member");
         }
         my $p_allowed = $person->find_or_create_related('allowed', { tool_id => $tool->id, is_admin => 0 });
         $p_allowed->discard_changes();
         # send a confirmation email or telegram msg
         if ($p_allowed->pending_acceptance) {
             $self->confirm_induction($message, $p_allowed);
-            return $message->$reply("Ok, inducted " . $person->name ." on " . $tool->name . ' (they should have a confirmation message)');
+            return $message->reply("Ok, inducted " . $person->name ." on " . $tool->name . ' (they should have a confirmation message)');
         } else {
             print "No need to confirm, already accepted\n";
-            return $message->$reply('It looks like ' . $person->name . ' is already inducted on that and accepted it');
+            return $message->reply('It looks like ' . $person->name . ' is already inducted on that and accepted it');
         }
     }
 
@@ -456,7 +455,7 @@ sub induct_member ($self, $text, $message, $args = undef) {
                     })
             });
     }
-    return $message->$reply("Try /induct <person name> on <tool name> or /help");
+    return $message->reply("Try /induct <person name> on <tool name> or /help");
 }
 
 =head inductees
@@ -465,18 +464,29 @@ Who is inducted on this thing?
 
 =cut
 
-sub inducted_on ($self, $text, $message) {
+sub inducted_on ($self, $text, $message, $args = undef) {
     return unless $self->authorize($message);
 
-    if ($text =~ m{^/inducted_on\s([\w\s\d]+)$}) {
+    my ($tool, $t_status, $tool_or_keyb);
+    my $waiting = $self->waiting_on_response->{$message->from->id} || {};
+    if (!$args && $text =~ m{^/inducted_on\s([\w\s\d]+)$}) {
         my $tool_name = $1;
-        my ($status, $tool) = $self->find_tool($tool_name, 'inducted_on',
+        ($t_status, $tool_or_keyb) = $self->find_tool($tool_name, 'inducted_on',
             {
                 prefetch=> {'allowed_people' => 'person'},
             });
-        if ($status ne 'success') {
-            return $message->reply("I can't find a tool named $tool_name");
+        if ($t_status eq 'success') {
+            $tool = $tool_or_keyb;
         }
+    }
+    if ($args) {
+        if ($args->[1] eq 'tool') {
+            $tool = $self->db->resultset('Tool')->find({name => $args->[2]});
+            $waiting->{tool} = $tool;
+        }
+        $tool ||= $waiting->{tool};
+    }
+    if ($tool) {
         my $str = join("\n", map {
             (
              $_->person->is_valid ?
@@ -495,6 +505,24 @@ sub inducted_on ($self, $text, $message) {
             $str = 'Nobody !?';
         }
         return $message->reply("Inducted on " . $tool->name . ":\n$str");
+    }
+
+    if ($t_status eq 'keyboard') {
+        ## didnt find an exact match, user gets to pick:
+        $waiting->{action} = 'inducted_on';
+        $waiting->{type} = 'tool';
+        $waiting->{text} = $text;
+        $self->waiting_on_response->{$message->from->id} = $waiting;
+
+        return $message->_brain->sendMessage(
+            {
+                chat_id => $message->chat->id,
+                text    => "No exact match for tool, pick one:",
+                reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new(
+                    {
+                        inline_keyboard => $tool_or_keyb,
+                    })
+            });
     }
 }
 
@@ -533,7 +561,6 @@ sub inductions ($self, $text, $message) {
 sub make_inductor ($self, $text, $message, $args = undef) {
     return unless $self->authorize($message);
 
-    my $reply = ref($message) =~ /Callback/ ? 'answer' : 'reply';
     my ($tool, $person, $p_status, $person_or_keyb, $t_status, $tool_or_keyb);
 
     # Requestor is a valid member of the makerspace (paid up)
@@ -548,7 +575,7 @@ sub make_inductor ($self, $text, $message, $args = undef) {
     my $allowed = $member->allowed->find({ tool_id => $door->id });
     return if !$allowed;
     # if (!$allowed->is_admin) {
-    #     return $message->$reply("You're not allowed to do that");
+    #     return $message->reply("You're not allowed to do that");
     # }
 
     if (!$args && $text =~ m{^/make_inductor\s([\w\s]+)\son\s([\w\s\d]+)$}) {
@@ -588,16 +615,16 @@ sub make_inductor ($self, $text, $message, $args = undef) {
     if ($tool && $person) {
         ## got all the details, actually try and do the induction
         if (!$person->is_valid) {
-            return $message->$reply("I found " . $person->name ." but they aren't a paid-up member");
+            return $message->reply("I found " . $person->name ." but they aren't a paid-up member");
         }
         my $member_inductor = $member->allowed->find({ tool_id => $tool->id });
         if (!$allowed->is_admin && ($member_inductor && !$member_inductor->is_admin)) {
             # member is not a director, and not an inductor on the tool
-            return $message->$reply("You're not allowed to do that");
+            return $message->reply("You're not allowed to do that");
         }
         my $inducted = $person->find_or_create_related('allowed', { tool_id => $tool->id, is_admin => 1 });
         $inducted->update({ is_admin => 1 });
-        return $message->$reply("Ok, made " . $person->name ." an inductor on " . $tool->name);
+        return $message->reply("Ok, made " . $person->name ." an inductor on " . $tool->name);
     }
 
     # we didn't find an exact tool, display buttons to pick from instead
@@ -619,7 +646,7 @@ sub make_inductor ($self, $text, $message, $args = undef) {
                     })
             });
     }
-    return $message->$reply("Try /make_inductor <person name> on <tool name> or /help");
+    return $message->reply("Try /make_inductor <person name> on <tool name> or /help");
 }
 
 =head2 balance
@@ -788,6 +815,13 @@ sub generic_keyboard ($self, $method, $values, $colcount, $endbuttons, $order=un
 
 sub resolve_callback ($self, $callback) {
     my $waiting = $self->waiting_on_response->{$callback->from->id};
+    # Remove keyboard from message now that we're dealing with it!
+    my $msg = $callback->_brain->editMessageText({'chat_id' => $callback->message->chat->id, 'message_id' => $callback->message->message_id, text => $callback->message->text . ' (done and keyboard removed)', reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new({inline_keyboard => []}) });
+    if (!$msg) {
+        die "Failed to remove inline keyboard\n";
+    }
+
+    ## This shouldnt happen once the keyboard is gone .. (it might if someone else clicks who isnt the expected user!)
     if (!$waiting) {
         $callback->_brain->sendMessage({'chat_id' => $callback->message->chat->id, text => 'Confusion in the bot-brain, what are you responding to?'});
         return $callback->_brain->answerCallbackQuery({callback_query_id => $callback->id, text => 'Arghhh!', cache_time => 36000});
@@ -796,16 +830,16 @@ sub resolve_callback ($self, $callback) {
     print STDERR Data::Dumper::Dumper(\@args);
     print STDERR $self->can("$args[0]") ? "I can\n" : "I can't\n";
     if ($waiting->{action} eq $args[0]) {
+        my $msg_text = $waiting->{text} || die('Missing msg text in waiting');
         my @w_args = @{ $waiting->{args} || [] };
         my $method = $args[0];
-        return $self->$method($callback, @w_args, \@args);
+        return $self->$method($msg_text, $callback, @w_args, \@args);
     }
     return $callback->answer('Confused!');
 }
 
 sub confirm_induction ($self, $message, $allowed, $args = undef) {
     # if inductee has identified with telegram? if so send an inline keyboard
-    my $reply = ref($message) =~ /Callback/ ? 'answer' : 'reply';
     if (!$args) {
         print "No args\n";
         my $in_chat = $allowed->person->telegram_chatid
@@ -846,9 +880,9 @@ sub confirm_induction ($self, $message, $allowed, $args = undef) {
             my $resp = $ua->get($url);
             if (!$resp->is_success) {
                 print STDERR "Failed: ", $resp->status_line, " ", $resp->content, "\n";
-                $message->$reply("I attempted to send an email but.. that didn't work, go poke Jess R about that");
+                $message->reply("I attempted to send an email but.. that didn't work, go poke Jess R about that");
             } else {
-                $message->$reply('Email sent to ' . $allowed->person->name);
+                $message->reply('Email sent to ' . $allowed->person->name);
             }
         }
     } else {
