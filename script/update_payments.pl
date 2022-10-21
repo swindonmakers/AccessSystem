@@ -106,8 +106,10 @@ sub fiddle_payment {
     } elsif($trans->{name} =~ /MR LAWRENCE A ONSL SM0190/) {
         $trans->{name} = 'MR LAWRENCE A ONSL SM0189';
     } elsif($trans->{name} =~ /MR PETER A COWDY SMO241 STO/) {
-	$trans->{name} = 'MR PETER A COWDY SM0241 STO';
-    }
+	$trans->{name} = 'MR PETER A COWDY SM0241 STO'; 
+    } elsif($trans->{name} =~ /J SCOTT STO/) {
+	$trans->{name} = 'J SCOTT SM0303 STO';
+   }
     return 0;
 }
 
