@@ -13,12 +13,12 @@ use lib "$ENV{CATALYST_HOME}/lib";
 use AccessSystem::Schema;
 use Sendinblue::API;
 
-my %config = Config::General->new("$ENV{CATALYST_HOME}/accesssystem_api.conf")->getall;
+#my %config = Config::General->new("$ENV{CATALYST_HOME}/accesssystem_api.conf")->getall;
 my %localconfig = Config::General->new("$ENV{CATALYST_HOME}/accesssystem_api_local.conf")->getall;
 my $schema = AccessSystem::Schema->connect(
-    $config{'Model::AccessDB'}{connect_info}{dsn},
-    $config{'Model::AccessDB'}{connect_info}{user},
-    $config{'Model::AccessDB'}{connect_info}{password},
+    $localconfig{'Model::AccessDB'}{connect_info}{dsn},
+    $localconfig{'Model::AccessDB'}{connect_info}{user},
+    $localconfig{'Model::AccessDB'}{connect_info}{password},
     );
 my $sb_key = $localconfig{Sendinblue}{'api-key'};
 my $sb = Sendinblue::API->new({api_key => $sb_key});
