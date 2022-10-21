@@ -815,6 +815,13 @@ sub generic_keyboard ($self, $method, $values, $colcount, $endbuttons, $order=un
 
 sub resolve_callback ($self, $callback) {
     my $waiting = $self->waiting_on_response->{$callback->from->id};
+    # Remove keyboard from message now that we're dealing with it!
+    my $msg = $callback->_brain->editMessageText({'chat_id' => $callback->message->chat->id, 'message_id' => $callback->message->message_id, text => $callback->message->text . ' (done and keyboard removed)', reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new({inline_keyboard => []}) });
+    if (!$msg) {
+        die "Failed to remove inline keyboard\n";
+    }
+
+    ## This shouldnt happen once the keyboard is gone .. (it might if someone else clicks who isnt the expected user!)
     if (!$waiting) {
         $callback->_brain->sendMessage({'chat_id' => $callback->message->chat->id, text => 'Confusion in the bot-brain, what are you responding to?'});
         return $callback->_brain->answerCallbackQuery({callback_query_id => $callback->id, text => 'Arghhh!', cache_time => 36000});
