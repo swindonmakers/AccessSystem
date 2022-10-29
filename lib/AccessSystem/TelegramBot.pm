@@ -308,6 +308,7 @@ sub tools ($self, $text, $message) {
     }
 
     my $tool_str = join("\n", map { $_->{name} . ($_->{requires_induction} ? ' (induction)' : '') } ($tools->all));
+    $tool_str ||= '<None found>';
     $message->reply($tool_str);
 }
 
@@ -830,7 +831,10 @@ sub resolve_callback ($self, $callback) {
     print STDERR Data::Dumper::Dumper(\@args);
     print STDERR $self->can("$args[0]") ? "I can\n" : "I can't\n";
     if ($waiting->{action} eq $args[0]) {
-        my $msg_text = $waiting->{text} || die('Missing msg text in waiting');
+        if (!exists $waiting->{text}) {
+            warn 'Missing msg text in waiting for ' . $args[0];
+        }
+        my $msg_text = $waiting->{text} || '';
         my @w_args = @{ $waiting->{args} || [] };
         my $method = $args[0];
         return $self->$method($msg_text, $callback, @w_args, \@args);
@@ -852,6 +856,7 @@ sub confirm_induction ($self, $message, $allowed, $args = undef) {
             print "Found person in this chat\n";
             $self->waiting_on_response()->{$allowed->person->telegram_chatid} = {
                 'action' => 'confirm_induction',
+                'text' => $message->text,
                     'args' => [ $allowed ],
             };
 
