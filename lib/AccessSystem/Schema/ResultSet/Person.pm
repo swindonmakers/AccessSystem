@@ -16,14 +16,14 @@ sub find_person {
     if ($person) {
         return $person;
     }
-    my $people = $self->search_rs({ 'me.name' => { '-like' => "%$input" }}, $args);
+    my $people = $self->search_rs({ 'me.name' => { '-like' => "$input%" }}, $args);
     if ($people->count == 1) {
         $person = $people->first;
     }
     return $person if $person;
     try {
         # Pg syntax, but not other databases, sigh
-        my $pgpeople = $self->search_rs({ 'me.name' => { '-ilike' => "%$input" }}, $args);
+        my $pgpeople = $self->search_rs({ 'me.name' => { '-ilike' => "$input%" }}, $args);
         if ($pgpeople->count == 1) {
             $people = $pgpeople;
             $person = $pgpeople->first;
