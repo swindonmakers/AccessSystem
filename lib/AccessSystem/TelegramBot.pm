@@ -229,7 +229,7 @@ sub bankinfo ($self, $text, $message) {
     my $dues = sprintf('%.2f', $member->dues / 100);
     my $bank_ref = $member->bank_ref;
 
-    my $text = <<"END";
+    my $new_text = <<"END";
 Monthly fee: $dues/month</li>
 To: Swindon Makerspace
 Bank: Barclays
@@ -238,7 +238,7 @@ Account: 83789160
 Ref: $bank_ref
 END
 
-    $message->reply($text);
+    $message->reply($new_text);
 }
 
 sub memberstats ($self, $text, $message) {
