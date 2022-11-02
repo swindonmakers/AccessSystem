@@ -9,13 +9,14 @@ use base 'DBIx::Class::ResultSet';
 sub find_tool {
     my ($self, $input, $args, $rc_class) = @_;
 
-    $self->result_class($rc_class);
-    my $tool = $self->find({ 'me.name' => $input }, $args);
-    if ($tool) {
-        return ($tool, $self);
-    }
-    my $tools = $self->search_rs({ 'me.name' => { '-like' => "%$input%" }}, $args);
+    my $tools = $self->search_rs({ 'me.name' => $input }, $args);
     $tools->result_class($rc_class);
+    if ($tools->count == 1) {
+        return ($tools->first, $tools);
+    }
+    $tools = $self->search_rs({ 'me.name' => { '-like' => "%$input%" }}, $args);
+    $tools->result_class($rc_class);
+    my $tool;
     if ($tools->count == 1) {
         $tool = $tools->first;
     }

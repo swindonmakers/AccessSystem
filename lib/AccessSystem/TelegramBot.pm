@@ -112,7 +112,7 @@ Given a bunch of text representing a tool, either return a tool row object, or r
 sub find_tool ($self, $name, $method, $args = undef) {
     my ($tool, $tools_rs) = $self->db->resultset('Tool')->find_tool($name);
     if ($tool) {
-        return ('success', $tools_rs->first);
+        return ('success', $tool);
     }
 
     if ($tools_rs->count == 0) {
