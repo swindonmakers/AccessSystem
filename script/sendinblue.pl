@@ -60,38 +60,42 @@ foreach my $person (@people) {
 				       ]});
 # email => { '-ilike' => $person->{email} }, end_date => undef });
     if ($db_person->count == 1) {
-	$db_person = $db_person->first;
-	if (($person->{attributes}{NAME} ne $db_person->name
-	     || ($person->{attributes}{OPT_IN} != $db_person->opt_in)
-	     || (($person->{attributes}{JOINED} || '') ne $db_person->created_date->date)
-	     || ($db_person->valid_until && $person->{attributes}{PAID_UP_UNTIL} ne $db_person->valid_until->date))) {
-	    #change list prefs:
-	    # turned on opt-in, add events+newsletter
-	    if (!$person->{attributes}{OPT_IN} && $db_person->opt_in) {
-		push @{ $person->{listIds} }, $events_id, $newsletter_id;
-	    }
-	    # turned off opt-in, remove em again
-	    if ($person->{attributes}{OPT_IN} && !$db_person->opt_in) {
-		$person->{listIds} = [ grep { $_ != $events_id && $_ != $newsletter_id } (@{ $person->{listIds} }) ];
-	    }
-	    # no longer a paid-up member
-	    if (!$db_person->valid_until || $db_person->valid_until < DateTime->now) {
-		$person->{listIds} = [ grep { $_ != $valid_all_id } (@{ $person->{listIds} }) ];
-	    }
-	    # is a paid-up member again
-	    if ($db_person->valid_until && $db_person->valid_until >= DateTime->now) {
-		push @{ $person->{listIds} }, $valid_all_id;
-	    }
+        $db_person = $db_person->first;
+        if (($person->{attributes}{NAME} ne $db_person->name
+             || ($person->{attributes}{OPT_IN} != $db_person->opt_in)
+             || (($person->{attributes}{JOINED} || '') ne $db_person->created_date->date) 
+             || ($db_person->valid_until && $person->{attributes}{PAID_UP_UNTIL} ne $db_person->real_expiry($localconfig{overlap_days})->date))) {
+            #change list prefs:
+            # turned on opt-in, add events+newsletter
+            if (!$person->{attributes}{OPT_IN} && $db_person->opt_in) {
+                push @{ $person->{listIds} }, $events_id, $newsletter_id;
+            }
+            # turned off opt-in, remove em again
+            if ($person->{attributes}{OPT_IN} && !$db_person->opt_in) {
+                $person->{listIds} = [ grep { $_ != $events_id && $_ != $newsletter_id } (@{ $person->{listIds} }) ];
+            }
+            # no longer a paid-up member
+            print STDERR $db_person->name, Data::Dumper::Dumper($person->{listIds});
+            if (!$db_person->valid_until || $db_person->real_expiry($localconfig{overlap_days}) < DateTime->now) {
+                $person->{listIds} = [ grep { $_ != $valid_all_id } (@{ $person->{listIds} }) ];
+                print STDERR $db_person->name, "List Ids changed ", Data::Dumper::Dumper($person->{listIds});
+                push @{$person->{unlinkListIds}}, $valid_all_id;
+            }
+            # is a paid-up member again
+            if ($db_person->valid_until && $db_person->real_expiry($localconfig{overlap_days}) >= DateTime->now) {
+                push @{ $person->{listIds} }, $valid_all_id;
+                print STDERR $db_person->name, "List Ids changed again?", Data::Dumper::Dumper($person->{listIds});
+            }
+            
+            $person->{attributes}{NAME} = $db_person->name;
+            $person->{attributes}{JOINED} = $db_person->created_date->date;
+            $person->{attributes}{OPT_IN} = $db_person->opt_in ? JSON::true : JSON::false;
+            if ($db_person->real_expiry($localconfig{overlap_days})) {
+                $person->{attributes}{PAID_UP_UNTIL} = $db_person->real_expiry($localconfig{overlap_days})->date;
+            }
 
-	    $person->{attributes}{NAME} = $db_person->name;
-	    $person->{attributes}{JOINED} = $db_person->created_date->date;
-	    $person->{attributes}{OPT_IN} = $db_person->opt_in ? JSON::true : JSON::false;
-	    if ($db_person->valid_until) {
-		$person->{attributes}{PAID_UP_UNTIL} = $db_person->valid_until->date;
-	    }
-
-	    push @updates, $person;
-	}
+            push @updates, $person;
+        }
     }
     push @checked_emails, $person->{email};
 }

@@ -116,28 +116,43 @@ sub update_contacts {
     # no modifiedAt / createdAt
     # only one of email/id/sms
     foreach my $c (@$contacts) {
-	delete $c->{modifiedAt};
-	delete $c->{createdAt};
-	delete $c->{email};
-	delete $c->{sms};
+        delete $c->{modifiedAt};
+        delete $c->{createdAt};
+        delete $c->{email};
+        delete $c->{sms};
     }
     my $uri = $self->_construct_uri('contacts/batch');
-    #    print STDERR Dumper($contacts);
-#    if (scalar @$contacts > 100) {
+    print STDERR Dumper($contacts);
+    my @clist = @$contacts;
+    my @sublist = @$contacts;
+    my $response;
+    if (scalar @$contacts > 100) {
+        my $total = scalar @$contacts;
+        while (@clist) {
+            @sublist = splice(@clist, 0, 99);
 	
-	my $response = $self->ua->post(
-	    $uri,
-	    Content => encode_json({ contacts => $contacts}),
-	    %{ $self->headers },
-	    );
-    # print STDERR "Update Contacts:", Dumper( $response);
- #   }
+            $response = $self->ua->post(
+                $uri,
+                Content => encode_json({ contacts => \@sublist}),
+                %{ $self->headers },
+                );
+#            print STDERR "Update Contacts:", Dumper( $response);
+            sleep 1;
+        }
+    } else {
+        $response = $self->ua->post(
+            $uri,
+            Content => encode_json({ contacts => $contacts}),
+            %{ $self->headers },
+            );
+#        print STDERR "Update Contacts:", Dumper( $response);
+    }
     if($response->is_success) {
-	if ($response->code == 204) {
-	    return 1;
-	} else {
-	    return decode_json $response->decoded_content;
-	}
+        if ($response->code == 204) {
+            return 1;
+        } else {
+            return decode_json $response->decoded_content;
+        }
     } else {
         warn "Post $uri failed: " . $response->status_line;
         return {};
