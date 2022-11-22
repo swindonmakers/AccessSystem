@@ -846,37 +846,38 @@ sub confirm_induction ($self, $message, $allowed, $args = undef) {
     # if inductee has identified with telegram? if so send an inline keyboard
     if (!$args) {
         print "No args\n";
-        my $in_chat = $allowed->person->telegram_chatid
-            ? $message->_brain->getChatMember($message->chat->id, $allowed->person->telegram_chatid)
-            : undef;
-        if ($message->chat->type ne 'private'
-            && $in_chat
-            && $in_chat->status =~ /^creator|adminstrator|member|restricted$/) {
-            ## Not a direct message and target is in the chat..
-            print "Found person in this chat\n";
-            $self->waiting_on_response()->{$allowed->person->telegram_chatid} = {
-                'action' => 'confirm_induction',
-                'text' => $message->text,
-                    'args' => [ $allowed ],
-            };
+        # In-chat msg stuff is a tad buggy (ours that is)
+        # my $in_chat = $allowed->person->telegram_chatid
+        #     ? $message->_brain->getChatMember($message->chat->id, $allowed->person->telegram_chatid)
+        #     : undef;
+        # if ($message->chat->type ne 'private'
+        #     && $in_chat
+        #     && $in_chat->status =~ /^creator|adminstrator|member|restricted$/) {
+        #     ## Not a direct message and target is in the chat..
+        #     print "Found person in this chat\n";
+        #     $self->waiting_on_response()->{$allowed->person->telegram_chatid} = {
+        #         'action' => 'confirm_induction',
+        #         'text' => $message->text,
+        #             'args' => [ $allowed ],
+        #     };
 
-            return $message->_brain->sendMessage({
-                chat_id => $message->chat->id,
-                text    => '@' . $allowed->person->telegram_username . ' Please confirm that you understand the safety induction for using the ' . $allowed->tool->name . ' and take responsibility for your actions while using it.',
-                reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new({
-                    inline_keyboard => [[
-                        Telegram::Bot::Object::InlineKeyboardButton->new({
-                            text => 'I confirm',
-                            callback_data => "confirm_induction|Yes",
-                        }),
-                        Telegram::Bot::Object::InlineKeyboardButton->new({
-                            text => 'I have not been inducted',
-                            callback_data => "confirm_induction|No",
-                        }),
-                    ]]
-                })
-            });
-        } else {
+        #     return $message->_brain->sendMessage({
+        #         chat_id => $message->chat->id,
+        #         text    => '@' . $allowed->person->telegram_username . ' Please confirm that you understand the safety induction for using the ' . $allowed->tool->name . ' and take responsibility for your actions while using it.',
+        #         reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new({
+        #             inline_keyboard => [[
+        #                 Telegram::Bot::Object::InlineKeyboardButton->new({
+        #                     text => 'I confirm',
+        #                     callback_data => "confirm_induction|Yes",
+        #                 }),
+        #                 Telegram::Bot::Object::InlineKeyboardButton->new({
+        #                     text => 'I have not been inducted',
+        #                     callback_data => "confirm_induction|No",
+        #                 }),
+        #             ]]
+        #         })
+        #     });
+        # } else {
             # send an email
             print "Didn't find them in this chat!?\n";
             my $url = $self->base_url . 'send_induction_acceptance?tool=' . $allowed->tool->id . '&person='.$allowed->person->id;
@@ -889,7 +890,7 @@ sub confirm_induction ($self, $message, $allowed, $args = undef) {
             } else {
                 $message->reply('Email sent to ' . $allowed->person->name);
             }
-        }
+        # }
     } else {
         # args (result of a telegram confirmation)
         delete $self->waiting_on_response->{$message->from->id};
