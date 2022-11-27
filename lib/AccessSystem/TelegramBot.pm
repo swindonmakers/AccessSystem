@@ -386,7 +386,7 @@ sub induct_member ($self, $text, $message, $args = undef) {
     my $member = $self->member($message);
     return if !$member;
     #                                  /induct James Mastros on Point of Sale
-    if (!$args && $text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
+    if (!$args && $text =~ m{^/induct\s([\w\s]+)\s?on\s([\w\d\s]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
         ($p_status, $person_or_keyb) = ('success', $self->db->resultset('Person')->find_person($name));
@@ -579,7 +579,7 @@ sub make_inductor ($self, $text, $message, $args = undef) {
     #     return $message->reply("You're not allowed to do that");
     # }
 
-    if (!$args && $text =~ m{^/make_inductor\s([\w\s]+)\son\s([\w\s\d]+)$}) {
+    if (!$args && $text =~ m{^/make_inductor\s([\w\s]+)\s?on\s([\w\s\d]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
         # Find the target person:
