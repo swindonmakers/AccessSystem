@@ -190,15 +190,15 @@ The POST `transaction` endpoint records a (debit) transaction row for a member, 
 
 Responds with json, success:1|0, error:'Nope!', balance: <member's current balance>
 
-The GET `get\_transactions/:count/:user_hash` returns \$count of json containing the member's transactions containing the date, reason and amount fields, together with their balance.
+The GET `get_transactions/:count/:user_hash` returns \$count of json containing the member's transactions containing the date, reason and amount fields, together with their balance.
 
-The GET `user\_guid\_request` endpoint sends the given `userid` (ref or pure number) an email containing their user hash. This is for entering on the App.
+The GET `user_guid_request` endpoint sends the given `userid` (ref or pure number) an email containing their user hash. This is for entering on the App.
 
-The GET `confirm\_telegram` endpoint given an `email`, `chatid` and `username` is called from the telegram bot `identify` command, this emails the user with this email address (if they exist), an email to confirm they wish to link their telegram and makerspace accounts. The chatid and username are put in temporary storage until the email link is clicked on.
+The GET `confirm_telegram` endpoint given an `email`, `chatid` and `username` is called from the telegram bot `identify` command, this emails the user with this email address (if they exist), an email to confirm they wish to link their telegram and makerspace accounts. The chatid and username are put in temporary storage until the email link is clicked on.
 
-The GET `confirm\_email` endpoint confirms+stores the telegram chatid/username into the member's people database row. This is the link emailed by `confirm\_telegram`.
+The GET `confirm_email` endpoint confirms+stores the telegram chatid/username into the member's people database row. This is the link emailed by `confirm_telegram`.
 
-The GET `induction\_acceptance` endpoint, given a `tool` id and a `person` id, sets "pending acceptance" to false, for that combination of tool and person, in the `allowed` table.
+The GET `induction_acceptance` endpoint, given a `tool` id and a `person` id, sets "pending acceptance" to false, for that combination of tool and person, in the `allowed` table.
 
 Security & DPA
 --------------
@@ -240,11 +240,11 @@ ref of SM0001 in their payment.
 
 A script `script/from_bank.pl` is run daily to import transactions from barclays bank using [barclayscrape](https://github.com/russss/barclayscrape). Any transaction matching SM\d+ is taken to be a payment for that member. A new transaction row is added. 
 
-A separate script `script/membership_payments` runs daily. It checks for each member, if they are expired/invalid, or about to expire, whether they have paid in enough (transactions balance) to cover another monthly payment. If they have and the member is currently valid, a new payment row is created with an expiry date later than their current expiry date by a month. If they are invalid, the new row expires ($amount_paid / $amount\_due) months from the current date. (This has to be a whole number, else the entire payment is rejected).
+A separate script `script/membership_payments` runs daily. It checks for each member, if they are expired/invalid, or about to expire, whether they have paid in enough (transactions balance) to cover another monthly payment. If they have and the member is currently valid, a new payment row is created with an expiry date later than their current expiry date by a month. If they are invalid, the new row expires ($amount\_paid / $amount\_due) months from the current date. (This has to be a whole number, else the entire payment is rejected).
 
 Payments may cover more than one month at a time. Monthly dues are calculated  starting with the standard rate (£25) and adjusting for circumstances -  if the member is a member of another hackspace the value is reduced to £5, for members with concessions the value is then divided by 2. The minimum value is set to £5 in case all of these apply.
 
-If the amount available covers 12\*monthly_amount\*0.9 then their expiry date is updated by a year (10% off for paying a year at a time).
+If the amount available covers 12\*monthly\_amount\*0.9 then their expiry date is updated by a year (10% off for paying a year at a time).
 
 Otherwise, the value paid is then divided by this calculated amount, and that number of months is added to the member's expiry date.
 
