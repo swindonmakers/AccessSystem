@@ -1,4 +1,11 @@
 # Secrit stuff, do not commmit the _local.conf!
+<Model::AccessDB>
+  <connect_info>
+    dsn dbi:SQLite:db/test.db
+    user <unused for sqlite>
+    password <unused for sqlite>
+  </connect_info>
+</Model::AccessDB>
 <OneAll>
   subdomain swindon-makerspace
   domain swindon-makerspace.api.oneall.com
@@ -9,4 +16,11 @@
   name access_system
   mac_secret <any old crap, I generated a guid>
 </authen_cookie>
+<Controller::Root>
+  namespace accesssystem
+</Controller::Root>
+<Sendinblue>
+  api-key <look this up>
+</Sendinblue>
+base_url http://<yourhost>/accesssystem/
 
