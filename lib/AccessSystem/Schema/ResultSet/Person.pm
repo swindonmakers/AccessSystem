@@ -12,6 +12,8 @@ use base 'DBIx::Class::ResultSet';
 sub find_person {
     my ($self, $input, $args) = @_;
 
+    $input =~ s/^\s+//;
+    $input =~ s/\s+$//;
     my $person = $self->find({ 'me.name' => $input }, $args);
     if ($person) {
         return $person;

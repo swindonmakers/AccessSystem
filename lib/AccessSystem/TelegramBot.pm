@@ -386,10 +386,14 @@ sub induct_member ($self, $text, $message, $args = undef) {
     my $member = $self->member($message);
     return if !$member;
     #                                  /induct James Mastros on Point of Sale
-    if (!$args && $text =~ m{^/induct\s([\w\s]+)\s?on\s([\w\d\s]+)$}) {
+    if (!$args && $text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
-        ($p_status, $person_or_keyb) = ('success', $self->db->resultset('Person')->find_person($name));
+        $person_or_keyb = $self->db->resultset('Person')->find_person($name);
+        $p_status = $person_or_keyb ? 'success' : undef;
+        if (!$p_status) {
+            return $message->reply("Didn't find a member with that name");
+        }
         ($t_status, $tool_or_keyb) = $self->find_tool($tool_name, 'induct_member');
         if ($p_status eq 'success') {
             $person = $person_or_keyb;
@@ -579,11 +583,15 @@ sub make_inductor ($self, $text, $message, $args = undef) {
     #     return $message->reply("You're not allowed to do that");
     # }
 
-    if (!$args && $text =~ m{^/make_inductor\s([\w\s]+)\s?on\s([\w\s\d]+)$}) {
+    if (!$args && $text =~ m{^/make_inductor\s([\w\s]+)\son\s([\w\s\d]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
         # Find the target person:
-        ($p_status, $person_or_keyb) = ('success', $self->db->resultset('Person')->find_person($name));
+        $person_or_keyb = $self->db->resultset('Person')->find_person($name);
+        $p_status = $person_or_keyb ? 'success' : undef;
+        if (!$p_status) {
+            return $message->reply("Didn't find a member with that name");
+        }
         # Find the tool (or return a status which will display buttons)
         ($t_status, $tool_or_keyb) = $self->find_tool($tool_name, 'make_inductor');
         if ($p_status eq 'success') {
