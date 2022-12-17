@@ -5,7 +5,7 @@
   <h2>Add child for [% parent.name %]</h2>
   [% END %]
   <p>
-  Swindon Makerspace members pay &pound;25/month (concessions available) to access the Makerspace facility 24 hours a day, 7 days a week. Only paid-up members may use the regulated equipment (after a short induction).
+  Swindon Makerspace members pay a monthly fee (concessions available) to access the Makerspace facility 24 hours a day, 7 days a week. Only paid-up members may use the regulated equipment (after a short induction).
   </p>
   <p>
   Paying Members must be adults (18+), adults may bring supervised children at no further cost.

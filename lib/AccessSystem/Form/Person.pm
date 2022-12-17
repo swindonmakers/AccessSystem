@@ -41,7 +41,6 @@ sub validate {
         $temp->dob($self->field('dob')->value());
     }
     $temp->concessionary_rate_override($self->field('concessionary_rate_override')->value());
-    $temp->member_of_other_hackspace(1) if $self->field('member_of_other_hackspace')->value();
     $self->field('payment_override')
         ->add_error('Voluntary payment amount must be more than suggested amount (' . $temp->normal_dues / 100 . ')')
         if($self->field('payment_override')->is_active()  && $self->field('payment_override')->value() < $temp->normal_dues);
@@ -142,7 +141,7 @@ has_field dob => field_add_defaults {
         required => 'Please enter your date of birth',
     },
     label => 'Date of Birth *',
-    help_string => 'YYYY-MM, only Year/Month accuracy is required. We use this to ensure that you are old enough to be an adult member, or if you are elgiable for OAP concessions.',
+    help_string => 'YYYY-MM, only Year/Month accuracy is required. We use this to ensure that you are old enough to be an adult member, or if you are eligible for senior (65) concessions.',
 };
 
 has_field address => field_add_defaults {
@@ -220,9 +219,23 @@ has_field google_id => field_add_defaults {
     help_string => '(Optional) Your google account email address, (even if the same as your usual email address) - this will be used for access to our Google Drive documents.',
 };
 
+# Display 3 tier choices as big buttons?
+has_field tier => field_add_defaults {
+    type => 'Select',
+    required => 1,
+    active_column => 'in_use',
+    label_column => 'display_name_and_price',
+    widget => 'RadioGroup',
+    messages => {
+        required => 'Please choose a payment tier',
+    },
+    wrapper_attr => { id => 'field-tier', class => 'payment'  },
+    help_string => 'Not resident in Swindon, and a member of a space elsewhere?<br/>Access weekends and Wednesday nights only<br/>Access 24/7 365 days a year<br/>Full access, sponsoring member',
+};
+
 has_field payment_button => (
     type => 'Button',
-    value => 'Change/Show Payment Details',
+    value => 'Change/Show More Payment Options',
     label => '',
     element_attr => { style => 'background-color: #eabf83;' },
     );
@@ -239,9 +252,8 @@ has_field concessionary_rate_override => field_add_defaults {
                  { value => 'twigs', label => 'Referred by Twigs' },
                  { value => 'student', label => 'Student' },
                  { value => 'universal credit', label => 'Universal Credit' },
-                 { value => 'disability', label => 'Disbaility Benefits' },
+                 { value => 'disability', label => 'Disability Benefits' },
                  { value => 'job seeking', label => 'Job Seeking' },
-                 { value => 'mensshed', label => 'Men&apos;s Shed Member' },
         ],
     label => 'Concessionary Rate',
     wrapper_attr => { id => 'field-concessionary-rate-override', class => 'payment payment_hide', style => "display:none"  },
@@ -249,14 +261,14 @@ has_field concessionary_rate_override => field_add_defaults {
     help_string => 'Do you qualify for our reduced payment rate? Choose what best matches your situation, please show documentation to a director to prove your status.',
 };
 
-has_field member_of_other_hackspace => field_add_defaults {
-    type => 'Checkbox',
-    required => 0,
-    wrapper_attr => { id => 'field-member-of-other-hackspace', class => 'payment payment_hide', style => "display:none" },
-    tags => { no_errors => 1},
-    label => 'I am mainly a member of another hackspace/makerspace',
-    help_string => 'Just visiting or only in Swindon part of the year? If you are a member of another hackspace somewhere, you can join us for only &pound;5/month.',
-};
+# has_field member_of_other_hackspace => field_add_defaults {
+#     type => 'Checkbox',
+#     required => 0,
+#     wrapper_attr => { id => 'field-member-of-other-hackspace', class => 'payment payment_hide', style => "display:none" },
+#     tags => { no_errors => 1},
+#     label => 'I am mainly a member of another hackspace/makerspace',
+#     help_string => 'Just visiting or only in Swindon part of the year? If you are a member of another hackspace somewhere, you can join us for only &pound;5/month.',
+# };
 
 has_field payment_override => field_add_defaults {
     type => 'Money',

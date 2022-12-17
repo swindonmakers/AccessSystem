@@ -251,6 +251,8 @@ sub verify: Chained('base') :PathPart('verify') :Args(0) {
                     person => { name => $result->{person}->name },
                     trainer => $result->{person}->get_column('trainer'),
                     access => 1,
+                    cache => $result->{person}->tier->restrictions->{'times'} ? 0 : 1,
+                    colour => $result->{person}->door_colour_to_code || 0x01,
                 }
             );
         } elsif($result) {
@@ -258,6 +260,7 @@ sub verify: Chained('base') :PathPart('verify') :Args(0) {
                 json => {
                     access => 0,
                     error  => $result->{error},
+                    colour => $result->{colour},
                 }
             );
         } else {
@@ -265,6 +268,7 @@ sub verify: Chained('base') :PathPart('verify') :Args(0) {
                 json => {
                     access => 0,
                     error  => 'Failed to look up parameters',
+                    colour => 0x23,
                 }
             );
         }
@@ -708,21 +712,32 @@ sub confirm_induction: Chained('base'): PathPart('confirm_induction'): Args(0) {
     return $c->res->redirect($c->uri_for('post_confirm', { type => 'induction' }));
 }
 
+=head2 get_dues
+
+Returns amount of dues, in pence, which would be payable using current
+input values of: date of birth (dob), concession rate
+(concessionary_rate_override), and tier (tier) chosen.
+
+Used by the L</register> page to live-update dues values when
+prospective members change rates/concession choices.
+
+=cut
+
 sub get_dues: Chained('base'): PathPart('get_dues'): Args(0) {
     my ($self, $c) = @_;
 
     my $dob = $c->req->params->{dob};
     my $concession = $c->req->params->{concessionary_rate_override} || '';
-    my $other_hackspace = $c->req->params->{member_of_other_hackspace} || '';
+    my $tier = $c->req->params->{tier} || 3;
 
     $c->log->debug(Data::Dumper::Dumper($c->req->params));
 #    $c->log->debug("Vals: $dob $concession $other_hackspace Result: ", $new_person->dues);
     my $new_person = $c->model('AccessDB::Person')->new_result({});
-    $new_person->dob($dob);
+    $new_person->tier_id($tier);
+    $new_person->dob($dob) if $dob;
     $new_person->concessionary_rate_override($concession);
-    $new_person->member_of_other_hackspace(1) if $other_hackspace;
 
-    $c->log->debug("Vals: $dob $concession $other_hackspace Result: ", $new_person->dues);
+    $c->log->debug("Vals: $dob $concession Result: ", $new_person->dues);
     $c->response->body($new_person->dues / 100);
 }
 
@@ -731,6 +746,7 @@ sub register: Chained('base'): PathPart('register'): Args(0) {
 
     my $form = AccessSystem::Form::Person->new({ctx => $c, inactive => ['has_children']});
     my $new_person = $c->model('AccessDB::Person')->new_result({});
+    $new_person->tier_id(3);
     $new_person->payment_override($new_person->normal_dues);
 
     if($form->process(

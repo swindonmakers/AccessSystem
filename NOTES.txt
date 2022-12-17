@@ -19,7 +19,7 @@ also add concessionary override entry - via multi choice
 test /editme!
 
 
-perl -Ilib -Mlocal::lib=/usr/src/perl/libs/access_system/perl5/ -MAccessSystem::Schema -le'AccessSystem::Schema->connect("dbi:SQLite:test.db")->create_ddl_dir(undef, undef, undef, "2.0")'
+perl -Ilib -Mlocal::lib=/usr/src/perl/libs/access_system/perl5/ -MAccessSystem::Schema -le'AccessSystem::Schema->connect("dbi:SQLite:test.db")->create_ddl_dir(undef, undef, 'sql/', "2.0")'
 
 emvtool -r 1 -p 8477 cap
 
@@ -103,3 +103,46 @@ Uploaders: Debian Python Modules Team <python-modules-team@lists.alioth.debian.o
 Build-Depends: debhelper (>= 9), python-all, python3-all, dh-python, libssl-dev (>= 0.9.8), openssl, python-sphinx (>= 1.0.7+dfsg), python-setuptools, python3-setuptools, python-cryptography (>= 1.3), python3-cryptography (>= 1.3), python-six, python3-six, python-pytest (>= 2.8.5), python3-pytest (>= 2.8.5), python-cffi, python3-cffi, python-all-dev, python3-all-dev, python-sphinx-rtd-theme
 
 - needs python-openssl installed too.. that one says "arch:any" so it should Just Work?
+
+10.12.2022:
+
+* new membership tiers: https://docs.google.com/document/d/1YbuFwwVMnIjdSh_ZwrWBjttum_nQh5OTOBuiD9Xaf2w/edit#
+** database table
+- tiers: id, name, description, price, concessions_allowed (yes/no), dont_use (yes/no), restrictions (if any?)
+Eg:
+1. MemberOfOtherHackspace, '...', 500, no, no, {}
+2. Weekend, '...', 1500, yes, no, {'times': [{'from':.., 'to'}, {'from' .. }]}
+3. Standard, '...', 2500, yes, no, {}
+4. Sponsor, '...', yes, no, {}
+5. MensShed, '..', no, yes, {}
+
+# DateTime: 1=Monday, 7=Sunday
+{"times": [{"from":"6:00:00","to":"7:23:59"},{"from":"3:18:30","to":"3:23:59"}]}
+
+- person
+** remove member_of_another_hackspace
+** add tier_id, default to 3
+** add prefered door_colour !
+
+** dont forget to upgrade existing members!
+- is mostly: make sure member_of_another_hackspace folks get tier 1 set
+- repeat for concession_rate_override = 'mensshed'
+
+** DB update:
+** sqlite
+INSERT INTO "people_temp_alter"( "id", "parent_id", "name", "email", "opt_in", "dob", "address", "how_found_us", "github_user", "telegram_username", "telegram_chatid", "google_id", "concessionary_rate_override", "payment_override", "voucher_code", "voucher_start", "created_date", "end_date", "tier_id") SELECT "id", "parent_id", "name", "email", "opt_in", "dob", "address", "how_found_us", "github_user", "telegram_username", "telegram_chatid", "google_id", "concessionary_rate_override", "payment_override", "voucher_code", "voucher_start", "created_date", "end_date", CASE WHEN "people".member_of_other_hackspace ==  1 THEN 1 WHEN "people".concessionary_rate_override == 'mensshed' THEN 5 ELSE 3 END tier_id FROM "people";
+** pg:
+ALTER TABLE people ADD COLUMN tier_id integer DEFAULT 0 NOT NULL;
+
+UPDATE people SET tier_id = 1 WHERE member_of_other_hackspace = 1;
+
+UPDATE people SET tier_id = 5 WHERE concessionary_rate_override = 'mensshed';
+
+ALTER TABLE people DROP COLUMN member_of_other_hackspace;
+
+** tiers:
+INSERT INTO tiers (name, description, price, in_use, concessions_allowed) values ('MemberOfOtherHackspace', 'Living outside of Swindon Borough and a fully paid up member of another Maker or Hackspace', 500, 1, 0);
+INSERT INTO tiers (name, description, price, restrictions, in_use) values ('Weekend', 'Access 12:00am Saturday until 12:00am Monday, and Wednesdays 6:30pm to 11:59pm only', 1500, '', 1);
+INSERT INTO tiers (name, description, price, in_use) values ('Standard', 'Access 24hours a day, 365 days a year', 2500, 1);
+INSERT INTO tiers (name, description, price, in_use) values ('Sponsor', 'Access 24hours a day, 365 days a year', 3500, 1);
+INSERT INTO tiers (name, description, price) values ('MensShed', 'Members of Renew only, rate now retired', 1000);

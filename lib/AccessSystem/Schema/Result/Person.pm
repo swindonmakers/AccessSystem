@@ -150,9 +150,15 @@ __PACKAGE__->add_columns(
         data_type => 'float',
         is_nullable => 1,
     },
-    member_of_other_hackspace => {
-        data_type => 'boolean',
+    tier_id => {
+        data_type => 'integer',
         default_value => 0,
+        is_nullable => 0,
+    },
+    door_colour => {
+        data_type => 'varchar',
+        size => '20',
+        default_value => 'green',
         is_nullable => 0,
     },
     voucher_code => {
@@ -209,17 +215,15 @@ __PACKAGE__->has_many('login_tokens', 'AccessSystem::Schema::Result::PersonLogin
 __PACKAGE__->has_many('children', 'AccessSystem::Schema::Result::Person', 'parent_id');
 __PACKAGE__->has_many('transactions', 'AccessSystem::Schema::Result::Transactions', 'person_id');
 __PACKAGE__->belongs_to('parent', 'AccessSystem::Schema::Result::Person', 'parent_id', { 'join_type' => 'left'} );
+__PACKAGE__->belongs_to('tier', 'AccessSystem::Schema::Result::Tier', 'tier_id');
 
 # FIXME: Magic number 
 sub is_valid {
     my ($self, $date) = @_;
-#    my $overlap_days = 14;
-    #   $date ||= DateTime->today()->add(days => $overlap_days);
     $date = DateTime->now();
 
     my $dtf = $self->result_source->schema->storage->datetime_parser;
     my $date_str = $dtf->format_datetime($date);
-    # print STDERR "Date valid compare $date_str\n";
 
     my $is_paid;
 
@@ -257,7 +261,6 @@ sub bank_ref {
 
 ## basic = 25/mo
 ## reduced to 5/mo if member is marked as a member of another hack/makerspace
-## add 5 for each child beyond first one
 ## divide by 2 for concessions (applies also to children!?)
 ## returns whole pence
 
@@ -266,26 +269,12 @@ sub normal_dues {
 
     return 0 if $self->parent;
 
-    my $dues = 2500;
-    if($self->member_of_other_hackspace) {
-        $dues = 500;
-    }
+    my $dues = $self->tier ? $self->tier->price : 2500;
 
-    # Children's data no longer collected (or paid for)
-    # if($self->children_rs->search({ end_date => { '!=' => undef } })->count > 1) {
-    #     $dues += 500 * ($self->children_rs->count-1);
-    # }
-
-    if($self->concessionary_rate) {
+    if($self->tier && $self->tier->concessions_allowed && $self->concessionary_rate) {
         $dues /= 2;
     }
 
-    ## Men's shed special:
-    if($self->concessionary_rate_override &&
-       $self->concessionary_rate_override eq 'mensshed') {
-        $dues = 1000;
-    }
-    
     # minimum amount! cant be student+member of another, and pay only 2.50!
     if($dues < 500) {
         $dues = 500;
@@ -298,9 +287,11 @@ sub dues {
     my ($self) = @_;
 
     my $dues = $self->normal_dues;
+
     if($self->payment_override && $self->payment_override > $dues) {
         $dues = $self->payment_override;
     }
+
     # voucher code gives 20% off first 3 months
     if($self->voucher_code
        && $self->voucher_start->add(months => 3) > DateTime->now()) {
@@ -370,22 +361,6 @@ sub concessionary_rate {
     # It's a nice round number, anyway.
     if ($age->years >= 65) {
         return 1;
-    }
-
-    # Children don't actually pay dues, they increase the dues of
-    # their parents.  Because of that, and because we are nice like
-    # that, we give anybody who has at least one concessionary child a
-    # concession, which lowers their rate, including what they pay for that child (if anything).
-#    if($self->children_rs->search({
-#                                   end_date => { '!=' => undef },
-#                                   concessionary_rate_override => { '!=' => undef },
-    #                                  })->count) {
-    my $children = $self->children_rs;
-    while (my $child = $children->next) {
-        if ($child->concessionary_rate) {
-            print STDERR "concession child\n";
-            return 1;
-        }
     }
 
     return 0;
@@ -632,6 +607,25 @@ Swindon Makerspace
 "
                                          });
     }
+}
+
+sub door_colour_to_code {
+    my ($self) = @_;
+
+    if ($self->tier && $self->tier->name eq 'Sponsor') {
+        my %codes = (
+            white    => 0x00,
+            green    => 0x01,
+            purple   => 0x02,
+            blue     => 0x03,
+            pink     => 0x04,
+            orange   => 0x05,
+            rainbow  => 0x11,
+            rainbow2 => 0x12,
+            );   
+        return $codes{$self->door_colour};
+    }
+    return undef;
 }
 
 1;
