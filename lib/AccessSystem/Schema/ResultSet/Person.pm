@@ -52,16 +52,41 @@ sub allowed_to_thing {
         });
     
     if($person_rs->count == 1 && $person_rs->first->is_valid ) {
+        ## time restrictions for weekenders
+        my $person = $person_rs->first;
+        if ($person->tier->restrictions->{'times'}) {
+            my $now = DateTime->now(time_zone => 'Europe/London');
+            my $r_allow = 0;
+            foreach my $time (@{ $person->tier->restrictions->{'times'} }) {
+                # 'from' => '6:00:00', 'to' => '7:23:59'
+                my ($f_dow, $f_hour, $f_minute) = split(':', $time->{from});
+                my ($t_dow, $t_hour, $t_minute) = split(':', $time->{to});
+                if ($now->day_of_week >= $f_dow && $now->day_of_week <= $t_dow
+                    && $now->hour >= $f_hour && $now->hour <= $t_hour
+                    && $now->minute >= $f_minute && $now->minute <= $t_minute
+                    ) {
+                    $r_allow = 1;
+                }
+            }
+            if (!$r_allow) {
+                return {
+                    error => 'Weekend member is trying to enter during restricted hours',
+                    colour => 0x21,
+                };
+            }
+        }
         return {
-            person => $person_rs->first,
+            person => $person,
         };
     } elsif( $person_rs->count > 1) {
         return {
             error => 'Somehow that returned more than one person! <wibble>',
+            colour => 0x25,
         };
     } elsif( $person_rs->count == 1 && !$person_rs->first->is_valid) {
         return {
             error => "Member would have access with that token, but their membership has expired",
+            colour => 0x22,
         };
     } else {
         my $person;
@@ -74,6 +99,7 @@ sub allowed_to_thing {
         if(!$has_token->count) {
             return {
                 error => "The token ($token) isn't associated with any user",
+                colour => 0x20,
             };
         } else {
             $person = $has_token->first;
@@ -93,11 +119,12 @@ sub allowed_to_thing {
                 error => "The thing exists, but the Person isn't allowed to access it",
                 person => $person,
                 thing => $thing_rs->first,
+                colour => 0x24,
             };
         }
     }
 
-    return { error => 'I have no idea what happened there, but that did\'t work' };
+    return { error => 'I have no idea what happened there, but that did\'t work', colour => 0x23 };
 
 }
 
@@ -185,6 +212,7 @@ sub get_person_from_hash {
     return 0;
 }
 
+## TODO: Update for new tiers
 sub membership_stats {
     my ($self) = @_;
 
@@ -200,8 +228,8 @@ sub membership_stats {
 
         if(!$member->parent) {
             push @flags, 'concession' if $member->concessionary_rate;
-            push @flags, 'otherspace' if $member->member_of_other_hackspace;
-            push @flags, 'full' if !$member->member_of_other_hackspace && ! $member->concessionary_rate;
+            push @flags, 'otherspace' if $member->tier->name eq 'MemberOfOtherHackspace';
+            push @flags, 'full' if $member->tier->name ne 'MemberOfOtherHackspace' && ! $member->concessionary_rate;
 
             push @flags, 'ex_members' if $member->end_date && !$member->is_valid;
             push @flags, 'overdue_members' if !$member->end_date && !$member->is_valid;
