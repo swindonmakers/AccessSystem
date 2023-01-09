@@ -230,7 +230,7 @@ sub bankinfo ($self, $text, $message) {
     my $bank_ref = $member->bank_ref;
 
     my $new_text = <<"END";
-Monthly fee: $dues/month</li>
+Monthly fee: $dues/month
 To: Swindon Makerspace
 Bank: Barclays
 Sort Code: 20-84-58
