@@ -882,19 +882,16 @@ DISTRIBUTIONS
       Test::More 0.88
       Test::Requires 0
       parent 0.223
-  Catalyst-View-JSON-0.36
-    pathname: J/JJ/JJNAPIORK/Catalyst-View-JSON-0.36.tar.gz
+  Catalyst-View-JSON-0.37
+    pathname: H/HA/HAARG/Catalyst-View-JSON-0.37.tar.gz
     provides:
       Catalyst::Helper::View::JSON undef
-      Catalyst::View::JSON 0.36
+      Catalyst::View::JSON 0.37
     requirements:
-      Catalyst 5.6
-      ExtUtils::MakeMaker 6.59
+      Catalyst 5.60
+      ExtUtils::MakeMaker 0
       JSON::MaybeXS 1.003000
       MRO::Compat 0
-      Test::More 0
-      YAML 0
-      perl 5.008001
   Catalyst-View-TT-0.44
     pathname: E/ET/ETHER/Catalyst-View-TT-0.44.tar.gz
     provides:
@@ -3977,11 +3974,11 @@ DISTRIBUTIONS
       perl 5.006
       strict 0
       warnings 0
-  JSON-2.97001
-    pathname: I/IS/ISHIGAKI/JSON-2.97001.tar.gz
+  JSON-4.10
+    pathname: I/IS/ISHIGAKI/JSON-4.10.tar.gz
     provides:
-      JSON 2.97001
-      JSON::Backend::PP 2.97001
+      JSON 4.10
+      JSON::Backend::PP 4.10
     requirements:
       ExtUtils::MakeMaker 0
       Test::More 0

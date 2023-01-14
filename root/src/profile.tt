@@ -16,6 +16,7 @@
   <div class="col-lg-10 offset-2"> Google Id: <strong>[% person.google_id %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
   <div class="col-lg-10 offset-2"> Emails: <strong>[% IF person.opt_in; 'Yes'; ELSE; 'No'; END %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
   <div class="col-lg-10 offset-2"> Concessions?: <strong>[% person.concessionary_rate_override || '&lt;none&gt;' %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
+  <div class="col-lg-10 offset-2"> Door colour: <strong>[% person.door_colour || '&lt;green&gt;' %]</strong> <a href="[% c.uri_for('editme') %]">Edit</a> </div>
 
 
 <div class="col-lg-12"><strong>Important Info:</strong></div>

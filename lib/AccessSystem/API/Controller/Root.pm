@@ -748,6 +748,7 @@ sub register: Chained('base'): PathPart('register'): Args(0) {
     my $new_person = $c->model('AccessDB::Person')->new_result({});
     $new_person->tier_id(3);
     $new_person->payment_override($new_person->normal_dues);
+    $new_person->door_colour('green');
 
     if($form->process(
         item => $new_person,
