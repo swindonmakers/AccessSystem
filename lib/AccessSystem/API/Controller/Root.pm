@@ -863,6 +863,7 @@ sub send_membership_email: Private {
 
     my $member = $c->stash->{member};
     my $dues_nice = sprintf("%0.2f", $member->dues/100);
+    my $access = $member->tier->times_to_string;
     $c->stash->{email} = {
             to => $member->email,
             cc => $c->config->{emails}{cc},
@@ -878,7 +879,7 @@ sub send_membership_email: Private {
                     body => "
 Dear " . $member->name . ",
 
-Thank you for signing up for membership of the Swindon Makerspace. To activate your 24x7 access and ability to use the regulated equipment, please set up a Standing Order with your bank using the following details:
+Thank you for signing up for membership of the Swindon Makerspace. To activate your ${access} access and ability to use the regulated equipment, please set up a Standing Order with your bank using the following details:
 
 Monthly fee: £${dues_nice}/month
 To: Swindon Makerspace
@@ -920,7 +921,7 @@ Swindon Makerspace
                     body => "
 <p>Dear " . $member->name . ",</p>
 
-<p>Thank you for signing up for membership of the Swindon Makerspace. To activate your 24x7 access and ability to use the regulated equipment, please set up a Standing Order with your bank using the following details:</p>
+<p>Thank you for signing up for membership of the Swindon Makerspace. To activate your access and ability to use the regulated equipment, please set up a Standing Order with your bank using the following details:</p>
 <p>Monthly fee: £${dues_nice}/month<br/>
 To: Swindon Makerspace<br/>
 Bank: Barclays<br/>
