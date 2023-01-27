@@ -24,6 +24,18 @@
     jQuery('#associated_button').click(function() {
       jQuery('.associated_hide').toggle();
     });
+
+    // Caution: magic number(s) based on ordering
+    jQuery('.door_colour').prop('disabled', true);
+    jQuery('[name=tier]').change(function() {
+      if (jQuery('#tier\\.3').is(':checked')) {
+        jQuery('.door_colour').prop('disabled', false);
+      } else {
+        jQuery('.door_colour').prop('checked', false);
+        jQuery('#door_colour\\.0').prop('checked', true);
+        jQuery('.door_colour').prop('disabled', true);
+      }
+    });
   });
 </script>
     

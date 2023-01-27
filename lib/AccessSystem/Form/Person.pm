@@ -168,7 +168,7 @@ has_field how_found_us => field_add_defaults {
                  { value => 'facebook', label => 'Facebook' },
                  { value => 'other social media', label => 'Other Social Media' },
                  { value => 'event/conference', label => 'Event or Conference' },
-                 { value => 'referred by friend/family', label => 'Referred by Field or Family' },
+                 { value => 'referred by friend/family', label => 'Referred by Friend or Family' },
                  { value => 'other', label => 'Other' },
         ],
     label => 'How did you find us?*',
@@ -280,6 +280,24 @@ has_field payment_override => field_add_defaults {
     deflation => sub { return $_[0] / 100 },
     apply => [ { transform => sub { return $_[0] * 100 } } ],
     help_string => 'You are welcome to overpay for use of the space, indicate here how much you would like to pay monthly.',
+};
+
+has_field door_colour => field_add_defaults {
+    type => 'Select',
+    widget => 'RadioGroup',
+    required => 0,
+    label => 'Entry Colour',
+    options => [
+        { value => 'green', label => 'Green', attributes => { class => 'door_colour' }, checked => 1 },
+        { value => 'white', label => 'White', attributes => { class => 'door_colour' } },
+        { value => 'purple', label => 'Purple', attributes => { class => 'door_colour' } },
+        { value => 'blue', label => 'Blue', attributes => { class => 'door_colour' } },
+        { value => 'pink', label => 'Pink', attributes => { class => 'door_colour' } },
+        { value => 'orange', label => 'Orange', attributes => { class => 'door_colour' }  },
+        { value => 'rainbow', label => 'Rainbow', attributes => { class => 'door_colour' } },
+        { value => 'rainbow2', label => 'Pride Flag', attributes => { class => 'door_colour' } },
+        ],
+    help_string => 'Sponsor members can pick their entry acceptance colour. Everyone else gets green',
 };
 
 has_field voucher_code => field_add_defaults {
