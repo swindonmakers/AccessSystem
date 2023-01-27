@@ -302,12 +302,19 @@ Output a list of tool names.
 
 sub tools ($self, $text, $message) {
     my $tools = $self->db->resultset('Tool');
-    my $name_match = '%';
+    $tools->result_class('DBIx::Class::ResultClass::HashRefInflator');
     if ($text =~ m{/tools ([\w\d\s]+)}) {
         (undef, $tools) = $tools->find_tool($1, undef, 'DBIx::Class::ResultClass::HashRefInflator');
     }
 
-    my $tool_str = join("\n", map { $_->{name} . ($_->{requires_induction} ? ' (induction)' : '') } ($tools->all));
+    my $tool_str = join("\n",
+                        map {
+                            $_->{name} . ($_->{requires_induction}
+                                            ? ' (induction)'
+                                            : '')
+                        }
+                        grep { $_->{name} !~ /oneall_login_callback/ }
+                        ($tools->all));
     $tool_str ||= '<None found>';
     $message->reply($tool_str);
 }

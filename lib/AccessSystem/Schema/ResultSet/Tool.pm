@@ -10,12 +10,12 @@ sub find_tool {
     my ($self, $input, $args, $rc_class) = @_;
 
     my $tools = $self->search_rs({ 'me.name' => $input }, $args);
-    $tools->result_class($rc_class);
+    $tools->result_class($rc_class) if $rc_class;
     if ($tools->count == 1) {
         return ($tools->first, $tools);
     }
     $tools = $self->search_rs({ 'me.name' => { '-like' => "%$input%" }}, $args);
-    $tools->result_class($rc_class);
+    $tools->result_class($rc_class) if $rc_class;
     my $tool;
     if ($tools->count == 1) {
         $tool = $tools->first;
@@ -26,13 +26,13 @@ sub find_tool {
         my $pgtools = $self->search_rs({ 'me.name' => { '-ilike' => "%$input%" }}, $args);
         if ($pgtools->count) {
             $tools = $pgtools;
-            $tools->result_class($rc_class);
+            $tools->result_class($rc_class) if $rc_class;
         }
         if ($tools->count == 1) {
             $tool = $tools->first;
         }
     } catch {
-        print "This is not Pg: $_\n";
+        print "This is not Pg: (no ILIKE)\n";
     };
     return ($tool, $tools) if $tool;
     
