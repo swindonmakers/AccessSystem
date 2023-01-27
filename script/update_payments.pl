@@ -72,43 +72,15 @@ $schema->resultset('Person')->update_member_register();
 
 sub fiddle_payment {
     my ($trans) = @_;
-
-    return 1 if $trans->{fitid} eq '+201603140000001';
-    return 1 if $trans->{fitid} eq '+201603070000003';
+    $trn->{name} =~ s/o/0/gi;
+    $trn->{name} =~ s/ sm/SM/ig;
+    $trn->{name} =~ s/ SN/ SM/gi;
 
     ## Mr Netting paid to wrong membership ID (twice):
-    if($trans->{fitid} eq '+201603080000003') {
-        $trans->{name} = 'NETTING S SM0007 BGC';
-    } elsif($trans->{fitid} eq '+201603080000002') {
-        $trans->{name} = 'NETTING S SM0012 BGC';
-    } elsif($trans->{name} =~ /O FUNNELL SM0026 STO/) {
-        $trans->{name} = 'O FUNNELL SM0020 STO';
-    } elsif($trans->{name} =~ /BRIDGE PS ABC SM0029 FT/) {
-        $trans->{name} = 'BRIDGE PS ABC SM0027 FT';
-    } elsif($trans->{fitid} eq '+201609150000002') {
-        $trans->{name} = "$trans->{name} SM0039";
-    } elsif($trans->{fitid} eq '+201705020000006') {
-        $trans->{name} = "$trans->{name} SM0068";
-    } elsif($trans->{name} =~ /JAMES C SMO122/) {
-        $trans->{name} = 'JAMES C SM0122';
-    } elsif($trans->{name} =~ /Consulting NT LTD MAKESPACE SM01/) {
-        $trans->{name} = 'Consulting NT LTD MAKESPACE SM00129';
-    } elsif($trans->{name} =~ / SN0068/) {
-        $trans->{name} = 'MR MARK HEWLETT SM0068';
-    } elsif($trans->{name} =~ /SWAG /) {
-        $trans->{name} = 'FELLOWES DJ SM0136';
-    } elsif($trans->{name} =~ /POULIS-JARVI/) {
-        $trans->{name} = 'POULIS-JARVI SM0155';
-    } elsif($trans->{name} =~ /K WALLBANK/) {
+    if($trans->{name} =~ /K WALLBANK/) {
         $trans->{name} = 'K WALLBANK SM00194';
-    } elsif($trans->{name} =~ /RENEW SMO188/) {
-        $trans->{name} = 'RENEW SM0188';
-    } elsif($trans->{name} =~ /MR LAWRENCE A ONSL SM0190/) {
-        $trans->{name} = 'MR LAWRENCE A ONSL SM0189';
-    } elsif($trans->{name} =~ /MR PETER A COWDY SMO241 STO/) {
-	$trans->{name} = 'MR PETER A COWDY SM0241 STO'; 
     } elsif($trans->{name} =~ /J SCOTT STO/) {
-	$trans->{name} = 'J SCOTT SM0303 STO';
+        $trans->{name} = 'J SCOTT SM0303 STO';
    }
     return 0;
 }

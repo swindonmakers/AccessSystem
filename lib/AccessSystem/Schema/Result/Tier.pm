@@ -108,5 +108,23 @@ sub display_name_and_price {
     return sprintf("%s (&pound;%.2f/month)", $self->name, $self->price/100);
 }
 
+sub times_to_string {
+    my ($self) = @_;
+
+    my @times = ();
+    foreach my $time (@{ $self->restrictions->{'times'} }) {
+        push @times, sprintf('On: %s from: %s to: %x');
+                             
+    }
+
+    # lazy!
+    my $times ||= '24x7';
+    if (@{ $self->restrictions->{'times'} }) {
+        $times = 'weekends and wednesday evenings';
+    }
+
+    return $times;
+}
+
 1;
 

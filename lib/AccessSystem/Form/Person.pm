@@ -40,12 +40,13 @@ sub validate {
     } else {
         $temp->dob($self->field('dob')->value());
     }
+    $temp->tier_id($self->field('tier')->value());
     $temp->concessionary_rate_override($self->field('concessionary_rate_override')->value());
     $self->field('payment_override')
         ->add_error('Voluntary payment amount must be more than suggested amount (' . $temp->normal_dues / 100 . ')')
         if($self->field('payment_override')->is_active()  && $self->field('payment_override')->value() < $temp->normal_dues);
 
-    my $vcode = lc $self->item->voucher_code;
+    my $vcode = lc ($self->item->voucher_code || '');
     if (not $vcode) {
         # voucher code is optional, so OK, nop.
     } elsif ($vcode =~ /festival/ or lc $vcode =~ /tomorrow/) {
