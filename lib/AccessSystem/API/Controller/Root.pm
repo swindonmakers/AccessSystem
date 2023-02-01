@@ -295,7 +295,9 @@ sub verify: Chained('base') :PathPart('verify') :Args(0) {
     ## can't fwd to our own View::JSON, this one somehow takes over
     ## and fucks it up!
     $c->forward('View::JSON');
-    
+
+    $c->res->body($c->res->body() . "\n");
+    $c->res->content_length(length($c->res->body));
 }
 
 sub msg_log: Chained('base'): PathPart('msglog'): Args() {
