@@ -1,0 +1,122 @@
+@startuml
+
+title The Database
+
+class tools {
+   id : integer
+   name : string
+   assigned_ip : string
+   requires_induction : boolean
+   team : string
+}
+
+class people {
+   id : integer
+   name : string
+   email : string
+   opt_in : boolean
+   tier_id : integer
+   dob : string
+   address : string
+   how_found_us : string
+   github_user : string
+   telegram_username : string
+   telegram_chatid : bitint
+   google_id : string
+   concessionary_rate_override : string
+   payment_override : string
+   door_colour : string <<default green>>
+   voucher_code : string
+   voucher_start : datetime
+   created_date : datetime
+   end_date : datetime
+}
+
+class membership_register {
+   name : string
+}
+
+class tiers {
+   id : string
+   name : string
+   description : string
+   price : integer
+   concessions_allowed : boolean
+   in_use : boolean
+   restrictions : string
+}
+
+class access_tokens {
+   id : string
+   person_id : integer
+   type : string
+}
+
+class dues {
+   person_id : integer
+   paid_on_date : datetime
+   expires_on_date : datetime
+   amount_p : integer
+   added_on : datetime
+}
+
+class transactions {
+   person_id : integer
+   added_on : datetime
+   amount_p : integer
+   reason : string
+}
+
+class allowed {
+   person_id : integer
+   tool_id : string
+   is_admin : boolean
+   accepted_on : datetime
+   added_on : datetime
+}
+
+class message_log {
+   tool_id : string
+   message : string
+   from_ip : string
+   written_date : datetime
+}
+
+class communications {
+   person_id : integer
+   sent_on : datetime
+   type : string
+   status : string
+   content : string
+}
+
+class confirmations {
+   person_id : integer
+   token : string
+   storage : string
+}
+
+people::tier_id ||--|| tiers::id
+access_tokens::person_id }|--|| people::id
+dues::person_id }|--|| people::id
+transactions::person_id }|--|| people::id
+communications::person_id }|--|| people::id
+confirmations::person_id }|--|| people::id
+allowed::person_id }|--|| people::id
+allowed::tool_id }|--|| tools::id
+message_log::tool_id }|--|| tools::id
+people::name ||--|{ membership_register::name
+
+note left of people: member details
+note top of transactions: in from\nthe member's\nbankref, out\n to transactions+?
+note top of dues: transactions assigned\nto member dues
+note top of access_tokens: RFID token\nassignments\nto members
+note top of tools: inductable machines\n(and the door)
+note top of tiers: membership levels
+note top of allowed: members allowed\nto use tools
+note top of message_log: logs from\napi users
+note top of communications: record of emails\nsent to members
+note top of confirmations: data waiting\nfor email\nconfirmations
+
+
+@enduml
