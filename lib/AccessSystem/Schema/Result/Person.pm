@@ -160,6 +160,7 @@ __PACKAGE__->add_columns(
         size => '20',
         default_value => 'green',
         is_nullable => 0,
+        default_if_empty => 1,
     },
     voucher_code => {
         data_type => 'varchar',
@@ -216,6 +217,20 @@ __PACKAGE__->has_many('children', 'AccessSystem::Schema::Result::Person', 'paren
 __PACKAGE__->has_many('transactions', 'AccessSystem::Schema::Result::Transactions', 'person_id');
 __PACKAGE__->belongs_to('parent', 'AccessSystem::Schema::Result::Person', 'parent_id', { 'join_type' => 'left'} );
 __PACKAGE__->belongs_to('tier', 'AccessSystem::Schema::Result::Tier', 'tier_id');
+
+## HFH is a bit of a pita
+sub insert {
+    my $self = shift;
+    foreach my $col ($self->columns) {
+        my $info = $self->column_info($col);
+        if ($info->{default_if_empty} and not $self->get_column($col)) { 
+            # $self->store_column($col => \'DEFAULT') #'
+            $self->set_column($col => $info->{default_value});
+        }
+    }
+    return $self->next::method(@_);
+}
+
 
 # FIXME: Magic number 
 sub is_valid {
