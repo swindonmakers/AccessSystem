@@ -22,7 +22,7 @@ sub build_form_tags {
         'layout_classes' => {
             label_class => ['col-md-3 font-weight-bold text-right'],
             element_wrapper_class => ['col-md-5'],
-            no_label_element_wrapper_class => ['offset-3'],
+            no_label_element_wrapper_class => ['offset-md-3'],
         },
     };
 }
