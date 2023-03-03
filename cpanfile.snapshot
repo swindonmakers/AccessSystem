@@ -6387,10 +6387,18 @@ DISTRIBUTIONS
       Text::DelimMatch 1.05
       XML::DOM 1.43
       XML::Parser 2.25
-  SQL-Abstract-1.87
-    pathname: I/IL/ILMARI/SQL-Abstract-1.87.tar.gz
+  SQL-Abstract-2.000001
+    pathname: M/MS/MSTROUT/SQL-Abstract-2.000001.tar.gz
     provides:
-      SQL::Abstract 1.87
+      Chunkstrumenter undef
+      DBIx::Class::SQLMaker::Role::SQLA2Passthrough undef
+      SQL::Abstract 2.000001
+      SQL::Abstract::Formatter undef
+      SQL::Abstract::Parts undef
+      SQL::Abstract::Plugin::BangOverrides undef
+      SQL::Abstract::Plugin::ExtraClauses undef
+      SQL::Abstract::Reference undef
+      SQL::Abstract::Role::Plugin undef
       SQL::Abstract::Test undef
       SQL::Abstract::Tree undef
     requirements:
