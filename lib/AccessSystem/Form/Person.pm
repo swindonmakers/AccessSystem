@@ -49,7 +49,7 @@ sub validate {
     my $vcode = lc ($self->item->voucher_code || '');
     if (not $vcode) {
         # voucher code is optional, so OK, nop.
-    } elsif ($vcode =~ /festival/ or lc $vcode =~ /tomorrow/) {
+    } elsif ($vcode =~ /festival/ or $vcode =~ /tomorrow/) {
         # OK, nop
     } else {
         $self->field('voucher_code')
@@ -288,6 +288,7 @@ has_field door_colour => field_add_defaults {
     widget => 'RadioGroup',
     required => 0,
     label => 'Entry Colour',
+    default => 'green',
     options => [
         { value => 'green', label => 'Green', attributes => { class => 'door_colour' }, checked => 1 },
         { value => 'white', label => 'White', attributes => { class => 'door_colour' } },
