@@ -1,5 +1,8 @@
 #!/usr/bin/perl
 
+use strict;
+use warnings;
+
 # use local::lib '/usr/src/perl/libs/accesssystem/perl5';
 use Config::General;
 use DateTime;
@@ -72,9 +75,9 @@ $schema->resultset('Person')->update_member_register();
 
 sub fiddle_payment {
     my ($trans) = @_;
-    $trn->{name} =~ s/o/0/gi;
-    $trn->{name} =~ s/ sm/SM/ig;
-    $trn->{name} =~ s/ SN/ SM/gi;
+    $trans->{name} =~ s/o/0/gi;
+    $trans->{name} =~ s/ sm/SM/ig;
+    $trans->{name} =~ s/ SN/ SM/gi;
 
     ## Mr Netting paid to wrong membership ID (twice):
     if($trans->{name} =~ /K WALLBANK/) {
