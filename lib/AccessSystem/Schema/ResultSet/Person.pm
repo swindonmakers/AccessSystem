@@ -252,7 +252,8 @@ sub membership_stats {
             push @flags, 'concession' if $member->concessionary_rate;
             push @flags, $member->tier->name;
 
-            push @flags, 'full' if $member->tier->name ne 'MemberOfOtherHackspace' && ! $member->concessionary_rate;
+            push @flags, 'full' if ! $member->concessionary_rate;
+#            push @flags, 'full' if $member->tier->name ne 'MemberOfOtherHackspace' && ! $member->concessionary_rate;
 
             push @flags, 'ex_members' if $member->end_date && !$member->is_valid;
             push @flags, 'overdue_members' if !$member->end_date && !$member->is_valid;
@@ -284,9 +285,9 @@ sub membership_stats {
     my $msg_text = "
 Current Total Members: " . ($data{valid_members}{count}{count} || 0) . "\n";
     foreach my $tier ($self->result_source->schema->resultset('Tier')->all) {
-        $msg_text .= sprintf("%-30s: %d full, %d concession\n",
+        $msg_text .= sprintf("%-15.15s: % 3s full, % 3s concession\n",
                              $tier->name,
-                             $data{full}{valid_members}{$tier->name},
+                             $data{full}{valid_members}{$tier->name} || 0,
                              $data{concession}{valid_members}{$tier->name} || 0
             );
     }

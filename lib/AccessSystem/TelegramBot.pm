@@ -245,9 +245,9 @@ sub memberstats ($self, $text, $message) {
     my $data = $self->db->resultset('Person')->membership_stats;
     print STDERR Data::Dumper::Dumper($data);
     
-    my $msg_text = $data->{msg_text};
+    my $msg_text = '<pre>' . $data->{msg_text}. '</pre>';
 
-    $message->reply($msg_text);
+    $message->reply($msg_text, { parse_mode => 'html'});
 
     return;
 }
