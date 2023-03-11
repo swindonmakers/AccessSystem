@@ -185,6 +185,13 @@ sub update_member_register {
         } elsif(!$recent->ended_date) {
             # the most recent membership hadnt ended, but now we discover that
             # it has, so we close it:
+            if ($member->valid_until < $recent->started_date) {
+                # This happens when we have 2 ids with duplicate names..
+                # try to close the new one with the old one's details !
+                warn "Register Update: Duplicate? member " . $member->name . " ended before they started!?\n Valid: " . $member->valid_until->ymd . " Started: " . $recent->started_date->ymd . "\n";
+                next;
+            }
+
             $recent->update({
                 ended_date => $member->valid_until->ymd,
                 updated_date => DateTime->now,
@@ -264,7 +271,9 @@ sub membership_stats {
                 push @{ $data{$f}{people} }, { %cols{qw/id parent_id name created_date end_date/}, concessionary_rate => $member->concessionary_rate, valid_until => $v_until->ymd, tier => $member->tier->name };
             }
             for my $g (@flags) {
-                $data{$f}{$g}++;
+                for my $h (@flags) {
+                    $data{$f}{$g}{$h}++;
+                }
             }
         }
     }
@@ -273,18 +282,16 @@ sub membership_stats {
 
     # email/telegram text:
     my $msg_text = "
-Current Total Members: " . ($data{valid_members}{count} || 0) . "\n";
+Current Total Members: " . ($data{valid_members}{count}{count} || 0) . "\n";
     foreach my $tier ($self->result_source->schema->resultset('Tier')->all) {
         $msg_text .= sprintf("%-30s: %d full, %d concession\n",
                              $tier->name,
-                             $data{valid_members}{$tier->name},
-                             ( $data{concession}{$tier->name} ?
-                               $data{concession}{$tier->name} - ($data{valid_members}{concession} || $data{concession}{$tier->name})
-                               : 0)
+                             $data{full}{valid_members}{$tier->name},
+                             $data{concession}{valid_members}{$tier->name} || 0
             );
     }
     $msg_text .= "Income expected: \x{00A3}" . sprintf("%0.2f", $data{income}/100) . "\n";
-    $msg_text .= "Left this month: " . ($data{recent_expired}{count} || 0) ."\n";
+    $msg_text .= "Left this month: " . ($data{recent_expired}{count}{count} || 0) ."\n";
     $data{msg_text} = $msg_text;
 
     $data{recently} = join("\n", map {
