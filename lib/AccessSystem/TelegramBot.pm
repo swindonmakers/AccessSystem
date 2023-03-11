@@ -243,11 +243,9 @@ END
 
 sub memberstats ($self, $text, $message) {
     my $data = $self->db->resultset('Person')->membership_stats;
-    my $msg_text = "
-Current members: " . ($data->{valid_members}{count} || 0) . " - (" . join(', ', map { "$_: " . ($data->{valid_members}{$_} || 0) } (qw/full concession otherspace adult child/)) . "),
-Ex members: " . ($data->{ex_members}{count} || 0) . " - (" . join(', ', map { "$_: " . ($data->{ex_members}{$_} || 0) } (qw/full concession otherspace/)) . "),
-Overdue members: " . ($data->{overdue_members}{count} || 0) ." - (" . join(', ', map { "$_: " . ($data->{overdue_members}{$_} || 0) } (qw/full concession otherspace/)) . "),
-Left this month: " . ($data->{recent_expired}{count} || 0) ." - (" . join(', ', map { "$_: " . ($data->{recent_expired}{$_} || 0) } (qw/full concession otherspace/)) . ")";
+    print STDERR Data::Dumper::Dumper($data);
+    
+    my $msg_text = $data->{msg_text};
 
     $message->reply($msg_text);
 

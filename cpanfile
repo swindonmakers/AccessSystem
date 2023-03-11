@@ -7,6 +7,7 @@ requires 'Catalyst::View::Email';
 requires 'Net::SMTP::SSL';
 requires 'DateTime';
 requires 'DBIx::Class::TimeStamp';
+requires 'SQL::Abstract', '2';
 requires 'SGML::DTDParse';
 requires 'HTML::FormHandler';
 requires 'HTML::TreeBuilder';
