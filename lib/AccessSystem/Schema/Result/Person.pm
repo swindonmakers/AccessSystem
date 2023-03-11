@@ -231,6 +231,18 @@ sub insert {
     return $self->next::method(@_);
 }
 
+sub update {
+    my $self = shift;
+    foreach my $col ($self->columns) {
+        my $info = $self->column_info($col);
+        if ($info->{default_if_empty} and not $self->get_column($col)) {
+            # $self->store_column($col => \'DEFAULT') #'
+            $self->set_column($col => $info->{default_value});
+        }
+    }
+    return $self->next::method(@_);
+}
+
 
 # FIXME: Magic number 
 sub is_valid {

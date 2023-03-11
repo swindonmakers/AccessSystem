@@ -27,6 +27,9 @@
 
     // Caution: magic number(s) based on ordering
     jQuery('.door_colour').prop('disabled', true);
+    if (jQuery('#tier\\.3').is(':checked')) {
+      jQuery('.door_colour').prop('disabled', false);
+    }
     jQuery('[name=tier]').change(function() {
       if (jQuery('#tier\\.3').is(':checked')) {
         jQuery('.door_colour').prop('disabled', false);
