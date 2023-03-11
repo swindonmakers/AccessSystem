@@ -1167,29 +1167,13 @@ sub membership_status_update : Chained('base') :PathPart('membership_status_upda
     use Data::Dumper;
     $c->log->debug(Dumper($data));
     $c->stash->{email} = {
-#            to => 'jess@jandj.me.uk', #'info@swindon-makerspace.org',
             to => $c->config->{emails}{cc},
             from => 'info@swindon-makerspace.org',
             subject => 'Swindon Makerspace membership status',
             body => "
 Dear Directors,
 
-Current members: " . $data->{valid_members}{count} . " - (" . join(', ', map { "$_: " . ($data->{valid_members}{$_} || 0) } (qw/full concession otherspace adult child/)) . "), 
-Ex members: " . ($data->{ex_members}{count} || 0) . " - (" . join(', ', map { "$_: " . ($data->{ex_members}{$_} || 0) } (qw/full concession otherspace/)) . "), 
-Overdue members: " . $data->{overdue_members}{count} ." - (" . join(', ', map { "$_: " . ($data->{overdue_members}{$_} || 0) } (qw/full concession otherspac/)) . "), 
-Recently: 
-" . join("\n", map { sprintf("%03d: %40s: %20s: %s", 
-                                   $_->{id},
-                                   $_->{name},
-                                   ($_->{concessionary_rate}
-                                    ? 'concession' 
-                                    : ( $_->{member_of_other_hackspace}
-                                        ? 'otherspace' 
-                                        : 'full' )
-                                   ),
-                                   $_->{valid_until}) } (@{ $data->{recent_expired}{people} }) ) .",
-
-Income expected: £" . sprintf("%0.2f", $data->{income}/100) . "
+" . $data->{msg_text} . "\n\n" . $data->{recently} ."
 
 Regards,
 

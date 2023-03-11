@@ -142,7 +142,63 @@ ALTER TABLE people DROP COLUMN member_of_other_hackspace;
 
 ** tiers:
 INSERT INTO tiers (name, description, price, in_use, concessions_allowed) values ('MemberOfOtherHackspace', 'Living outside of Swindon Borough and a fully paid up member of another Maker or Hackspace', 500, 1, 0);
-INSERT INTO tiers (name, description, price, restrictions, in_use) values ('Weekend', 'Access 12:00am Saturday until 12:00am Monday, and Wednesdays 6:30pm to 11:59pm only', 1500, '', 1);
+INSERT INTO tiers (name, description, price, restrictions, in_use) values ('Weekend', 'Access 12:00am Saturday until 12:00am Monday, and Wednesdays 6:30pm to 11:59pm only', 1500, '{"times":[{"from":"3:18:00","to":"3:23:59"},{"from":"6:00:01","to":"6:23:59"},{"from":"7:00:01","to":7:23:59"}]}', 1);
 INSERT INTO tiers (name, description, price, in_use) values ('Standard', 'Access 24hours a day, 365 days a year', 2500, 1);
 INSERT INTO tiers (name, description, price, in_use) values ('Sponsor', 'Access 24hours a day, 365 days a year', 3500, 1);
 INSERT INTO tiers (name, description, price) values ('MensShed', 'Members of Renew only, rate now retired', 1000);
+
+09.03.2023:
+
+Matt's crazy sql abstract "tiers + concessions count" query:
+
+my $sqla = SQL::Abstract->new->plugin('+ExtraClauses');
+
+# my ($query, @bind) = $sqla->select({
+#   _ => [
+#     'tiers.name',
+#     { -as => [ { -count => '*' }, \'"all"' ] },
+#     { -as => [
+#       { -sum => { -cast => [ 'is_concession' => 'int' ] } },
+#       'conc'
+#     ] },
+#   ],
+#   from => [
+#     { -select => {
+#       _ => [
+#         'person.tier_id',
+#         \q{(person.concessionary_rate_override != '') AS is_concession},
+#       ],
+#       from => [
+#         'people' => -as => 'person',
+#          -join => [
+#            { 'dues' => { -as => 'payment' } },
+#            on => { 'payment.person_id' => 'person.id' },
+#            type => 'left'
+#         ],
+#       ],
+#       group_by => 'person.id',
+#       having => { -op => [
+#         '>=',
+#         { -max => 'payment.expires_on_date' },
+#         { -value => $dtf->format_datetime($now) }, # { -now => [] },
+#       ] },
+#     } },
+#     -as => 'valid_person',
+#     -join => [
+#       'tiers',
+#       on => { 'tiers.id' => 'valid_person.tier_id' }
+#     ],
+#   ],
+#   group_by => 'tiers.id',
+# });
+
+# # print $query, "\n";
+
+# my $tiers = $self->result_source->schema->storage->dbh_do(sub {
+# my $dbh = $_[1];
+#   $dbh->selectall_hashref($query, 'name', {}, @bind)
+# });
+
+# #print STDERR Data::Dumper::Dumper($tiers);
+#      $data->{valid_members} = $tiers;
+      

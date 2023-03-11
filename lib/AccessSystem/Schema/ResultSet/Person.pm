@@ -6,7 +6,8 @@ use warnings;
 use Digest::MD5 qw(md5_hex);
 use Try::Tiny;
 use DateTime;
-
+use SQL::Abstract;
+#use SQL::Abstract::Plugin::ExtraClauses;
 use base 'DBIx::Class::ResultSet';
 
 sub find_person {
@@ -212,6 +213,17 @@ sub get_person_from_hash {
     return 0;
 }
 
+# Example response for /memberstats that now includes weekend
+
+# Current Total Members: X
+# 24/7 members: X full, X concession
+#     Wknd members: X full, X concession
+#     Sponsor members: X full, X concession
+#   Otherspace: X
+#   Child: X (should we list this?)
+# Left this month: X (dont break this down as feels like overkill)
+#     things in brackets are comments, obviously :)
+    
 ## TODO: Update for new tiers
 sub membership_stats {
     my ($self) = @_;
@@ -221,6 +233,9 @@ sub membership_stats {
     my $now = DateTime->now()->subtract(days => 1);
     my $four_weeks = $now->clone->subtract('days' => 27);
 
+    my $dtf = $self->result_source->schema->storage->datetime_parser;
+
+
     while (my $member = $self->next() ) {
         my @flags = ();
         push @flags, 'valid_members' if $member->is_valid;
@@ -228,7 +243,8 @@ sub membership_stats {
 
         if(!$member->parent) {
             push @flags, 'concession' if $member->concessionary_rate;
-            push @flags, 'otherspace' if $member->tier->name eq 'MemberOfOtherHackspace';
+            push @flags, $member->tier->name;
+
             push @flags, 'full' if $member->tier->name ne 'MemberOfOtherHackspace' && ! $member->concessionary_rate;
 
             push @flags, 'ex_members' if $member->end_date && !$member->is_valid;
@@ -245,7 +261,7 @@ sub membership_stats {
         for my $f (@flags) {
             if($f eq 'recent_expired') {
                 my %cols = $member->get_columns;
-                push @{ $data{$f}{people} }, { %cols{qw/id parent_id name member_of_other_hackspace created_date end_date/}, concessionary_rate => $member->concessionary_rate, valid_until => $v_until->ymd };
+                push @{ $data{$f}{people} }, { %cols{qw/id parent_id name created_date end_date/}, concessionary_rate => $member->concessionary_rate, valid_until => $v_until->ymd, tier => $member->tier->name };
             }
             for my $g (@flags) {
                 $data{$f}{$g}++;
@@ -254,6 +270,32 @@ sub membership_stats {
     }
 
     $data{income} = $income;
+
+    # email/telegram text:
+    my $msg_text = "
+Current Total Members: " . ($data{valid_members}{count} || 0) . "\n";
+    foreach my $tier ($self->result_source->schema->resultset('Tier')->all) {
+        $msg_text .= sprintf("%-30s: %d full, %d concession\n",
+                             $tier->name,
+                             $data{valid_members}{$tier->name},
+                             ( $data{concession}{$tier->name} ?
+                               $data{concession}{$tier->name} - ($data{valid_members}{concession} || $data{concession}{$tier->name})
+                               : 0)
+            );
+    }
+    $msg_text .= "Income expected: \x{00A3}" . sprintf("%0.2f", $data{income}/100) . "\n";
+    $msg_text .= "Left this month: " . ($data{recent_expired}{count} || 0) ."\n";
+    $data{msg_text} = $msg_text;
+
+    $data{recently} = join("\n", map {
+        sprintf("%03d: %40s: %20s: %s", 
+                $_->{id},
+                $_->{name},
+                ($_->{concessionary_rate}
+                 ? 'concession' 
+                 : $_->{tier}
+                ),
+                $_->{valid_until}) } (@{ $data{recent_expired}{people} }) );
 
     return \%data;
 }
