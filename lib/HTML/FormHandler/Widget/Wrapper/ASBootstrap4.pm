@@ -172,7 +172,7 @@ sub wrap_checkbox {
     # return wrapped checkbox, either on left or right
     return qq{<div class="checkbox"><label$for>\n$label\n$rendered_widget</label></div>}
         if( $self->get_tag('label_left') );
-    return qq{<div class="form-check-input"><label$for class="form-check-label">$rendered_widget\n$label\n</label></div>};
+    return qq{<div class="form-check"><label$for class="form-check-label">$rendered_widget\n$label\n</label></div>};
 }
 
 sub do_prepend_append {
