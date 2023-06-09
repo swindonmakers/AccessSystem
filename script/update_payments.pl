@@ -1,4 +1,6 @@
 #!/usr/bin/perl
+use warnings;
+use strict;
 
 # use local::lib '/usr/src/perl/libs/accesssystem/perl5';
 use Config::General;
@@ -72,15 +74,19 @@ $schema->resultset('Person')->update_member_register();
 
 sub fiddle_payment {
     my ($trans) = @_;
-    $trn->{name} =~ s/o/0/gi;
-    $trn->{name} =~ s/ sm/SM/ig;
-    $trn->{name} =~ s/ SN/ SM/gi;
+    $trans->{name} =~ s/o/0/gi;
+    $trans->{name} =~ s/sm/SM/ig;
+    $trans->{name} =~ s/SN/ SM/gi;
 
     ## Mr Netting paid to wrong membership ID (twice):
     if($trans->{name} =~ /K WALLBANK/) {
         $trans->{name} = 'K WALLBANK SM00194';
     } elsif($trans->{name} =~ /J SCOTT STO/) {
         $trans->{name} = 'J SCOTT SM0303 STO';
+    } elsif($trans->{name} =~ /Henry Russell/) {
+        $trans->{name} = 'Henry Russell SM0374';
+    } elsif($trans->{name} =~ /CROSSKEY CG I/) {
+        $trans->{name} = 'CROSSKEY CG SM0375';
    }
     return 0;
 }
