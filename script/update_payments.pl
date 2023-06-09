@@ -2,6 +2,9 @@
 use warnings;
 use strict;
 
+use strict;
+use warnings;
+
 # use local::lib '/usr/src/perl/libs/accesssystem/perl5';
 use Config::General;
 use DateTime;
