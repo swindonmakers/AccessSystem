@@ -90,6 +90,8 @@ sub fiddle_payment {
         $trans->{name} = 'Henry Russell SM0374';
     } elsif($trans->{name} =~ /CROSSKEY CG I/) {
         $trans->{name} = 'CROSSKEY CG SM0375';
+    } elsif($trans->{name} =~ /D'JORN FEVRIER/) {
+        $trans->{name} = 'JORN FEVRIER SM0301';
    }
     return 0;
 }
