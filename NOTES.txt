@@ -202,3 +202,99 @@ my $sqla = SQL::Abstract->new->plugin('+ExtraClauses');
 # #print STDERR Data::Dumper::Dumper($tiers);
 #      $data->{valid_members} = $tiers;
       
+
+09.04.2023:
+
+Bot can ban/unban members? (or ban, then unban if/when they attempt to re-join? is there an on-join?)
+
+banChatMember
+Use this method to ban a user in a group, a supergroup or a channel. In the case of supergroups and channels, the user will not be able to return to the chat on their own using invite links, etc., unless unbanned first. The bot must be an administrator in the chat for this to work and must have the appropriate administrator rights. Returns True on success.
+- chat_id, user_id, until_date, revoke_messages (Pass True to delete all messages from the chat for the user that is being removed. If False, the user will be able to see messages in the group that were sent before the user was removed. Always True for supergroups and channels.)
+
+unbanChatMember chat_id, user_id, only_if_banned
+
+approveChatJoinRequest - chat_id, user_id
+declineChatJoinRequest - chat_id, user_id
+
+Types of incoming messages:
+chat_join_request	ChatJoinRequest
+chat: Chat
+from: User
+user_chat_id: Identifier of a private chat with the user who sent the join request. This number may have more than 32 significant bits and some programming languages may have difficulty/silent defects in interpreting it. But it has at most 52 significant bits, so a 64-bit integer or double-precision float type are safe for storing this identifier. The bot can use this identifier for 24 hours to send messages until the join request is processed, assuming no other administrator contacted the user.
+date: Integer
+bio: String
+invite_link: ChatInviteLink
+
+Object::Chat:
+join_to_send_messages	True	Optional. True, if users need to join the supergroup before they can send messages. Returned only in getChat.
+join_by_request	True	Optional. True, if all users directly joining the supergroup need to be approved by supergroup administrators. Returned only in getChat.
+
+Hmm no ChatJoinRequest (maybe only if the bot itself made the invite!?)
+Instead we get this (message with no text):
+
+Incoming msg: $VAR1 = {
+          'message' => {
+                         'new_chat_member' => {
+                                                'is_bot' => bless( do{\(my $o = 0)}, 'JSON::PP::Boolean' ),
+                                                'id' => 201913669,
+                                                'last_name' => 'smith',
+                                                'username' => 'colour_limited',
+                                                'first_name' => 'josh'
+                                              },
+                         'new_chat_members' => [
+                                                 {
+                                                   'last_name' => 'smith',
+                                                   'id' => 201913669,
+                                                   'is_bot' => $VAR1->{'message'}{'new_chat_member'}{'is_bot'},
+                                                   'first_name' => 'josh',
+                                                   'username' => 'colour_limited'
+                                                 }
+                                               ],
+                         'new_chat_participant' => {
+                                                     'username' => 'colour_limited',
+                                                     'first_name' => 'josh',
+                                                     'is_bot' => $VAR1->{'message'}{'new_chat_member'}{'is_bot'},
+                                                     'last_name' => 'smith',
+                                                     'id' => 201913669
+                                                   },
+                         'from' => {
+                                     'first_name' => 'josh',
+                                     'username' => 'colour_limited',
+                                     'id' => 201913669,
+                                     'last_name' => 'smith',
+                                     'is_bot' => $VAR1->{'message'}{'new_chat_member'}{'is_bot'}
+                                   },
+                         'date' => 1681051733,
+                         'message_id' => 2,
+                         'chat' => {
+                                     'title' => 'SwMakers Bot Testing',
+                                     'id' => '-1001809447294',
+                                     'type' => 'supergroup'
+                                   }
+                       },
+          'update_id' => 623330505
+        };
+
+
+
+TODO:
+* readme/docs for Telegram::Bot::Brain
+
+2023-04-23:
+
+We need an invite link with this set:
+*creates_join_request*	Boolean	True, if users joining the chat via the link need to be approved by chat administrators
+
+ChatInviteLink
+Represents an invite link for a chat.
+
+Field	Type	Description
+invite_link	String	The invite link. If the link was created by another chat administrator, then the second part of the link will be replaced with “…”.
+creator	User	Creator of the link
+*creates_join_request*	Boolean	True, if users joining the chat via the link need to be approved by chat administrators
+is_primary	Boolean	True, if the link is primary
+is_revoked	Boolean	True, if the link is revoked
+name	String	Optional. Invite link name
+expire_date	Integer	Optional. Point in time (Unix timestamp) when the link will expire or has been expired
+member_limit	Integer	Optional. The maximum number of users that can be members of the chat simultaneously after joining the chat via this invite link; 1-99999
+pending_join_request_count	Integer	Optional. Number of pending join requests created using this link

@@ -198,23 +198,28 @@ sub read_message ($self, $message) {
         },
         );
 
-    if (ref($message) eq 'Telegram::Bot::Object::Message') {
-#        print STDERR Data::Dumper::Dumper($message);
+    if (ref($message) eq 'Telegram::Bot::Object::Message' && $message->text) {
         print STDERR $message->text, "\n" if ($message->text =~ q{^/});
         if ($message->text =~ qr{^/(help|start)}) {
             return $message->reply(join("\n", "I know: ", map {$methods{$_}->{help}} (sort keys %methods) ));
         }
         foreach my $method (keys %methods) {
-            if ($message->text =~ /$methods{$method}{match}/) {
+            if ($message->text && $message->text =~ /$methods{$method}{match}/) {
                 my $message_text = $message->text;
                 my $replace = '\@' . $self->bot_name;
                 $message_text =~ s/$replace//;
                 return $self->$method($message_text, $message);
             }
         }
+    } elsif (ref($message) eq 'Telegram::Bot::Object::Message' && $message->new_chat_members) {
+        $self->check_if_ban($message);
     } elsif (ref($message) eq 'Telegram::Bot::Object::CallbackQuery') {
         # print STDERR "Calling resolve\n";
         return $self->resolve_callback($message);
+    } elsif (ref($message) eq 'Telegram::Bot::Object::ChatJoinRequest') {
+        # print STDERR "Calling resolve\n";
+        print STDERR Data::Dumper::Dumper($message);
+        return $self->respond_to_join_request($message);
     }
     # This turns out to be just annoying..
     # if ($message->text =~ m{^/}) {
@@ -854,6 +859,68 @@ sub resolve_callback ($self, $callback) {
         return $self->$method($msg_text, $callback, @w_args, \@args);
     }
     return $callback->answer('Confused!');
+}
+
+# We'll only get these in groups where the Bot is an admin that has
+# invite permissions.
+# And the link is set to "requires admin approval!"
+sub respond_to_join_request ($self, $chatjoinrequest) {
+    # Approve if is currently a valid member
+    # Decline otherwise
+    # IIRC this doesn't ban people, mebbe should implement some sorta
+    # timeout if they retry?
+
+    my $member = $self->member($chatjoinrequest);
+    if (!$member) {
+        # Not a member, or not identified
+        $chatjoinrequest->_brain->sendMessage({
+            chat_id => $chatjoinrequest->user_chat_id,
+            text    => $chatjoinrequest->chat->title . " is for paid-up members of the Swindon Makerspace only. If you are a paid-up member, PM me /identify <email address>, to prove who you are."
+        });
+        print STDERR "Declining: ", $chatjoinrequest->from->id, " (Not member)\n";
+        return $chatjoinrequest->decline();
+    }
+    if(!$member->is_valid) {
+        $chatjoinrequest->_brain->sendMessage({
+            chat_id => $chatjoinrequest->user_chat_id,
+            text    => $chatjoinrequest->chat->title . " is for paid-up members of the Swindon Makerspace only. If you want to rejoin PM me /bankinfo to get our bank details"
+        }); 
+        print STDERR "Declining: ", $chatjoinrequest->from->id, " (Not valid)\n";
+        return $chatjoinrequest->decline();
+    }
+
+    print STDERR "Approving: ", $chatjoinrequest->from->id, "\n";
+    $chatjoinrequest->approve();
+}
+
+# Message with no "text", "from" is a new chat member (if it has new_chat_members)
+sub check_if_ban ($self, $message) {
+    my $member = $self->member($message);
+    if (!$member) {
+        # Not a member, or not identified
+        $message->_brain->banChatMember({
+            chat_id => $message->chat->id,
+            user_id => $message->from->id,
+            until_date => time()+60,
+        });
+        return $message->reply(
+            $message->chat->title . " is for paid-up members of the Swindon Makerspace only. If you are a paid-up member, PM me /identify <email address>, to prove who you are."
+        );
+        print STDERR "Join from: ", $message->from->username, " (Not member)\n";
+    }
+    if(!$member->is_valid) {
+        $message->_brain->banChatMember({
+            chat_id => $message->chat->id,
+            user_id => $message->from->id,
+            until_date => time()+60,
+        });
+        return $message->reply(
+            $message->chat->title . " is for paid-up members of the Swindon Makerspace only. If you want to rejoin PM me /bankinfo to get our bank details"
+        );
+        print STDERR "Join from: ", $message->from->username, " (Not valid)\n";
+    }
+
+    print STDERR "Join allowed: ", $message->from->username, "\n";
 }
 
 sub confirm_induction ($self, $message, $allowed, $args = undef) {
