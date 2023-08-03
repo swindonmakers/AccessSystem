@@ -199,6 +199,7 @@ sub read_message ($self, $message) {
         );
 
     if (ref($message) eq 'Telegram::Bot::Object::Message') {
+#        print STDERR Data::Dumper::Dumper($message);
         print STDERR $message->text, "\n" if ($message->text =~ q{^/});
         if ($message->text =~ qr{^/(help|start)}) {
             return $message->reply(join("\n", "I know: ", map {$methods{$_}->{help}} (sort keys %methods) ));
@@ -391,7 +392,7 @@ sub induct_member ($self, $text, $message, $args = undef) {
     my $member = $self->member($message);
     return if !$member;
     #                                  /induct James Mastros on Point of Sale
-    if (!$args && $text =~ m{^/induct\s([\w\s]+)\son\s([\w\d\s]+)$}) {
+    if (!$args && $text =~ m{^/induct\s(['\w\s]+)\son\s([\w\d\s]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
         $person_or_keyb = $self->db->resultset('Person')->find_person($name);
@@ -545,7 +546,7 @@ What can this person use?
 sub inductions ($self, $text, $message) {
     return unless my $member = $self->authorize($message);
 
-    if ($text =~ m{^/inductions(?:\s([\w\s]+))?$}) {
+    if ($text =~ m{^/inductions(?:\s(['\w\s]+))?$}) {
         my $name = $1;
         if (!$name) {
             $name = $member->name;
@@ -588,7 +589,7 @@ sub make_inductor ($self, $text, $message, $args = undef) {
     #     return $message->reply("You're not allowed to do that");
     # }
 
-    if (!$args && $text =~ m{^/make_inductor\s([\w\s]+)\son\s([\w\s\d]+)$}) {
+    if (!$args && $text =~ m{^/make_inductor\s(['\w\s]+)\son\s([\w\s\d]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
         # Find the target person:
