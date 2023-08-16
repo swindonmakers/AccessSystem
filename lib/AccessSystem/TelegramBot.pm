@@ -6,6 +6,7 @@ use Mojo::Base 'Telegram::Bot::Brain';
 use Telegram::Bot::Object::InlineKeyboardMarkup;
 use Telegram::Bot::Object::InlineKeyboardButton;
 use Config::General;
+use Data::Dumper;
 use LWP::Simple;
 use LWP::UserAgent;
 use Text::Fuzzy;
@@ -47,9 +48,12 @@ has 'mainconfig' => sub ($self) {
 };
 
 has bot_name => '';
+has me => undef;
 has 'base_url' => sub ($self) {
     return $self->mainconfig->{base_url};
 };
+
+has chat_rights => sub { return {}; };
 
 has waiting_on_response => sub { return {}; };
 
@@ -895,32 +899,39 @@ sub respond_to_join_request ($self, $chatjoinrequest) {
 
 # Message with no "text", "from" is a new chat member (if it has new_chat_members)
 sub check_if_ban ($self, $message) {
-    my $member = $self->member($message);
-    if (!$member) {
-        # Not a member, or not identified
-        $message->_brain->banChatMember({
-            chat_id => $message->chat->id,
-            user_id => $message->from->id,
-            until_date => time()+60,
-        });
-        return $message->reply(
-            $message->chat->title . " is for paid-up members of the Swindon Makerspace only. If you are a paid-up member, PM me /identify <email address>, to prove who you are."
-        );
-        print STDERR "Join from: ", $message->from->username, " (Not member)\n";
+    # Only do this check if we're an admin:
+    if (!exists $self->chat_rights->{$message->chat->id}) {
+        $self->chat_rights->{$message->chat->id} = $message->_brain->getChatMember($message->chat->id, $self->me->id);
+        #print STDERR "Chat rights :", Dumper($self->chat_rights);
     }
-    if(!$member->is_valid) {
-        $message->_brain->banChatMember({
-            chat_id => $message->chat->id,
-            user_id => $message->from->id,
-            until_date => time()+60,
-        });
-        return $message->reply(
-            $message->chat->title . " is for paid-up members of the Swindon Makerspace only. If you want to rejoin PM me /bankinfo to get our bank details"
-        );
-        print STDERR "Join from: ", $message->from->username, " (Not valid)\n";
+    if (exists $self->chat_rights->{$message->chat->id} &&
+        $self->chat_rights->{$message->chat->id}->status eq 'administrator') {
+        my $member = $self->member($message);
+        if (!$member) {
+            # Not a member, or not identified
+            $message->_brain->banChatMember({
+                chat_id => $message->chat->id,
+                user_id => $message->from->id,
+                until_date => time()+60,
+                                            });
+            return $message->reply(
+                $message->chat->title . " is for paid-up members of the Swindon Makerspace only. If you are a paid-up member, PM me /identify <email address>, to prove who you are."
+                );
+            print STDERR "Join from: ", $message->from->username, " (Not member)\n";
+        }
+        if(!$member->is_valid) {
+            $message->_brain->banChatMember({
+                chat_id => $message->chat->id,
+                user_id => $message->from->id,
+                until_date => time()+60,
+                                            });
+            return $message->reply(
+                $message->chat->title . " is for paid-up members of the Swindon Makerspace only. If you want to rejoin PM me /bankinfo to get our bank details"
+                );
+            print STDERR "Join from: ", $message->from->username, " (Not valid)\n";
+        }
     }
-
-    print STDERR "Join allowed: ", $message->from->username, "\n";
+    print STDERR "Joined: ", $message->from->username, "\n";
 }
 
 sub confirm_induction ($self, $message, $allowed, $args = undef) {

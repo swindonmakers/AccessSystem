@@ -202,7 +202,6 @@ my $sqla = SQL::Abstract->new->plugin('+ExtraClauses');
 # #print STDERR Data::Dumper::Dumper($tiers);
 #      $data->{valid_members} = $tiers;
       
-
 09.04.2023:
 
 Bot can ban/unban members? (or ban, then unban if/when they attempt to re-join? is there an on-join?)
@@ -298,3 +297,14 @@ name	String	Optional. Invite link name
 expire_date	Integer	Optional. Point in time (Unix timestamp) when the link will expire or has been expired
 member_limit	Integer	Optional. The maximum number of users that can be members of the chat simultaneously after joining the chat via this invite link; 1-99999
 pending_join_request_count	Integer	Optional. Number of pending join requests created using this link
+
+12.08.2023:
+
+* admin rights in groups/channels
+Bot - setMyCommands (update command list)
+Bot - getMyDefaultAdministratorRights (for_channels) returns https://core.telegram.org/bots/api#chatadministratorrights
+** getChatMember with chat id, bot id
+
+
+* https://core.telegram.org/bots/features#chat-and-user-selection
+
