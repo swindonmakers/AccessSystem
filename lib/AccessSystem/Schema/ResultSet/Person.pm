@@ -23,7 +23,7 @@ sub find_person {
     if ($people->count == 1) {
         $person = $people->first;
     }
-    return $person if $person;
+    return ($person, undef) if $person;
     try {
         # Pg syntax, but not other databases, sigh
         my $pgpeople = $self->search_rs({ 'me.name' => { '-ilike' => "$input%" }}, $args);
@@ -34,10 +34,10 @@ sub find_person {
     } catch {
         print "This is not Pg: $_\n";
     };
-    return $person if $person;
+    return ($person, undef) if $person;
     
     warn "Add more people-finding magic here: $input failed\n";
-    return undef;
+    return (undef, $people);
 }
 
 sub allowed_to_thing {

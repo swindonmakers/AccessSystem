@@ -172,6 +172,10 @@ sub read_message ($self, $message) {
             match => qr{^/add_tool},
             help  => '/add_tool <tool>',
         },
+        find_member => {
+            match => qr{^/whois\b},,
+            help  => '/whois <name>',
+        },
         induct_member => {
             match => qr{^/induct\b},,
             help  => '/induct <name> on <tool>',
@@ -380,6 +384,46 @@ sub add_tool ($self, $text, $message, $args = undef) {
     }
 }
 
+=head2 find_member (whois)
+
+Simple member lookup (are they a member?)
+
+=cut
+
+sub find_member ($self, $text, $message, $args = undef) {
+    return unless $self->authorize($message);
+
+    my ($person, $people_rs, $p_status, $person_or_keyb);
+    my $member = $self->member($message);
+    return if !$member;
+    #                                  /induct James Mastros on Point of Sale
+    if (!$args && $text =~ m{^/whois\s(['\w\s]+)$}) {
+        my ($name) = ($1);
+
+        ($person_or_keyb, $people_rs) = $self->db->resultset('Person')->find_person($name);
+        $p_status = $person_or_keyb ? 'success' : undef;
+        if (!$p_status && !$people_rs->count) {
+            return $message->reply("Didn't find a member with that name");
+        }
+        if (!$p_status && $people_rs->count > 1) {
+            return $message->reply("I found " . $people_rs->count . " members starting with that");
+        }
+        if ($p_status eq 'success') {
+            $person = $person_or_keyb;
+            $self->waiting_on_response->{$message->from->id}{person} = $person;
+        }
+    }
+    if ($person) {
+        ## Found em, dump some info
+        my $p_data = $person->name . " (" . $person->tier->name . " tier)";
+        if (!$person->is_valid) {
+            return $message->reply("I found $p_data but they aren't a paid-up member, they last were: " . ($person->valid_until ? $person->valid_until->ymd : 'never'));
+        }
+        return $message->reply("I found $p_data they are paid up until " . $person->valid_until->ymd);
+    }
+    return $message->reply("Try /whois <person name>");
+}
+
 =head2 induct_member
 
 Create an "allowed" link between a member and a tool.
@@ -404,7 +448,7 @@ sub induct_member ($self, $text, $message, $args = undef) {
     if (!$args && $text =~ m{^/induct\s(['\w\s]+)\son\s([\w\d\s]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
-        $person_or_keyb = $self->db->resultset('Person')->find_person($name);
+        ($person_or_keyb, undef) = $self->db->resultset('Person')->find_person($name);
         $p_status = $person_or_keyb ? 'success' : undef;
         if (!$p_status) {
             return $message->reply("Didn't find a member with that name");
@@ -560,7 +604,7 @@ sub inductions ($self, $text, $message) {
         if (!$name) {
             $name = $member->name;
         }
-        my $person = $self->db->resultset('Person')->find_person($name,
+        my ($person, $p_rs) = $self->db->resultset('Person')->find_person($name,
             { prefetch => {'allowed' => 'tool'}});
         if (!$person) {
             return $message->reply("I can't find a person named $name");
@@ -602,7 +646,7 @@ sub make_inductor ($self, $text, $message, $args = undef) {
         my ($name, $tool_name) = ($1, $2);
 
         # Find the target person:
-        $person_or_keyb = $self->db->resultset('Person')->find_person($name);
+        ($person_or_keyb, undef) = $self->db->resultset('Person')->find_person($name);
         $p_status = $person_or_keyb ? 'success' : undef;
         if (!$p_status) {
             return $message->reply("Didn't find a member with that name");
