@@ -111,19 +111,35 @@ sub display_name_and_price {
 sub times_to_string {
     my ($self) = @_;
 
+    my %days = (
+        1=> 'Mon',
+        2=> 'Tue',
+        3=> 'Wed',
+        4=> 'Thur',
+        5=> 'Fri',
+        6=> 'Sat',
+        7=> 'Sun'
+        );
     my @times = ();
     foreach my $time (@{ $self->restrictions->{'times'} }) {
-        push @times, sprintf('On: %s from: %s to: %x');
-                             
+        my ($f_dow, $f_time) = split(':', $time->{from}, 2);
+        my ($t_dow, $t_time) = split(':', $time->{to}, 2);
+        
+        push @times, sprintf(
+            "from: %s %s to %s %s",
+            $days{$f_dow}, $f_time, $days{$t_dow}, $t_time
+            );
     }
 
-    # lazy!
-    my $times ||= '24x7';
-    if (@{ $self->restrictions->{'times'} }) {
-        $times = 'weekends and wednesday evenings';
-    }
+    return @times ? 'access: ' . join("; ", @times) : '24x7';
+    
+    # # lazy!
+    # my $times ||= '24x7';
+    # if (@{ $self->restrictions->{'times'} }) {
+    #     $times = 'weekends and wednesday evenings';
+    # }
 
-    return $times;
+    # return $times;
 }
 
 1;

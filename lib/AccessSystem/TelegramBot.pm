@@ -415,7 +415,7 @@ sub find_member ($self, $text, $message, $args = undef) {
     }
     if ($person) {
         ## Found em, dump some info
-        my $p_data = $person->name . " (" . $person->tier->name . " tier)";
+        my $p_data = $person->name . " (" . $person->tier->times_to_string . ")";
         if (!$person->is_valid) {
             return $message->reply("I found $p_data but they aren't a paid-up member, they last were: " . ($person->valid_until ? $person->valid_until->ymd : 'never'));
         }
