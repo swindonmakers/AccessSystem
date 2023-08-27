@@ -952,15 +952,15 @@ sub check_if_ban ($self, $message) {
         $self->chat_rights->{$message->chat->id}->status eq 'administrator') {
         my $member = $self->member($message);
         if (!$member) {
-            # Not a member, or not identified
-            $message->_brain->banChatMember({
+            $message->reply(
+                $message->chat->title . " is for paid-up members of the Swindon Makerspace only. If you are a paid-up member, PM me /identify <email address>, to prove who you are."
+                );
+
+            return $message->_brain->banChatMember({
                 chat_id => $message->chat->id,
                 user_id => $message->from->id,
                 until_date => time()+60,
                                             });
-            return $message->reply(
-                $message->chat->title . " is for paid-up members of the Swindon Makerspace only. If you are a paid-up member, PM me /identify <email address>, to prove who you are."
-                );
             print STDERR "Join from: ", $message->from->username, " (Not member)\n";
         }
         if(!$member->is_valid) {
