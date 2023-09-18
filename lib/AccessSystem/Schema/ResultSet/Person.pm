@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Digest::MD5 qw(md5_hex);
-use Try::Tiny;
+use Feature::Compat::Try;
 use DateTime;
 use SQL::Abstract;
 #use SQL::Abstract::Plugin::ExtraClauses;
@@ -24,16 +24,14 @@ sub find_person {
     try {
         # Pg syntax, but not other databases, sigh
         my $pgpeople = $self->search_rs({ 'me.name' => { '-ilike' => "$input%" }}, $args);
-        $people = $pgpeople;
         if ($pgpeople->count == 1) {
             $person = $pgpeople->first;
-#            return ($person, undef);
+            return ($person, undef);
         }
-    } catch {
-        print "This is not Pg: $_\n";
-    };
-    return ($person, undef) if $person;
-    return (undef, $people) if $people->count > 0;
+        return (undef, $pgpeople) if $pgpeople && $pgpeople->count > 0;        
+    } catch ($err) {
+        print "This is not Pg: $err\n";
+    }
 
     $people = $self->search_rs({ 'me.name' => { '-like' => "$input%" }}, $args);
     if ($people->count == 1) {

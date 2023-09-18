@@ -552,17 +552,18 @@ DISTRIBUTIONS
     requirements:
       Carp::Clan 0
       Catalyst::Component::InstancePerContext 0
+      Catalyst::Devel 1.0
       Catalyst::Runtime 5.80005
       CatalystX::Component::Traits 0.14
       DBD::SQLite 0
       DBIx::Class 0.08114
-      DBIx::Class::Schema::Loader 0.04005
       ExtUtils::MakeMaker 6.59
       Hash::Merge 0
       List::MoreUtils 0
       Module::Runtime 0.012
       Moose 1.12
       MooseX::MarkAsMethods 0.13
+      MooseX::NonMoose 0.16
       MooseX::Types 0
       MooseX::Types::LoadableClass 0.009
       Storable 0
@@ -3137,6 +3138,13 @@ DISTRIBUTIONS
       perl 5.006
       strict 0
       warnings 0
+  Feature-Compat-Try-0.05
+    pathname: P/PE/PEVANS/Feature-Compat-Try-0.05.tar.gz
+    provides:
+      Feature::Compat::Try 0.05
+    requirements:
+      Module::Build 0.4004
+      perl 5.014
   File-BaseDir-0.07
     pathname: K/KI/KIMRYAN/File-BaseDir-0.07.tar.gz
     provides:
