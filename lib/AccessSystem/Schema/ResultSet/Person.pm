@@ -27,12 +27,13 @@ sub find_person {
         $people = $pgpeople;
         if ($pgpeople->count == 1) {
             $person = $pgpeople->first;
-            return ($person, undef);
+#            return ($person, undef);
         }
-        return (undef, $people) if $people->count > 0;
     } catch {
         print "This is not Pg: $_\n";
     };
+    return ($person, undef) if $person;
+    return (undef, $people) if $people->count > 0;
 
     $people = $self->search_rs({ 'me.name' => { '-like' => "$input%" }}, $args);
     if ($people->count == 1) {

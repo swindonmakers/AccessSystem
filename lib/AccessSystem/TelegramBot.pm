@@ -393,25 +393,24 @@ Simple member lookup (are they a member?)
 sub find_member ($self, $text, $message, $args = undef) {
     return unless $self->authorize($message);
 
-    my ($person, $people_rs, $p_status, $person_or_keyb);
+    my ($person, $people_rs);
     my $member = $self->member($message);
     return if !$member;
     #                                  /induct James Mastros on Point of Sale
     if (!$args && $text =~ m{^/whois\s(['\w\s]+)$}) {
         my ($name) = ($1);
 
-        ($person_or_keyb, $people_rs) = $self->db->resultset('Person')->find_person($name);
-        $p_status = $person_or_keyb ? 'success' : undef;
-        if (!$p_status && !$people_rs->count) {
+        ($person, $people_rs) = $self->db->resultset('Person')->find_person($name);
+        if (!$person && !$people_rs->count) {
             return $message->reply("Didn't find a member with that name");
         }
-        if (!$p_status && $people_rs->count > 1) {
+        if (!$person && $people_rs->count > 1) {
             return $message->reply("I found " . $people_rs->count . " members starting with that");
         }
-        if ($p_status eq 'success') {
-            $person = $person_or_keyb;
-            $self->waiting_on_response->{$message->from->id}{person} = $person;
-        }
+        # if ($person eq 'success') {
+        #     $person = $person_or_keyb;
+        #     $self->waiting_on_response->{$message->from->id}{person} = $person;
+        # }
     }
     if ($person) {
         ## Found em, dump some info
