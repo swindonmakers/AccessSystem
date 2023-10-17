@@ -77,9 +77,6 @@ $schema->resultset('Person')->update_member_register();
 
 sub fiddle_payment {
     my ($trans) = @_;
-    $trans->{name} =~ s/o/0/gi;
-    $trans->{name} =~ s/sm/SM/ig;
-    $trans->{name} =~ s/SN/ SM/gi;
 
     ## Mr Netting paid to wrong membership ID (twice):
     if($trans->{name} =~ /K WALLBANK/) {
@@ -90,9 +87,14 @@ sub fiddle_payment {
         $trans->{name} = 'Henry Russell SM0374';
     } elsif($trans->{name} =~ /CROSSKEY CG I/) {
         $trans->{name} = 'CROSSKEY CG SM0375';
-    } elsif($trans->{name} =~ /D'JORN FEVRIER/) {
+    } elsif($trans->{name} =~ /DJORN\s+FEVRIER/) {
         $trans->{name} = 'JORN FEVRIER SM0301';
-   }
+    }
+    $trans->{name} =~ s/o/0/gi;
+    $trans->{name} =~ s/sm/SM/ig;
+    $trans->{name} =~ s/SN/ SM/gi;
+
+    print STDERR "Name now: " . $trans->{name} . "\n";
     return 0;
 }
 
