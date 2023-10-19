@@ -120,7 +120,7 @@ sub find_tool ($self, $name, $method, $args = undef) {
     }
 
     if ($tools_rs->count == 0) {
-        $tools_rs = $self->db->resultset('Tool');
+        $tools_rs = $self->db->resultset('Tool')->active;
     }
 
     my $fuzzy = Text::Fuzzy->new(lc $name);
