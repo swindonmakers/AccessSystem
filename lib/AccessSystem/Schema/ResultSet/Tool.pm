@@ -40,4 +40,18 @@ sub find_tool {
     return (undef, $tools);
 }
 
+sub active {
+    my ($self) = @_;
+
+    return $self->search_rs(
+        [
+         'statuses.status' => { '-not_in' => [qw/dead test psuedotool/] },
+         'statuses.status' => undef,
+        ],
+        {
+            join => 'statuses',
+            order_by => 'me.name'
+        });
+}
+
 1;

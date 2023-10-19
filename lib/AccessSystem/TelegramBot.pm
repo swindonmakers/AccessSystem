@@ -313,7 +313,7 @@ Output a list of tool names.
 =cut
 
 sub tools ($self, $text, $message) {
-    my $tools = $self->db->resultset('Tool');
+    my $tools = $self->db->resultset('Tool')->active;
     $tools->result_class('DBIx::Class::ResultClass::HashRefInflator');
     if ($text =~ m{/tools ([\w\d\s]+)}) {
         (undef, $tools) = $tools->find_tool($1, undef, 'DBIx::Class::ResultClass::HashRefInflator');
