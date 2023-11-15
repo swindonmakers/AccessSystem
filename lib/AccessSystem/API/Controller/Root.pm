@@ -1,5 +1,6 @@
 package AccessSystem::API::Controller::Root;
 use Moose;
+use Time::HiRes 'time';
 use namespace::autoclean;
 use AccessSystem::Form::Person;
 use DateTime;
@@ -221,7 +222,6 @@ sub delete_me :Chained('logged_in'): PathPart('deleteme'): Args(0) {
     }
 }
 
-    
 sub who : Chained('base') : PathPart('who') : Args(0)  {
     my ($self, $c) = @_;
 
@@ -551,7 +551,7 @@ Swindon Makerspace
     ## Store the comms:
     $member->communications_rs->create({
         type => 'app_login_email',
-        content => $c->stash->{email}{body},
+        plain_text => $c->stash->{email}{body},
         status => 'sent',
     });
     $c->forward($c->view('Email'));
@@ -605,7 +605,8 @@ Swindon Makerspace
         ## Store the comms:
         $member->communications_rs->create({
             type => 'telegram_confirm',
-            content => $c->stash->{email}{body},
+            plain_text => $c->stash->{email}{body},
+            status => 'sent',
         });
         $c->forward($c->view('Email'));
         $success = 1;
@@ -685,7 +686,8 @@ Swindon Makerspace
         ## Store the comms:
         $member->communications_rs->create({
             type => 'induction_confirm',
-            content => $c->stash->{email}{body},
+            plain_text => $c->stash->{email}{body},
+            status => 'sent'
         });
         $c->forward($c->view('Email'));
         $success = 1;
@@ -960,7 +962,7 @@ Bank Ref: " . $member->bank_ref. " <br/>
     ## Store the comms:
     $member->communications_rs->create({
         type => 'membership_email',
-        content => $c->stash->{email}{parts}[0]->body,
+        plain_text => $c->stash->{email}{parts}[0]->body,
         status => 'sent',
     });
     $c->forward($c->view('Email'));   
@@ -972,7 +974,12 @@ sub nudge_member: Chained('base'): PathPart('nudge_member'): Args(1) {
     if($member && !$member->is_valid && !$member->end_date) {
         $c->stash(member => $member);
         $c->forward('send_reminder_email');
-        $c->stash(json => { message => "Attempted to send reminder email" });
+        if ($c->stash->{message}) {
+            # may have failed / not been sent
+            $c->stash(json => { message => $c->stash->{message} });
+        } else {
+            $c->stash(json => { message => "Attempted to send reminder email" });
+        }
     } else {
         $c->stash(json => { message => "Can't find member $id or member is still valid!" });
     }
@@ -983,7 +990,14 @@ sub nudge_member: Chained('base'): PathPart('nudge_member'): Args(1) {
 sub send_reminder_email: Private {
     my ($self, $c) = @_;
 
+    my $comms_type = 'reminder_email';
     my $member = $c->stash->{member};
+    if(my $comms = $member->communications_rs->search_rs({
+        type => $comms_type,
+                                             })->first) {
+        $c->stash->{message} = 'Already reminded on ' . $comms->sent_on->iso8601();
+        return;
+    }
     my $last = $member->last_payment;
     my $paid_date = sprintf("%s, %d %s %d",
                             $last->paid_on_date->day_abbr,
@@ -1048,7 +1062,7 @@ Swindon Makerspace
     ## Store the comms:
     $member->communications_rs->create({
         type => 'reminder_email',
-        content => $c->stash->{email}{parts}[0]->body,
+        plain_text => $c->stash->{email}{parts}[0]->body,
         status => 'sent',
     });
     $c->forward($c->view('Email'));   
@@ -1143,7 +1157,7 @@ Ref: $bank_ref<br/>
     ## Store the comms:
     $member->communications_rs->create({
         type => 'box_reminder_email',
-        content => $c->stash->{email}{parts}[0]->body,
+        plain_text => $c->stash->{email}{parts}[0]->body,
         status => 'sent',
     });
     $c->forward($c->view('Email'));

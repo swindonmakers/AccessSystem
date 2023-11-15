@@ -11,9 +11,13 @@ __PACKAGE__->add_columns(
     person_id => {
         data_type => 'integer',
     },
-    sent_on => {
+    created_on => {
         data_type => 'datetime',
         set_on_create => 1,
+    },
+    sent_on => {
+        data_type => 'datetime',
+        is_nullable => 1,
     },
     type => {
         data_type => 'varchar',
@@ -22,14 +26,25 @@ __PACKAGE__->add_columns(
     status => {
         data_type => 'varchar', #enum ideally but lazy
         size => 10,
-        default => 'unsent',
+        default_value => 'unsent',
     },
-    content => {
+    subject => {
+        data_type => 'varchar',
+        size => 1024,
+        default_value => 'Communication from Swindon Makerspace',
+    },
+    # was 'content'
+    plain_text => {
         data_type => 'varchar',
         size => 10240,
     },
+    html => {
+        data_type => 'varchar',
+        size => 10240,
+        is_nullable => 1,
+    },
     );
-__PACKAGE__->set_primary_key('person_id', 'sent_on');
+__PACKAGE__->set_primary_key('person_id', 'type');
 
 __PACKAGE__->belongs_to('person', 'AccessSystem::Schema::Result::Person', 'person_id' );
 

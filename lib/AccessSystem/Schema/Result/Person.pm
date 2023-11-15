@@ -505,17 +505,25 @@ sub create_payment {
         if($self->voucher_code) {
             $self->update({ voucher_start => DateTime->now()});
         }
-        $self->create_communication('new_payment.tt');
     }
     # work this out after voucher setting cos it changes the dues
     if($self->balance_p < $self->dues) {
         warn "Member " . $self->bank_ref . " balance not enough for another month.\n";
+        if($valid_date && $valid_date->clone()->subtract(days => $OVERLAP_DAYS - 3) < $now) {
+            # has (or is about to) expire
+            # this will only send once!
+            $self->create_communication('Swindon Makerspace membership check', 'reminder_email');
+        }
         return;
+    }
+    if (!$valid_date) {
+        $self->create_communication('Your Swindon Makerspace membership has started', 'new_payment.tt');
     }
 
     if($valid_date && $valid_date < $now) {
         # renewed payments
-        $self->create_communication('renewed_payment.tt');
+        ## TODO: create email!
+        $self->create_communication('Your Swindon Makerspace membership has restarted', 'renewed_payment.tt');
     }
     # Only add $OVERLAP  extra days if a first or renewal payment - these
     # ensure member remains valid if standing order is not an
@@ -604,7 +612,7 @@ sub recent_transactions {
 }
 
 sub create_communication {
-    my ($self, $template) = @_;
+    my ($self, $subject, $template) = @_;
 
     ## Eventtually! this should store the template name in the comms
     ## table, and the comms sending part should construct the text?!
@@ -612,10 +620,11 @@ sub create_communication {
     my ($type) = $template =~ /^(\w+)/; # template with no .tt
     if($type eq 'new_payment') {
         $self->communications_rs->create({
-            sent_on => undef,
+            created_on => undef,
             type => $type,
             status => 'unsent',
-            content => "
+            subject => $subject,
+            plain_text => "
 Dear " . $self->name . ",
 
 Your initial payment has been received by the Swindon Makerspace, your
