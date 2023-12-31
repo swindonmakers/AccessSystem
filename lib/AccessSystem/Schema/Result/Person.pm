@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use DateTime;
+use Template;
 
 use base 'DBIx::Class::Core';
 
@@ -622,7 +623,7 @@ sub create_communication {
     if (!$ENV{CATALYST_HOME}) {
         die "CATALYST_HOME env var does not exist!";
     }
-    my $tt_path_base = "$ENV{CATALYST_HOME}/root/src/emails/$type/$type";
+    my $tt_path_base = "$ENV{CATALYST_HOME}/root/src/emails/$type";
 
     my $comm_hash = {
             created_on => undef,
@@ -634,28 +635,29 @@ sub create_communication {
 
     $tt_vars->{member} = $self;
 
-    my $tt = Template::Toolkit->new(
+    my $tt = Template->new(
+        INCLUDE_PATH => $tt_path_base,
         STRICT => 1
     ) or die "tt error: $Template::ERRROR";
 
     my $any_parts;
-    if (-e "${tt_path_base}.txt") {
+    if (-e "${tt_path_base}/$type.txt") {
         my $raw = "";
-        $tt->process("${tt_path_base}.txt", $tt_vars, \$raw)
+        $tt->process("$type.txt", {member => $self, %$tt_vars}, \$raw)
             or die $tt->error;
         $comm_hash->{plain_text} = $raw;
         $any_parts++;
     }
-    if (-e "${tt_path_base}.html") {
+    if (-e "${tt_path_base}/$type.html") {
         my $raw = "";
-        $tt->process("${tt_path_base}.html", $tt_vars, \$raw)
+        $tt->process("$type.html", {member => $self, %$tt_vars}, \$raw)
             or die $tt->error;
         $comm_hash->{html} = $raw;
         $any_parts++;
     }
 
     if (!$any_parts) {
-        die "When sending communication type $type, neither ${tt_path_base}.txt nor ${tt_path_base}.html exist";
+        die "When sending communication type $type, neither ${tt_path_base}/$type.txt nor ${tt_path_base}/$type.html exist";
     }
 
     $self->communications_rs->create($comm_hash);

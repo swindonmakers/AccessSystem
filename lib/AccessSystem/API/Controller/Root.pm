@@ -593,9 +593,11 @@ sub confirm_telegram: Chained('base'): PathPart('confirm_telegram'): Args(0) {
         # subject
         'Swindon Makerspace Telegram Confirmation',
         # type
-        'telegram_confirm',
+        'confirm_telegram',
         # vars
-        { 'link' => $c->uri_for('confirm_email', { token => $token }) }
+        { 'link' => $c->uri_for('confirm_email', { token => $token }),
+              telegram_user => $telegram_user,
+              telegram_chatid => $telegram_chatid }
         );
 
         $c->stash->{email} = {
@@ -678,7 +680,7 @@ sub send_induction_acceptance: Chained('base'): PathPart('send_induction_accepta
         ## Store the comms:
         my $comms = $member->create_communication(
             'Swindon Makerspace Induction Confirmation',
-            'induction_confirm',
+            'send_induction_acceptance',
             { tool_name => $allowed_row->tool_name,
               token => $token },
         );
@@ -884,8 +886,8 @@ sub send_membership_email: Private {
     ## Create the comms:
     my $comms = $member->create_communication(
         'Swindon Makerspace membership info',
-        'membership_email',
-        {}
+        'send_membership_email',
+        { dues_nice => $dues_nice }
     );
     $c->stash->{email} = {
             to => $member->email,

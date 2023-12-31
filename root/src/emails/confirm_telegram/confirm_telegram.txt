@@ -1,0 +1,9 @@
+Dear [% member.name %],
+
+You requested to attach a Telegram ID of [% telegram_user %] to your Makerspace Member account (or someone did using your email).
+
+Follow this link to confirm: [% token %]
+
+Regards,
+
+Swindon Makerspace
