@@ -525,39 +525,43 @@ sub user_guid_request: Chained('base'): PathPart('user_guid_request'): Args(0) {
         $success = 0;
         $message = 'Member doesn\'t have any logins';
     }
+    my $comms = $member->create_communication(
+        # subject
+        'Swindon Makerspace App Login',
+        # type
+        'app_login_email',
+        # vars
+        { 'success' => $success }
+        );
     $c->stash->{email} = {
         to => $member->email,
         cc => $c->config->{email}{cc},
         from => 'info@swindon-makerspace.org',
-        subject => 'Swindon Makerspace App Login',
-        body => "
-Dear " . $member->name . ",
+        subject => $comms->subject,
+        body => $comms->plain_text,
+#         body => "
+# Dear " . $member->name . ",
 
-You requested to use the Access System Mobile Payments app (or someone did using your id). " . ($success 
-? "
+# You requested to use the Access System Mobile Payments app (or someone did using your id). " . ($success 
+# ? "
 
-Enter this key into the Settings -> Key field to continue: " . $member->login_tokens->first->login_token
-: "
+# Enter this key into the Settings -> Key field to continue: " . $member->login_tokens->first->login_token
+# : "
 
-You need to login to the website first to create a login key, please visit " . $c->uri_for('login') . " ."
-) .
-"
+# You need to login to the website first to create a login key, please visit " . $c->uri_for('login') . " ."
+# ) .
+# "
 
-Regards,
+# Regards,
 
-Swindon Makerspace
-",
+# Swindon Makerspace
+# ",
     };
-    ## Store the comms:
-    $member->communications_rs->create({
-        type => 'app_login_email',
-        plain_text => $c->stash->{email}{body},
-        status => 'sent',
-    });
     $c->forward($c->view('Email'));
+    $comms->update({ status => 'sent'});
     $c->stash(
         json => {
-            success => 1,
+            success => $success,
         });
     $c->forward($c->view('JSON'));
 }
@@ -585,30 +589,35 @@ sub confirm_telegram: Chained('base'): PathPart('confirm_telegram'): Args(0) {
                 telegram_username => $telegram_user,
                 },
         });
+    my $comms = $member->create_communication(
+        # subject
+        'Swindon Makerspace Telegram Confirmation',
+        # type
+        'telegram_confirm',
+        # vars
+        { 'link' => $c->uri_for('confirm_email', { token => $token }) }
+        );
+
         $c->stash->{email} = {
                 to => $member->email,
                 cc => $c->config->{email}{cc},
                 from => 'info@swindon-makerspace.org',
-                subject => 'Swindon Makerspace Telegram Confirmation',
-                body => "
-Dear " . $member->name . ",
+                subject => $comms->subject,
+                body => $comms->plain_text,
+#                 body => "
+# Dear " . $member->name . ",
 
-You requested to attach a Telegram ID of $telegram_chatid ($telegram_user) to your Makerspace Member account (or someone did using your email).
+# You requested to attach a Telegram ID of $telegram_chatid ($telegram_user) to your Makerspace Member account (or someone did using your email).
 
-Follow this link to confirm: " . $c->uri_for('confirm_email', { token => $token }) . "
+# Follow this link to confirm: " . $c->uri_for('confirm_email', { token => $token }) . "
 
-Regards,
+# Regards,
 
-Swindon Makerspace
-",
-        };
-        ## Store the comms:
-        $member->communications_rs->create({
-            type => 'telegram_confirm',
-            plain_text => $c->stash->{email}{body},
-            status => 'sent',
-        });
+# Swindon Makerspace
+# ",
+         };
         $c->forward($c->view('Email'));
+        $comms->update({ status => 'sent'});
         $success = 1;
    } else {
         $msg = "I can't find a member with that email address, or there are more than one of them!";
@@ -666,30 +675,33 @@ sub send_induction_acceptance: Chained('base'): PathPart('send_induction_accepta
                 person_id => $person_id,
                 },
         });
+        ## Store the comms:
+        my $comms = $member->create_communication(
+            'Swindon Makerspace Induction Confirmation',
+            'induction_confirm',
+            { tool_name => $allowed_row->tool_name,
+              token => $token },
+        );
         $c->stash->{email} = {
                 to => $member->email,
                 cc => $c->config->{email}{cc},
                 from => 'info@swindon-makerspace.org',
-                subject => 'Swindon Makerspace Induction Confirmation',
-                body => "
-Dear " . $member->name . ",
+                subject => $comms->subject,
+                body => $comms->plain_text,
+#                 body => "
+# Dear " . $member->name . ",
 
-You have been inducted on the ". $allowed_row->tool->name . "Please confirm that you understand the safety induction for using the tool, and that you take responsibility for your actions while using it.
+# You have been inducted on the ". $allowed_row->tool->name . "Please confirm that you understand the safety induction for using the tool, and that you take responsibility for your actions while using it.
 
-Follow this link to confirm: " . $c->uri_for('confirm_induction', { token => $token }) . "
+# Follow this link to confirm: " . $c->uri_for('confirm_induction', { token => $token }) . "
 
-Regards,
+# Regards,
 
-Swindon Makerspace
-",
+# Swindon Makerspace
+# ",
         };
-        ## Store the comms:
-        $member->communications_rs->create({
-            type => 'induction_confirm',
-            plain_text => $c->stash->{email}{body},
-            status => 'sent'
-        });
         $c->forward($c->view('Email'));
+        $comms->update({ status => 'sent'});
         $success = 1;
    } else {
         $msg = "I can't find a member with that email address, or there are more than one of them!";
@@ -869,11 +881,17 @@ sub send_membership_email: Private {
     my $member = $c->stash->{member};
     my $dues_nice = sprintf("%0.2f", $member->dues/100);
     my $access = $member->tier->times_to_string;
+    ## Create the comms:
+    my $comms = $member->create_communication(
+        'Swindon Makerspace membership info',
+        'membership_email',
+        {}
+    );
     $c->stash->{email} = {
             to => $member->email,
             cc => $c->config->{emails}{cc},
             from => 'info@swindon-makerspace.org',
-            subject => 'Swindon Makerspace membership info',
+            subject => $comms->subject,
             content_type => 'multipart/alternative',
             parts => [
                 Email::MIME->create(
@@ -881,91 +899,88 @@ sub send_membership_email: Private {
                         content_type => 'text/plain',
                         charset => 'utf-8',
                     },
-                    body => "
-Dear " . $member->name . ",
+                    body => $comms->plain_text,
+#                    body => "
+# Dear " . $member->name . ",
 
-Thank you for signing up for membership of the Swindon Makerspace. To activate your ${access} access and ability to use the regulated equipment, please set up a Standing Order with your bank using the following details:
+# Thank you for signing up for membership of the Swindon Makerspace. To activate your ${access} access and ability to use the regulated equipment, please set up a Standing Order with your bank using the following details:
 
-Monthly fee: £${dues_nice}/month
-To: Swindon Makerspace
-Bank: Barclays
-Sort Code: 20-84-58
-Account: 83789160
-Bank Ref: " . $member->bank_ref . "
+# Monthly fee: £${dues_nice}/month
+# To: Swindon Makerspace
+# Bank: Barclays
+# Sort Code: 20-84-58
+# Account: 83789160
+# Bank Ref: " . $member->bank_ref . "
 
-To get access to the Makerspace, please visit on an open evening (Wednesday evenings), and bring (or buy for £1 from the space) a suitable RFID token.
+# To get access to the Makerspace, please visit on an open evening (Wednesday evenings), and bring (or buy for £1 from the space) a suitable RFID token.
 
-Please do make sure you have read the Member's Guide (which you just agreed to!) as this details how the space works
-- if you missed it, here is the link again: https://docs.google.com/document/d/1ruqYeKe7kMMnNzKh_LLo2aeoFufMfQsdX987iU6zgCI/edit#heading=h.a7vgchnwk02g
+# Please do make sure you have read the Member's Guide (which you just agreed to!) as this details how the space works
+# - if you missed it, here is the link again: https://docs.google.com/document/d/1ruqYeKe7kMMnNzKh_LLo2aeoFufMfQsdX987iU6zgCI/edit#heading=h.a7vgchnwk02g
 
-For live chat with other members, you are encouraged to join our Telegram group: https://t.me/joinchat/A5Xbrj7rku0D-F3p8wAgtQ.
-This is useful for seeing if anyone is in the space, getting help/ideas on projects etc.
+# For live chat with other members, you are encouraged to join our Telegram group: https://t.me/joinchat/A5Xbrj7rku0D-F3p8wAgtQ.
+# This is useful for seeing if anyone is in the space, getting help/ideas on projects etc.
 
-For more drawn out discussions (that you can read back on), announcements, and projects we have a forum located at http://forum.swindon-makerspace.org/.
+# For more drawn out discussions (that you can read back on), announcements, and projects we have a forum located at http://forum.swindon-makerspace.org/.
 
-Information such as Equipment documentation and ongoing project notes can be found on our wiki, located at https://github.com/swindonmakers/wiki/wiki/.
+# Information such as Equipment documentation and ongoing project notes can be found on our wiki, located at https://github.com/swindonmakers/wiki/wiki/.
 
-Please also keep an eye on our calendar at http://www.swindon-makerspace.org/calendar/, sometimes the space is \"booked\" (see Guide!)
- you may still use the space, but please be courteous and avoid using loud machinery during bookings.
+# Please also keep an eye on our calendar at http://www.swindon-makerspace.org/calendar/, sometimes the space is \"booked\" (see Guide!)
+#  you may still use the space, but please be courteous and avoid using loud machinery during bookings.
 
-One last thing, please do try and help out, we have a number of small and large infrastructure tasks that need doing, as well as regular
-maintenance (eg bins emptying!), if you see such a task and have 5 mins to do it, please don't leave it for the next member.
+# One last thing, please do try and help out, we have a number of small and large infrastructure tasks that need doing, as well as regular
+# maintenance (eg bins emptying!), if you see such a task and have 5 mins to do it, please don't leave it for the next member.
 
-Thanks for reading this far! See you in the space!
+# Thanks for reading this far! See you in the space!
 
-Regards,
+# Regards,
 
-Swindon Makerspace
-",
+# Swindon Makerspace
+# ",
                 ),
                 Email::MIME->create(
                     attributes => {
                         content_type => 'text/html',
                         charset => 'utf-8',
                     },
-                    body => "
-<p>Dear " . $member->name . ",</p>
+                    body => $comms->html,
+#                     body => "
+# <p>Dear " . $member->name . ",</p>
 
-<p>Thank you for signing up for membership of the Swindon Makerspace. To activate your access and ability to use the regulated equipment, please set up a Standing Order with your bank using the following details:</p>
-<p>Monthly fee: £${dues_nice}/month<br/>
-To: Swindon Makerspace<br/>
-Bank: Barclays<br/>
-Sort Code: 20-84-58<br/>
-Account: 83789160<br/>
-Bank Ref: " . $member->bank_ref. " <br/> 
-</p>
-<p>To get access to the Makerspace, please visit on an open evening (Wednesday evenings), and bring (or buy for £1 from the space) a suitable RFID token.
-</p>
-<p>Please do make sure you have read the Member's Guide (which you just agreed to!) as this details how the space works</p>
-<p>- if you missed it, here is the link again: <a href='https://docs.google.com/document/d/1ruqYeKe7kMMnNzKh_LLo2aeoFufMfQsdX987iU6zgCI/edit#heading=h.a7vgchnwk02g'>Membership Guide</a></p>
+# <p>Thank you for signing up for membership of the Swindon Makerspace. To activate your access and ability to use the regulated equipment, please set up a Standing Order with your bank using the following details:</p>
+# <p>Monthly fee: £${dues_nice}/month<br/>
+# To: Swindon Makerspace<br/>
+# Bank: Barclays<br/>
+# Sort Code: 20-84-58<br/>
+# Account: 83789160<br/>
+# Bank Ref: " . $member->bank_ref. " <br/> 
+# </p>
+# <p>To get access to the Makerspace, please visit on an open evening (Wednesday evenings), and bring (or buy for £1 from the space) a suitable RFID token.
+# </p>
+# <p>Please do make sure you have read the Member's Guide (which you just agreed to!) as this details how the space works</p>
+# <p>- if you missed it, here is the link again: <a href='https://docs.google.com/document/d/1ruqYeKe7kMMnNzKh_LLo2aeoFufMfQsdX987iU6zgCI/edit#heading=h.a7vgchnwk02g'>Membership Guide</a></p>
 
-<p>For live chat with other members, you are encouraged to join our <a href='https://t.me/joinchat/A5Xbrj7rku0D-F3p8wAgtQ'>Telegram group</a>.</p>
-<p>This is useful for seeing if anyone is in the space, getting help/ideas on projects etc.</p>
+# <p>For live chat with other members, you are encouraged to join our <a href='https://t.me/joinchat/A5Xbrj7rku0D-F3p8wAgtQ'>Telegram group</a>.</p>
+# <p>This is useful for seeing if anyone is in the space, getting help/ideas on projects etc.</p>
 
-<p>For more drawn out discussions (that you can read back on), announcements, and projects we have a <a href='http://forum.swindon-makerspace.org/'>forum</a>.</p>
+# <p>For more drawn out discussions (that you can read back on), announcements, and projects we have a <a href='http://forum.swindon-makerspace.org/'>forum</a>.</p>
 
-<p>Information such as Equipment documentation and ongoing project notes can be found on our <a href='https://github.com/swindonmakers/wiki/wiki/'>Wiki</a>.</p>
+# <p>Information such as Equipment documentation and ongoing project notes can be found on our <a href='https://github.com/swindonmakers/wiki/wiki/'>Wiki</a>.</p>
 
-<p>Please also keep an eye on our <a href='http://www.swindon-makerspace.org/calendar/'>calendar</a>, sometimes the space is \"booked\" (see Guide!). You may still use the space, but please be courteous and avoid using loud machinery during bookings.</p>
+# <p>Please also keep an eye on our <a href='http://www.swindon-makerspace.org/calendar/'>calendar</a>, sometimes the space is \"booked\" (see Guide!). You may still use the space, but please be courteous and avoid using loud machinery during bookings.</p>
 
-<p>One last thing, please do try and help out, we have a number of small and large infrastructure tasks that need doing, as well as regular maintenance (eg bins emptying!), if you see such a task and have 5 mins to do it, please don't leave it for the next member.</p>
+# <p>One last thing, please do try and help out, we have a number of small and large infrastructure tasks that need doing, as well as regular maintenance (eg bins emptying!), if you see such a task and have 5 mins to do it, please don't leave it for the next member.</p>
 
-<p>Thanks for reading this far! See you in the space!</p>
+# <p>Thanks for reading this far! See you in the space!</p>
 
-<p>Regards,</p>
+# <p>Regards,</p>
 
-<p>Swindon Makerspace</p>
-",
+# <p>Swindon Makerspace</p>
+# ",
                 )]
-    };
+};
 
-    ## Store the comms:
-    $member->communications_rs->create({
-        type => 'membership_email',
-        plain_text => $c->stash->{email}{parts}[0]->body,
-        status => 'sent',
-    });
-    $c->forward($c->view('Email'));   
+    $c->forward($c->view('Email'));
+    $comms->update({ status => 'sent'});
 }
 
 sub nudge_member: Chained('base'): PathPart('nudge_member'): Args(1) {
@@ -1009,11 +1024,17 @@ sub send_reminder_email: Private {
                             $last->expires_on_date->day,
                             $last->expires_on_date->month_name,
                             $last->expires_on_date->year);
+    ## Store the comms:
+    my $comms = $member->create_communication(
+        'Swindon Makerspace membership check',
+        'reminder_email',
+        { paid_date => $paid_date, expires_date => $expires_date },
+    );
     $c->stash->{email} = {
             to => $member->email,
             cc => $c->config->{emails}{cc},
             from => 'info@swindon-makerspace.org',
-            subject => 'Swindon Makerspace membership check',
+            subject => $comms->subject,
             content_type => 'multipart/alternative',
             parts => [
                 Email::MIME->create(
@@ -1021,51 +1042,48 @@ sub send_reminder_email: Private {
                         content_type => 'text/plain',
                         charset => 'utf-8',
                     },
-                    body => "
-Dear " . $member->name . ",
+                    body => $comms->plain_text,
+#                     body => "
+# Dear " . $member->name . ",
 
-We've noticed that you haven't paid any Makerspace membership dues recently, your last payment was on " . $paid_date .", and your membership has been expired since " . $expires_date . ". If you intended to let your membership lapse, would you mind confirming by using this form https://forms.gle/hnaa1honuW29jEdq5 or by replying to this email.
+# We've noticed that you haven't paid any Makerspace membership dues recently, your last payment was on " . $paid_date .", and your membership has been expired since " . $expires_date . ". If you intended to let your membership lapse, would you mind confirming by using this form https://forms.gle/hnaa1honuW29jEdq5 or by replying to this email.
 
-If you'd like to resume your membership, we'd love to see you! Just make another payment and your membership will resume. We will store your membership data (for reporting purposes) for a year, and then delete it from our systems. If you wish to rejoin after a year, you will need to re-register.
+# If you'd like to resume your membership, we'd love to see you! Just make another payment and your membership will resume. We will store your membership data (for reporting purposes) for a year, and then delete it from our systems. If you wish to rejoin after a year, you will need to re-register.
 
-Please note: If you have left any items in the space, and intend not to resume your membership, please come and collect them. We will move items to roof storage, and in 2 weeks consider them a donation to the space.
+# Please note: If you have left any items in the space, and intend not to resume your membership, please come and collect them. We will move items to roof storage, and in 2 weeks consider them a donation to the space.
 
-This is the only reminder email we'll send you.
+# This is the only reminder email we'll send you.
 
-Regards,
+# Regards,
 
-Swindon Makerspace
-",
+# Swindon Makerspace
+# ",
                 ),
                 Email::MIME->create(
                     attributes => {
                         content_type => 'text/html',
                         charset => 'utf-8',
                     },
-                    body => "
-<p>Dear " . $member->name . ",</p>
+                    body => $comms->html,
+#                     body => "
+# <p>Dear " . $member->name . ",</p>
 
-<p>We've noticed that you haven't paid any Makerspace membership dues recently, your last payment was on " . $paid_date .", and your membership has been expired since " . $expires_date . ". If you intended to let your membership lapse, would you mind confirming by <a href='https://forms.gle/hnaa1honuW29jEdq5'>telling us why</a> or by replying to this email.</p>
+# <p>We've noticed that you haven't paid any Makerspace membership dues recently, your last payment was on " . $paid_date .", and your membership has been expired since " . $expires_date . ". If you intended to let your membership lapse, would you mind confirming by <a href='https://forms.gle/hnaa1honuW29jEdq5'>telling us why</a> or by replying to this email.</p>
 
-<p>If you'd like to resume your membership, we'd love to see you! Just make another payment and your membership will resume. We will store your membership data (for reporting purposes) for a year, and then delete it from our systems. If you wish to rejoin after a year, you will need to re-register.</p>
+# <p>If you'd like to resume your membership, we'd love to see you! Just make another payment and your membership will resume. We will store your membership data (for reporting purposes) for a year, and then delete it from our systems. If you wish to rejoin after a year, you will need to re-register.</p>
 
-<p>Please note: If you have left any items in the space, and intend not to resume your membership, please come and collect them. We will move items to roof storage, and in 2 weeks consider them a donation to the space.</p>
+# <p>Please note: If you have left any items in the space, and intend not to resume your membership, please come and collect them. We will move items to roof storage, and in 2 weeks consider them a donation to the space.</p>
 
-<p>This is the only reminder email we'll send you.</p>
+# <p>This is the only reminder email we'll send you.</p>
 
-<p>Regards,</p>
+# <p>Regards,</p>
 
-<p>Swindon Makerspace</p>
-",
+# <p>Swindon Makerspace</p>
+# ",
                 )]};
 
-    ## Store the comms:
-    $member->communications_rs->create({
-        type => 'reminder_email',
-        plain_text => $c->stash->{email}{parts}[0]->body,
-        status => 'sent',
-    });
-    $c->forward($c->view('Email'));   
+    $c->forward($c->view('Email'));
+    $comms->update({ status => 'sent' });
 }
 
 sub box_reminder: Chained('base'): PathPart('box_reminder'): Args(1) {
@@ -1096,6 +1114,12 @@ sub send_box_reminder_email: Private {
                                      $expire_date->year
         );
     my $bank_ref = $member->bank_ref;
+    ## Store the comms:
+    my $comms = $member->create_communication(
+        'Your Swindon Makerspace member box',
+        'box_reminder_email',
+        { dues_nice => $dues_nice, now_plus_one_month => $now_plus_one_month },
+    );
     $c->stash->{email} = {
             to => $member->email,
             cc => $c->config->{emails}{cc},
@@ -1108,59 +1132,56 @@ sub send_box_reminder_email: Private {
                         content_type => 'text/plain',
                         charset => 'utf-8',
                     },
-                    body => "
-Hello, $name,
-  We were just doing a check-up of the member boxes, and we noticed you seem to have a box, but not a current membership.
-We would, of course, love to have you back. Now is a great time to re-up. If circumstances have changed such that you need a concessionary membership (half price, 12.50 GBP/month), reply to this email and a director will help you. If you've just paused your membership during lockdown, you will be happy to know that we are now allowing groups of up to 6, and hope to be open as in the before-times on June 21st. If you've decided to not rejoin, then please reply to this email and arrange a time to get your box (and we'd like to know why you aren't coming back, if you don't mind). At the very least, please respond to this email to let us know that you don't want your stuff back, and we will dispose of it.
+                    body => $comms->plain_text,
+#                     body => "
+# Hello, $name,
+#   We were just doing a check-up of the member boxes, and we noticed you seem to have a box, but not a current membership.
+# We would, of course, love to have you back. Now is a great time to re-up. If circumstances have changed such that you need a concessionary membership (half price, 12.50 GBP/month), reply to this email and a director will help you. If you've just paused your membership during lockdown, you will be happy to know that we are now allowing groups of up to 6, and hope to be open as in the before-times on June 21st. If you've decided to not rejoin, then please reply to this email and arrange a time to get your box (and we'd like to know why you aren't coming back, if you don't mind). At the very least, please respond to this email to let us know that you don't want your stuff back, and we will dispose of it.
 
-If you don't tell us anything, or pay your membership fees, at some point after $now_plus_one_month, we will assume you don't want your box & contents back.  Consider this your final warning of that.
+# If you don't tell us anything, or pay your membership fees, at some point after $now_plus_one_month, we will assume you don't want your box & contents back.  Consider this your final warning of that.
 
-Just in case you've fogotten how to give us money:
+# Just in case you've fogotten how to give us money:
 
-Monthly fee: £${dues_nice}/month
-To: Swindon Makerspace
-Bank: Barclays
-Sort Code: 20-84-58
-Account: 83789160
-Ref: $bank_ref
+# Monthly fee: £${dues_nice}/month
+# To: Swindon Makerspace
+# Bank: Barclays
+# Sort Code: 20-84-58
+# Account: 83789160
+# Ref: $bank_ref
 
-Regards,
-Swindon Makerspace
-",
+# Regards,
+# Swindon Makerspace
+# ",
                 ),
                 Email::MIME->create(
                     attributes => {
                         content_type => 'text/html',
                         charset => 'utf-8',
                     },
-                    body => "
-<p>Hello, $name,</p>
-<p>  We were just doing a check-up of the member boxes, and we noticed you seem to have a box, but not a current membership.</p>
-<p>We would, of course, love to have you back. Now is a great time to re-up. If circumstances have changed such that you need a concessionary membership (half price, 12.50 GBP/month), reply to this email and a director will help you. If you've just paused your membership during lockdown, you will be happy to know that we are now allowing groups of up to 6, and hope to be open as in the before-times on June 21st. If you've decided to not rejoin, then please reply to this email and arrange a time to get your box (and we'd like to know why you aren't coming back, if you don't mind). At the very least, please respond to this email to let us know that you don't want your stuff back, and we will dispose of it.</p>
+                    body => $comms->html,
+#                     body => "
+# <p>Hello, $name,</p>
+# <p>  We were just doing a check-up of the member boxes, and we noticed you seem to have a box, but not a current membership.</p>
+# <p>We would, of course, love to have you back. Now is a great time to re-up. If circumstances have changed such that you need a concessionary membership (half price, 12.50 GBP/month), reply to this email and a director will help you. If you've just paused your membership during lockdown, you will be happy to know that we are now allowing groups of up to 6, and hope to be open as in the before-times on June 21st. If you've decided to not rejoin, then please reply to this email and arrange a time to get your box (and we'd like to know why you aren't coming back, if you don't mind). At the very least, please respond to this email to let us know that you don't want your stuff back, and we will dispose of it.</p>
 
-<p>If you don't tell us anything, or pay your membership fees, at some point after $now_plus_one_month, we will assume you don't want your box & contents back.  Consider this your final warning of that.</p>
+# <p>If you don't tell us anything, or pay your membership fees, at some point after $now_plus_one_month, we will assume you don't want your box & contents back.  Consider this your final warning of that.</p>
 
-<p>Just in case you've fogotten how to give us money:</p>
+# <p>Just in case you've fogotten how to give us money:</p>
 
-<p>Monthly fee: £${dues_nice}/month<br/>
-To: Swindon Makerspace<br/>
-Bank: Barclays<br/>
-Sort Code: 20-84-58<br/>
-Account: 83789160<br/>
-Ref: $bank_ref<br/>
-</p>
-<p>Regards,</p>
-<p>Swindon Makerspace</p>
-"
+# <p>Monthly fee: £${dues_nice}/month<br/>
+# To: Swindon Makerspace<br/>
+# Bank: Barclays<br/>
+# Sort Code: 20-84-58<br/>
+# Account: 83789160<br/>
+# Ref: $bank_ref<br/>
+# </p>
+# <p>Regards,</p>
+# <p>Swindon Makerspace</p>
+# "
                 )]};
 
-    ## Store the comms:
-    $member->communications_rs->create({
-        type => 'box_reminder_email',
-        plain_text => $c->stash->{email}{parts}[0]->body,
-        status => 'sent',
-    });
     $c->forward($c->view('Email'));
+    $comms->update({ status => 'sent'});
 }
 
 =head2 membership_status_update

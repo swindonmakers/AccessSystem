@@ -612,37 +612,53 @@ sub recent_transactions {
 }
 
 sub create_communication {
-    my ($self, $subject, $template) = @_;
+    my ($self, $subject, $type, $tt_vars) = @_;
+    $type =~ s/\.tt$//;
 
     ## Eventtually! this should store the template name in the comms
     ## table, and the comms sending part should construct the text?!
 
-    my ($type) = $template =~ /^(\w+)/; # template with no .tt
-    if($type eq 'new_payment') {
-        $self->communications_rs->create({
+    # templates in $ENV{CATALYST_HOME}/root/src/emails/<type>/<type>.txt / .html
+    if (!$ENV{CATALYST_HOME}) {
+        die "CATALYST_HOME env var does not exist!";
+    }
+    my $tt_path_base = "$ENV{CATALYST_HOME}/root/src/emails/$type/$type";
+
+    my $comm_hash = {
             created_on => undef,
             type => $type,
             status => 'unsent',
             subject => $subject,
-            plain_text => "
-Dear " . $self->name . ",
+    };
 
-Your initial payment has been received by the Swindon Makerspace, your
-membership is now activated. You can now access the Makerspace.
 
-If you do not yet have a door token, visit the Makerspace on a
-Wednesday evening and ask to be assigned one. To organise a different
-date email us at info\@swindon-makerspace.org or (better) join our
-group Telegram chat: https://t.me/joinchat/A5Xbrj7rku0D-F3p8wAgtQ .
+    $tt_vars->{member} = $self;
 
-Don't forget that you'll need inductions before you use some of the machines.
+    my $tt = Template::Toolkit->new(
+        STRICT => 1
+    ) or die "tt error: $Template::ERRROR";
 
-Regards,
-
-Swindon Makerspace
-"
-                                         });
+    my $any_parts;
+    if (-e "${tt_path_base}.txt") {
+        my $raw = "";
+        $tt->process("${tt_path_base}.txt", $tt_vars, \$raw)
+            or die $tt->error;
+        $comm_hash->{plain_text} = $raw;
+        $any_parts++;
     }
+    if (-e "${tt_path_base}.html") {
+        my $raw = "";
+        $tt->process("${tt_path_base}.html", $tt_vars, \$raw)
+            or die $tt->error;
+        $comm_hash->{html} = $raw;
+        $any_parts++;
+    }
+
+    if (!$any_parts) {
+        die "When sending communication type $type, neither ${tt_path_base}.txt nor ${tt_path_base}.html exist";
+    }
+
+    $self->communications_rs->create($comm_hash);
 }
 
 sub door_colour_to_code {
