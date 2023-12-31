@@ -1,0 +1,16 @@
+Dear [% member.name %],
+
+Welcome back, we have recieved your membership payments and reactivated your existing account
+Your rfid tag has now been reactivated and you can access the makerspace once more 
+
+If you have lost your door token, visit the Makerspace on a
+Wednesday evening and ask to be assigned a new one. To organise a different
+date email us at info\@swindon-makerspace.org or (better) join our
+group Telegram chat: https://t.me/joinchat/A5Xbrj7rku0D-F3p8wAgtQ .
+
+If you have stopped being a member for 3+ months then you will have lost your induction status
+and be required to be reinducted before being able to use them again
+
+Regards,
+
+Swindon Makerspace

@@ -1,7 +1,10 @@
 Hello, [% member.name %],
 
 We were just doing a check-up of the member boxes, and we noticed you seem to have a box, but not a current membership.
-We would, of course, love to have you back. Now is a great time to re-up. If circumstances have changed such that you need a concessionary membership (half price, 12.50 GBP/month), reply to this email and a director will help you. If you've just paused your membership during lockdown, you will be happy to know that we are now allowing groups of up to 6, and hope to be open as in the before-times on June 21st. If you've decided to not rejoin, then please reply to this email and arrange a time to get your box (and we'd like to know why you aren't coming back, if you don't mind). At the very least, please respond to this email to let us know that you don't want your stuff back, and we will dispose of it.
+We would, of course, love to have you back. Now is a great time to re-up. If circumstances have changed such that you need a concessionary membership (half price, 12.50 GBP/month), reply to this email and a director will help you. 
+If you've decided to not rejoin, then please reply to this email and arrange a time to get your box or if you dont want you box at all
+
+If you do want to leave, thats Ok but if you could let us know why with this short survey it would be greatly appreciated https://forms.gle/hnaa1honuW29jEdq5
 
 If you don't tell us anything, or pay your membership fees, at some point after [% now_plus_one_month %], we will assume you don't want your box & contents back.  Consider this your final warning of that.
 

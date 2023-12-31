@@ -1,0 +1,15 @@
+Dear [% member.name %],
+
+Your initial payment has been received by the Swindon Makerspace, your
+membership is now activated. You can now access the Makerspace.
+
+If you do not yet have a door token, visit the Makerspace on a
+Wednesday evening and ask to be assigned one. To organise a different
+date email us at info\@swindon-makerspace.org or (better) join our
+group Telegram chat: https://t.me/joinchat/A5Xbrj7rku0D-F3p8wAgtQ .
+
+Don't forget that you'll need inductions before you use some of the machines.
+
+Regards,
+
+Swindon Makerspace
