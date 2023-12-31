@@ -405,7 +405,8 @@ sub find_member ($self, $text, $message, $args = undef) {
             return $message->reply("Didn't find a member with that name");
         }
         if (!$person && $people_rs->count > 1) {
-            return $message->reply("I found " . $people_rs->count . " members starting with that");
+            my @people = map { $_->is_valid ? $_->name : () } ($people_rs->all);
+            return $message->reply("I found " . scalar @people . " members matching that\n" . join("\n",@people)."\n");
         }
         # if ($person eq 'success') {
         #     $person = $person_or_keyb;
