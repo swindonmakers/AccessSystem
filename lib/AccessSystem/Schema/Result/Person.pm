@@ -518,13 +518,12 @@ sub create_payment {
         return;
     }
     if (!$valid_date) {
-        $self->create_communication('Your Swindon Makerspace membership has started', 'new_payment.tt');
+        $self->create_communication('Your Swindon Makerspace membership has started', 'first_payment');
     }
 
     if($valid_date && $valid_date < $now) {
         # renewed payments
-        ## TODO: create email!
-        $self->create_communication('Your Swindon Makerspace membership has restarted', 'renewed_payment.tt');
+        $self->create_communication('Your Swindon Makerspace membership has restarted', 'rejoin_payment');
     }
     # Only add $OVERLAP  extra days if a first or renewal payment - these
     # ensure member remains valid if standing order is not an

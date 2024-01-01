@@ -3,7 +3,7 @@ Dear [% member.name %],
 Thank you for signing up for membership of the Swindon Makerspace. To activate your ${access} access and ability to use the regulated equipment, please set up a Standing Order with your bank using the following details:
 
 Monthly fee: £[% dues_nice %]/month
-To: Swindon Makerspace
+To: Swindon Makerspace CIC
 Bank: Barclays
 Sort Code: 20-84-58
 Account: 83789160

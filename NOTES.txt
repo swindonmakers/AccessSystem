@@ -308,3 +308,7 @@ Bot - getMyDefaultAdministratorRights (for_channels) returns https://core.telegr
 
 * https://core.telegram.org/bots/features#chat-and-user-selection
 
+Dec 2023
+
+* emails now using templating (see root/src/emails/)
+* TODO: add / fix tests! eg using https://metacpan.org/pod/Email::Sender::Transport::Test
