@@ -1,0 +1,46 @@
+@startuml
+title Start Here: (All the components)
+
+package "Door Hardware" {
+   [ESP]
+   [Pro Mini]
+   [Buzzer]
+   [RFID Reader]
+}
+
+package "AccessSystem Software" {
+   [access system web service] as web
+   [access system crud service] as crud
+   [telegram bot]
+   [update membership\npayments cron] as msp
+   [update sendinblue cron] as sib
+}
+
+package "Check-n Hardware" {
+   [arduino]
+}
+
+package "Jess R's desktop" {
+   [fetch bank\ntransactions cron]
+}
+
+database "PostgreSQL" {
+   [accessdb]
+}
+
+[ESP] --> [web]
+[ESP] <--> [Pro Mini]
+[fetch bank\ntransactions cron] --> [accessdb]
+web <--> [accessdb]
+[telegram bot] <--> [accessdb]
+[telegram bot] <--> web
+sib <--> [accessdb]
+crud <--> [accessdb]
+[arduino] <--> web
+
+note top of web: Perl Catalyst\nframework & DBIx::Class\nHTML & JSON endpoints
+note top of crud: Separate web UI\nview of the database\nusing RapidApp
+note top of sib: Sendinblue =\nmailing list\nservice
+note top of msp: Create next\nmonths membership
+
+@enduml
