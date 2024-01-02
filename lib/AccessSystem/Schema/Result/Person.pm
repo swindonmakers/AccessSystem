@@ -513,7 +513,18 @@ sub create_payment {
         if($valid_date && $valid_date->clone()->subtract(days => $OVERLAP_DAYS - 3) < $now) {
             # has (or is about to) expire
             # this will only send once!
-            $self->create_communication('Swindon Makerspace membership check', 'reminder_email');
+            my $last = $self->last_payment;
+            my $paid_date = sprintf("%s, %d %s %d",
+                                    $last->paid_on_date->day_abbr,
+                                    $last->paid_on_date->day,
+                                    $last->paid_on_date->month_name,
+                                    $last->paid_on_date->year);
+            my $expires_date = sprintf("%s, %d %s %d",
+                                       $last->expires_on_date->day_abbr,
+                                       $last->expires_on_date->day,
+                                       $last->expires_on_date->month_name,
+                                       $last->expires_on_date->year);
+            $self->create_communication('Swindon Makerspace membership check', 'reminder_email', { paid_date => $paid_date, expires_date => $expires_date });
         }
         return;
     }
@@ -615,8 +626,10 @@ sub create_communication {
     my ($self, $subject, $type, $tt_vars) = @_;
     $type =~ s/\.tt$//;
 
-    ## Eventtually! this should store the template name in the comms
-    ## table, and the comms sending part should construct the text?!
+    if($self->communications_rs->search_rs({type => $type})->count == 1) {
+        # should be only one per type!?
+        return undef;
+    }
 
     # templates in $ENV{CATALYST_HOME}/root/src/emails/<type>/<type>.txt / .html
     if (!$ENV{CATALYST_HOME}) {
@@ -659,7 +672,7 @@ sub create_communication {
         die "When sending communication type $type, neither ${tt_path_base}/$type.txt nor ${tt_path_base}/$type.html exist";
     }
 
-    $self->communications_rs->create($comm_hash);
+    return $self->communications_rs->create($comm_hash);
 }
 
 sub door_colour_to_code {

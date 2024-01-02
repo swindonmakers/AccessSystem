@@ -29,10 +29,14 @@ if(!$ENV{CATALYST_HOME}) {
 
 # debug/all
 my $debug = 0;
+my $id;
 my $mails_per_run = 400;
 GetOptions(
     'debug'  => \$debug,
-);
+    'id=i'   => \$id,
+    );
+
+exit if !$id;
 
 if($debug) {
     print "Debug mode, only doing one entry\n";
@@ -60,6 +64,7 @@ my $unsent_comms = $schema->resultset('Communication')->search({
 my $sent_count = 0;
 while(my $comms = $unsent_comms->next) {
     last if $sent_count >= $mails_per_run;
+    next if ($id && $comms->person_id != $id);
     if($debug) {
         print "Sending to " . $comms->person->name . " type: " . $comms->type . "\n";
     }
@@ -77,7 +82,7 @@ while(my $comms = $unsent_comms->next) {
     if ($comms->html) {
         push @parts, Email::MIME->create(
                 attributes => {
-                    content_type => 'text/plain',
+                    content_type => 'text/html',
                     charset => 'utf-8',
                 },
                 body => $comms->html,
@@ -105,11 +110,11 @@ while(my $comms = $unsent_comms->next) {
         }
     }
     my $end_time = time;
-    my $sleep_time = 2 * ($start_time - $end_time);
+    my $sleep_time = 2 * ($end_time - $start_time);
     $sleep_time = 0.5 if $sleep_time < 0.5;
 
     if ($debug) {
-        say "Send took ", ($start_time-$end_time), " seconds, will sleep $sleep_time seconds";
+        say "Send took ", ($end_time-$start_time), " seconds, will sleep $sleep_time seconds";
     }
 
     $sent_count++;
