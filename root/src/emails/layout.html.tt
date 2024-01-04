@@ -120,7 +120,7 @@
         <tr>
           <td style="padding: 24px 24px 48px 24px;">
             <div class="content" style="margin:0 auto;font-size:18px;line-height:28px;">
-              [% body %]
+              [% content %]
             </div>
           </td>
         </tr>
