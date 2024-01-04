@@ -28,3 +28,14 @@
 
 - Parcel email code editor https://parcel.io/
 - Email client compatibility https://www.caniemail.com/
+- Test sends https://putsmail.com/ or https://mailtrap.io/
+
+## Image hosting for emails
+
+Can be used free for limited amount of images https://imgbb.com/.
+We might want to consider adding to our website hosting.
+
+## Inlining template layout
+
+Use https://putsmail.com/inliner to inline the CSS in [example.html](root/src/emails/base_template/example.html).
+
