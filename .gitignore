@@ -2,6 +2,9 @@
 *.bak
 *.png
 
+# exception for email template assets
+!root/src/emails/base_template/img/*.png
+
 local/
 ofx/
 db/
