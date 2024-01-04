@@ -664,13 +664,8 @@ sub create_communication {
         my $raw = "";
         $tt->process("$type.html", {member => $self, %$tt_vars}, \$raw)
             or die $tt->error;
-
-        my $tt_path_html_layout = "$ENV{CATALYST_HOME}/root/src/emails/base_template/layout.html";
-        my $html = "";
-        $tt->process($tt_path_html_layout, {body => $raw}, \$html)
-            or die $tt->error;
         
-        $comm_hash->{html} = $html;
+        $comm_hash->{html} = $raw;
         $any_parts++;
     }
 
