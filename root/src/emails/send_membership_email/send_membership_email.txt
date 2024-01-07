@@ -24,8 +24,6 @@ https://docs.google.com/document/d/1ruqYeKe7kMMnNzKh_LLo2aeoFufMfQsdX987iU6zgCI/
 For live chat with other members, you are encouraged to join our Telegram group: https://t.me/joinchat/A5Xbrj7rku0D-F3p8wAgtQ.
 This is useful for seeing if anyone is in the space, getting help/ideas on projects etc.
 
-For more drawn out discussions (that you can read back on), announcements, and projects we have a forum located at http://forum.swindon-makerspace.org/.
-
 Information such as equipment documentation and ongoing project notes can be found on our wiki, located at https://github.com/swindonmakers/wiki/wiki/.
 
 Please also keep an eye on our calendar at
