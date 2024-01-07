@@ -1,10 +1,13 @@
-[% WRAPPER ../layout.html.tt %]
+[% WRAPPER layout.html.tt %]
 
-<p>Dear [% member.name %],</p>
+<h3>Dear [% member.name %],</h3>
 
-<p>You have been inducted on the [% allowed_row.tool.name %] Please confirm that you understand the safety induction for using the tool, and that you take responsibility for your actions while using it.</p>
+<p>
+    You have been inducted on the <strong>[% allowed_row.tool.name %]</strong>.<br>
+    Please confirm that you understand the safety induction for using the tool, and that you take responsibility for your actions while using it.
+</p>
 
-<p>Follow this link to confirm: [% link %]</p>
+<a href="[% link %]" class="button">Confirm</a>
 
 <p>Regards,</p>
 

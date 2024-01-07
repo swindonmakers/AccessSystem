@@ -38,4 +38,6 @@ We might want to consider adding to our website hosting.
 ## Inlining template layout
 
 Use https://putsmail.com/inliner to inline the CSS in [example.html](root/src/emails/base_template/example.html).
+Place the inlined template into the [layout.html.tt](root/src/emails/layout.html.tt) file making sure the `[% content %]`
+placeholder is inside the `.content` class `<div>` tag.
 
