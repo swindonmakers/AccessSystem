@@ -635,7 +635,7 @@ sub create_communication {
     if (!$ENV{CATALYST_HOME}) {
         die "CATALYST_HOME env var does not exist!";
     }
-    my $tt_path_base = "$ENV{CATALYST_HOME}/root/src/emails/$type";
+    my $tt_path_base = "$ENV{CATALYST_HOME}/root/src/emails";
 
     my $comm_hash = {
             created_on => undef,
@@ -653,9 +653,9 @@ sub create_communication {
     ) or die "tt error: $Template::ERRROR";
 
     my $any_parts;
-    if (-e "${tt_path_base}/$type.txt") {
+    if (-e "${tt_path_base}/$type/$type.txt") {
         my $raw = "";
-        $tt->process("$type.txt", {member => $self, %$tt_vars}, \$raw)
+        $tt->process("$type/$type.txt", {member => $self, %$tt_vars}, \$raw)
             or die $tt->error;
         $comm_hash->{plain_text} = $raw;
         $any_parts++;
