@@ -626,9 +626,10 @@ sub create_communication {
     my ($self, $subject, $type, $tt_vars) = @_;
     $type =~ s/\.tt$//;
 
-    if($self->communications_rs->search_rs({type => $type})->count == 1) {
+    my $check_exists = $self->communications_rs->search_rs({type => $type});
+    if($check_exists->count == 1) {
         # should be only one per type!?
-        return undef;
+        return $check_exists->first;
     }
 
     # templates in $ENV{CATALYST_HOME}/root/src/emails/<type>/<type>.txt / .html
@@ -650,30 +651,81 @@ sub create_communication {
     my $tt = Template->new(
         INCLUDE_PATH => $tt_path_base,
         STRICT => 1
-    ) or die "tt error: $Template::ERRROR";
+        );
+    if (!$tt) {
+        print STDERR "tt error: $Template::ERRROR";
+        return undef;
+    }
 
     my $any_parts;
     if (-e "${tt_path_base}/$type/$type.txt") {
         my $raw = "";
-        $tt->process("$type/$type.txt", {member => $self, %$tt_vars}, \$raw)
-            or die $tt->error;
+        my $process = $tt->process("$type/$type.txt", {member => $self, %$tt_vars}, \$raw);
+        if (!$process) {
+            print STDERR $tt->error;
+            return undef;
+        }
         $comm_hash->{plain_text} = $raw;
         $any_parts++;
     }
-    if (-e "${tt_path_base}/$type.html") {
+    if (-e "${tt_path_base}/$type/$type.html") {
+       # print STDERR "Found ${tt_path_base}/$type/$type.html\n";
         my $raw = "";
-        $tt->process("$type.html", {member => $self, %$tt_vars}, \$raw)
-            or die $tt->error;
-        
+        my $process = $tt->process("$type/$type.html", {member => $self, %$tt_vars}, \$raw);
+        if (!$process) {
+            print STDERR $tt->error;
+            return undef;
+        }
+        # print STDERR "Raw: $raw\n";
         $comm_hash->{html} = $raw;
         $any_parts++;
     }
 
     if (!$any_parts) {
-        die "When sending communication type $type, neither ${tt_path_base}/$type.txt nor ${tt_path_base}/$type.html exist";
+        print STDERR "When sending communication type $type, neither ${tt_path_base}/$type.txt nor ${tt_path_base}/$type.html exist";
+        return undef;
     }
 
     return $self->communications_rs->create($comm_hash);
+}
+
+sub generate_email {
+    my ($self, $comms, $config) = @_;
+    my @parts;
+
+    if ($comms->plain_text) {
+        push @parts, Email::MIME->create(
+                attributes => {
+                    content_type => 'text/plain',
+                    charset => 'utf-8',
+                },
+                body => $comms->plain_text,
+            );
+    }
+    if ($comms->html) {
+        push @parts, Email::MIME->create(
+                attributes => {
+                    content_type => 'text/html',
+                    charset => 'utf-8',
+                },
+                body => $comms->html,
+            );
+    }
+
+    my $email = Email::MIME->create(
+        attributes => {
+            content_type => 'multipart/alternative',
+        },
+        header_str => [
+            From => 'info@swindon-makerspace.org',
+            To   => $comms->person->email,
+            Cc => $config->{emails}{cc},
+            Subject => $comms->subject,
+        ],
+        parts => \@parts
+        );
+
+    return $email;
 }
 
 sub door_colour_to_code {

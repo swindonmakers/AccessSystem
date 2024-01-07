@@ -68,36 +68,7 @@ while(my $comms = $unsent_comms->next) {
     if($debug) {
         print "Sending to " . $comms->person->name . " type: " . $comms->type . "\n";
     }
-    my @parts;
-
-    if ($comms->plain_text) {
-        push @parts, Email::MIME->create(
-                attributes => {
-                    content_type => 'text/plain',
-                    charset => 'utf-8',
-                },
-                body => $comms->plain_text,
-            );
-    }
-    if ($comms->html) {
-        push @parts, Email::MIME->create(
-                attributes => {
-                    content_type => 'text/html',
-                    charset => 'utf-8',
-                },
-                body => $comms->html,
-            );
-    }
-
-    my $email = Email::MIME->create(
-        header_str => [
-            From => 'info@swindon-makerspace.org',
-            To   => $comms->person->email,
-            Cc => $m_config{emails}{cc},
-            Subject => $comms->subject,
-        ],
-        parts => \@parts
-        );
+    my $email = $comms->person->generate_email($comms, \%m_config);
     my $start_time = time;
     if(Email::Sender::Simple->try_to_send($email)) {
         $comms->update({ status => 'sent' });

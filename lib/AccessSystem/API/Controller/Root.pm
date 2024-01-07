@@ -537,30 +537,7 @@ sub user_guid_request: Chained('base'): PathPart('user_guid_request'): Args(0) {
             link => $c->uri_for('login'),
         }
         );
-    $c->stash->{email} = {
-        to => $member->email,
-        cc => $c->config->{email}{cc},
-        from => 'info@swindon-makerspace.org',
-        subject => $comms->subject,
-        body => $comms->plain_text,
-#         body => "
-# Dear " . $member->name . ",
-
-# You requested to use the Access System Mobile Payments app (or someone did using your id). " . ($success 
-# ? "
-
-# Enter this key into the Settings -> Key field to continue: " . $member->login_tokens->first->login_token
-# : "
-
-# You need to login to the website first to create a login key, please visit " . $c->uri_for('login') . " ."
-# ) .
-# "
-
-# Regards,
-
-# Swindon Makerspace
-# ",
-    };
+    $c->stash->{email} = $member->generate_email($comms, $c->config);
     $c->forward($c->view('Email'));
     $comms->update({ status => 'sent'});
     $c->stash(
@@ -604,24 +581,7 @@ sub confirm_telegram: Chained('base'): PathPart('confirm_telegram'): Args(0) {
               telegram_chatid => $telegram_chatid }
         );
 
-        $c->stash->{email} = {
-                to => $member->email,
-                cc => $c->config->{email}{cc},
-                from => 'info@swindon-makerspace.org',
-                subject => $comms->subject,
-                body => $comms->plain_text,
-#                 body => "
-# Dear " . $member->name . ",
-
-# You requested to attach a Telegram ID of $telegram_chatid ($telegram_user) to your Makerspace Member account (or someone did using your email).
-
-# Follow this link to confirm: " . $c->uri_for('confirm_email', { token => $token }) . "
-
-# Regards,
-
-# Swindon Makerspace
-# ",
-         };
+        $c->stash->{email} = $member->generate_email($comms, $c->config);
         $c->forward($c->view('Email'));
         $comms->update({ status => 'sent'});
         $success = 1;
@@ -685,19 +645,18 @@ sub send_induction_acceptance: Chained('base'): PathPart('send_induction_accepta
         my $comms = $member->create_communication(
             'Swindon Makerspace Induction Confirmation',
             'send_induction_acceptance',
-            { tool_name => $allowed_row->tool_name,
+            { tool_name => $allowed_row->tool->name,
               link => $c->uri_for('confirm_induction', { token => $token }) },
-        );
-        $c->stash->{email} = {
-                to => $member->email,
-                cc => $c->config->{email}{cc},
-                from => 'info@swindon-makerspace.org',
-                subject => $comms->subject,
-                body => $comms->plain_text,
-        };
-        $c->forward($c->view('Email'));
-        $comms->update({ status => 'sent'});
-        $success = 1;
+            );
+        if (!$comms) {
+            $success = 0;
+            $msg = "Failed to send mail!";
+        } else {
+            $c->stash->{email} = $member->generate_email($comms, $c->config);
+            $c->forward($c->view('Email'));
+            $comms->update({ status => 'sent'});
+            $success = 1;
+        }
    } else {
         $msg = "I can't find a member with that email address, or there are more than one of them!";
     }
@@ -882,29 +841,7 @@ sub send_membership_email: Private {
         'send_membership_email',
         { dues_nice => $dues_nice, access => $access }
     );
-    $c->stash->{email} = {
-            to => $member->email,
-            cc => $c->config->{emails}{cc},
-            from => 'info@swindon-makerspace.org',
-            subject => $comms->subject,
-            content_type => 'multipart/alternative',
-            parts => [
-                Email::MIME->create(
-                    attributes => {
-                        content_type => 'text/plain',
-                        charset => 'utf-8',
-                    },
-                    body => $comms->plain_text,
-                ),
-                Email::MIME->create(
-                    attributes => {
-                        content_type => 'text/html',
-                        charset => 'utf-8',
-                    },
-                    body => $comms->html,
-                )]
-};
-
+    $c->stash->{email} = $member->generate_email($comms, $c->config);
     $c->forward($c->view('Email'));
     $comms->update({ status => 'sent'});
 }
@@ -956,28 +893,7 @@ sub send_reminder_email: Private {
         'reminder_email',
         { paid_date => $paid_date, expires_date => $expires_date },
     );
-    $c->stash->{email} = {
-            to => $member->email,
-            cc => $c->config->{emails}{cc},
-            from => 'info@swindon-makerspace.org',
-            subject => $comms->subject,
-            content_type => 'multipart/alternative',
-            parts => [
-                Email::MIME->create(
-                    attributes => {
-                        content_type => 'text/plain',
-                        charset => 'utf-8',
-                    },
-                    body => $comms->plain_text,
-                ),
-                Email::MIME->create(
-                    attributes => {
-                        content_type => 'text/html',
-                        charset => 'utf-8',
-                    },
-                    body => $comms->html,
-                )]};
-
+    $c->stash->{email} = $member->generate_email($comms, $c->config);
     $c->forward($c->view('Email'));
     $comms->update({ status => 'sent' });
 }
@@ -1016,28 +932,7 @@ sub send_box_reminder_email: Private {
         'box_reminder_email',
         { dues_nice => $dues_nice, now_plus_one_month => $now_plus_one_month },
     );
-    $c->stash->{email} = {
-            to => $member->email,
-            cc => $c->config->{emails}{cc},
-            from => 'info@swindon-makerspace.org',
-            subject => 'Your Swindon Makerspace member box',
-            content_type => 'multipart/altrernative',
-            parts => [
-                Email::MIME->create(
-                    attributes => {
-                        content_type => 'text/plain',
-                        charset => 'utf-8',
-                    },
-                    body => $comms->plain_text,
-                ),
-                Email::MIME->create(
-                    attributes => {
-                        content_type => 'text/html',
-                        charset => 'utf-8',
-                    },
-                    body => $comms->html,
-                )]};
-
+    $c->stash->{email} = $member->generate_email($comms, $c->config);
     $c->forward($c->view('Email'));
     $comms->update({ status => 'sent'});
 }
