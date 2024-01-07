@@ -3,7 +3,7 @@
 *.png
 
 # exception for email template assets
-!root/src/emails/base_template/img/*.png
+!root/img/*.png
 
 local/
 ofx/

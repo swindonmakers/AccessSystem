@@ -32,8 +32,7 @@
 
 ## Image hosting for emails
 
-Can be used free for limited amount of images https://imgbb.com/.
-We might want to consider adding to our website hosting.
+We include images through the https://raw.githubusercontent.com/ URL of the images that are stored in [/root/img](/root/img).
 
 ## Inlining template layout
 
