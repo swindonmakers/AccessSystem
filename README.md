@@ -25,7 +25,7 @@ Technologies
 
 * [RapidApp](https://metacpan.org/pod/RadpiApp) - CRUD built atop Catalyst
 
-* [DBIx::Cass](https://metacpan.org/pod/DBIx::Class) - Perl ORM
+* [DBIx::Class](https://metacpan.org/pod/DBIx::Class) - Perl ORM
 
 * [SQLite](https://sqlite.org) (or pretty much any database, see above)
 
@@ -35,11 +35,11 @@ Technologies
 
 * [JSON](https://www.json.org) - API data send/receive
 
-* [SendInBlue](https://sendinblue.com) - SMTP email sending service - free to low volume (live system)
+* [Brevo](https://www.brevo.com/) (formerly SendInBlue) - SMTP email sending service - free to low volume (live system)
 
 * [OneAll.com](https://oneall.com) - social logins
 
-* [Barclayscrape](https://github.com/russss/barclayscrape) - Pull current transactions from a Barclays bank account
+* [Barclayscrape](https://github.com/carpii/barclayscrape) - Pull current transactions from a Barclays bank account
 
 * [Telegram::Bot::Brain](https://metacpan.org/pod/Telegram::Bot::Brain) - Telegram Bot system in Perl (inductions et al)
 
