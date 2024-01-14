@@ -2,7 +2,7 @@
 use warnings;
 use strict;
 
-use 5.30.0;
+use 5.28.0;
 
 use Time::HiRes 'time', 'sleep';
 use Config::General;
