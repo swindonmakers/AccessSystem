@@ -1,0 +1,12 @@
+Dear [% member.name %],
+
+You requested to use the Access System Mobile Payments app (or someone did using your id).
+
+[% IF success %]
+ Enter this key into the Settings -> Key field to continue: [% login_token %]
+[% ELSE %]
+ You need to login to the website first to create a login key, please visit [% link %]
+
+Enjoy!
+
+Swindon Makerspace

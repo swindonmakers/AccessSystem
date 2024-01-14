@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use DateTime;
+use Template;
 
 use base 'DBIx::Class::Core';
 
@@ -320,7 +321,7 @@ sub dues {
     }
 
     # voucher code gives 20% off first 3 months
-    if($self->voucher_code
+    if($self->voucher_code && $self->voucher_start
        && $self->voucher_start->add(months => 3) > DateTime->now()) {
         $dues = $dues * 0.8;
     }
@@ -505,17 +506,35 @@ sub create_payment {
         if($self->voucher_code) {
             $self->update({ voucher_start => DateTime->now()});
         }
-        $self->create_communication('new_payment.tt');
     }
     # work this out after voucher setting cos it changes the dues
     if($self->balance_p < $self->dues) {
         warn "Member " . $self->bank_ref . " balance not enough for another month.\n";
+        if($valid_date && $valid_date->clone()->subtract(days => $OVERLAP_DAYS - 3) < $now) {
+            # has (or is about to) expire
+            # this will only send once!
+            my $last = $self->last_payment;
+            my $paid_date = sprintf("%s, %d %s %d",
+                                    $last->paid_on_date->day_abbr,
+                                    $last->paid_on_date->day,
+                                    $last->paid_on_date->month_name,
+                                    $last->paid_on_date->year);
+            my $expires_date = sprintf("%s, %d %s %d",
+                                       $last->expires_on_date->day_abbr,
+                                       $last->expires_on_date->day,
+                                       $last->expires_on_date->month_name,
+                                       $last->expires_on_date->year);
+            $self->create_communication('Swindon Makerspace membership check', 'reminder_email', { paid_date => $paid_date, expires_date => $expires_date });
+        }
         return;
+    }
+    if (!$valid_date) {
+        $self->create_communication('Your Swindon Makerspace membership has started', 'first_payment');
     }
 
     if($valid_date && $valid_date < $now) {
         # renewed payments
-        $self->create_communication('renewed_payment.tt');
+        $self->create_communication('Your Swindon Makerspace membership has restarted', 'rejoin_payment');
     }
     # Only add $OVERLAP  extra days if a first or renewal payment - these
     # ensure member remains valid if standing order is not an
@@ -604,36 +623,109 @@ sub recent_transactions {
 }
 
 sub create_communication {
-    my ($self, $template) = @_;
+    my ($self, $subject, $type, $tt_vars) = @_;
+    $type =~ s/\.tt$//;
 
-    ## Eventtually! this should store the template name in the comms
-    ## table, and the comms sending part should construct the text?!
+    my $check_exists = $self->communications_rs->search_rs({type => $type});
+    if($check_exists->count == 1) {
+        # should be only one per type!?
+        return $check_exists->first;
+    }
 
-    my ($type) = $template =~ /^(\w+)/; # template with no .tt
-    if($type eq 'new_payment') {
-        $self->communications_rs->create({
-            sent_on => undef,
+    # templates in $ENV{CATALYST_HOME}/root/src/emails/<type>/<type>.txt / .html
+    if (!$ENV{CATALYST_HOME}) {
+        die "CATALYST_HOME env var does not exist!";
+    }
+    my $tt_path_base = "$ENV{CATALYST_HOME}/root/src/emails";
+
+    my $comm_hash = {
+            created_on => undef,
             type => $type,
             status => 'unsent',
-            content => "
-Dear " . $self->name . ",
+            subject => $subject,
+    };
 
-Your initial payment has been received by the Swindon Makerspace, your
-membership is now activated. You can now access the Makerspace.
 
-If you do not yet have a door token, visit the Makerspace on a
-Wednesday evening and ask to be assigned one. To organise a different
-date email us at info\@swindon-makerspace.org or (better) join our
-group Telegram chat: https://t.me/joinchat/A5Xbrj7rku0D-F3p8wAgtQ .
+    $tt_vars->{member} = $self;
 
-Don't forget that you'll need inductions before you use some of the machines.
-
-Regards,
-
-Swindon Makerspace
-"
-                                         });
+    my $tt = Template->new(
+        INCLUDE_PATH => $tt_path_base,
+        STRICT => 1
+        );
+    if (!$tt) {
+        print STDERR "tt error: $Template::ERRROR";
+        return undef;
     }
+
+    my $any_parts;
+    if (-e "${tt_path_base}/$type/$type.txt") {
+        my $raw = "";
+        my $process = $tt->process("$type/$type.txt", {member => $self, %$tt_vars}, \$raw);
+        if (!$process) {
+            print STDERR $tt->error;
+            return undef;
+        }
+        $comm_hash->{plain_text} = $raw;
+        $any_parts++;
+    }
+    if (-e "${tt_path_base}/$type/$type.html") {
+       # print STDERR "Found ${tt_path_base}/$type/$type.html\n";
+        my $raw = "";
+        my $process = $tt->process("$type/$type.html", {member => $self, %$tt_vars}, \$raw);
+        if (!$process) {
+            print STDERR $tt->error;
+            return undef;
+        }
+        # print STDERR "Raw: $raw\n";
+        $comm_hash->{html} = $raw;
+        $any_parts++;
+    }
+
+    if (!$any_parts) {
+        print STDERR "When sending communication type $type, neither ${tt_path_base}/$type.txt nor ${tt_path_base}/$type.html exist";
+        return undef;
+    }
+
+    return $self->communications_rs->create($comm_hash);
+}
+
+sub generate_email {
+    my ($self, $comms, $config) = @_;
+    my @parts;
+
+    if ($comms->plain_text) {
+        push @parts, Email::MIME->create(
+                attributes => {
+                    content_type => 'text/plain',
+                    charset => 'utf-8',
+                },
+                body => $comms->plain_text,
+            );
+    }
+    if ($comms->html) {
+        push @parts, Email::MIME->create(
+                attributes => {
+                    content_type => 'text/html',
+                    charset => 'utf-8',
+                },
+                body => $comms->html,
+            );
+    }
+
+    my $email = Email::MIME->create(
+        attributes => {
+            content_type => 'multipart/alternative',
+        },
+        header_str => [
+            From => 'info@swindon-makerspace.org',
+            To   => $comms->person->email,
+            Cc => $config->{emails}{cc},
+            Subject => $comms->subject,
+        ],
+        parts => \@parts
+        );
+
+    return $email;
 }
 
 sub door_colour_to_code {
