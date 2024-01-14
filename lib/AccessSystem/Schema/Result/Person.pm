@@ -321,7 +321,7 @@ sub dues {
     }
 
     # voucher code gives 20% off first 3 months
-    if($self->voucher_code
+    if($self->voucher_code && $self->voucher_start
        && $self->voucher_start->add(months => 3) > DateTime->now()) {
         $dues = $dues * 0.8;
     }
