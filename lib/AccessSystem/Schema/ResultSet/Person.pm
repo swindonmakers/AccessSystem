@@ -74,7 +74,7 @@ sub allowed_to_thing {
             }
             if (!$r_allow) {
                 return {
-                    error => 'Weekend member is trying to enter during restricted hours',
+                    error => 'No access for Weekend Member',
                     colour => 0x21,
                 };
             }
@@ -84,12 +84,12 @@ sub allowed_to_thing {
         };
     } elsif( $person_rs->count > 1) {
         return {
-            error => 'Somehow that returned more than one person! <wibble>',
+            error => 'More than 1 account. Talk to a director',
             colour => 0x25,
         };
     } elsif( $person_rs->count == 1 && !$person_rs->first->is_valid) {
         return {
-            error => "Member would have access with that token, but their membership has expired",
+            error => "Membership Expired/Unpaid",
             colour => 0x22,
         };
     } else {
@@ -102,7 +102,7 @@ sub allowed_to_thing {
             });
         if(!$has_token->count) {
             return {
-                error => "The token ($token) isn't associated with any user",
+                error => "RFID tag 0x($token) not recognised",
                 colour => 0x20,
             };
         } else {
@@ -116,11 +116,11 @@ sub allowed_to_thing {
         if(!$thing_rs->count) {
             return {
                 person => $person,
-                error => "That thing string ($thing_guid) doesn't represent any AccessibleThing I've heard of",
+                error => "($thing_guid) not recognised",
             }
         } else {
             return {
-                error => "The thing exists, but the Person isn't allowed to access it",
+                error => "You are not inducted on this tool",
                 person => $person,
                 thing => $thing_rs->first,
                 colour => 0x24,
