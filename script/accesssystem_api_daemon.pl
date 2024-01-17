@@ -16,7 +16,7 @@ exit Daemon::Control->new(
 #    init_config => "$path etc/environment",
     user        => 'castaway',
     group       => 'castaway',
-    program     => "carton exec $path/script/accesssystem_api_server.pl",
+    program     => "CATALYST_HOME=$path carton exec $path/script/accesssystem_api_server.pl",
  
     pid_file    => '/tmp/accesssystem_api.pid',
     stderr_file => '/tmp/accesssystem_api.out',
