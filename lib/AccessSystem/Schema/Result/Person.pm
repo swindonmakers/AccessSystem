@@ -510,7 +510,8 @@ sub create_payment {
     # work this out after voucher setting cos it changes the dues
     if($self->balance_p < $self->dues) {
         warn "Member " . $self->bank_ref . " balance not enough for another month.\n";
-        if($valid_date && $valid_date->clone()->subtract(days => $OVERLAP_DAYS - 3) < $now) {
+        if($valid_date && $valid_date->clone()->subtract(days => $OVERLAP_DAYS - 3) < $now
+            && $valid_date >= $now->clone()->subtract(months => 1)) {
             # has (or is about to) expire
             # this will only send once!
             my $last = $self->last_payment;
