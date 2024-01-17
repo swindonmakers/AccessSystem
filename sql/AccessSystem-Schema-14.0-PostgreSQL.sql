@@ -114,7 +114,7 @@ CREATE TABLE communications (
   status character varying(10) DEFAULT 'unsent' NOT NULL,
   subject character varying(1024) DEFAULT 'Communication from Swindon Makerspace' NOT NULL,
   plain_text character varying(10240) NOT NULL,
-  html character varying(10240),
+  html character varying(50240),
   PRIMARY KEY (person_id, type)
 );
 CREATE INDEX communications_idx_person_id on communications (person_id);

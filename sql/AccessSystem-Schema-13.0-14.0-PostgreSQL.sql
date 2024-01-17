@@ -14,7 +14,7 @@ ALTER TABLE communications ADD COLUMN subject character varying(1024) DEFAULT 'C
 
 ALTER TABLE communications RENAME COLUMN content TO plain_text;
 
-ALTER TABLE communications ADD COLUMN html character varying(10240);
+ALTER TABLE communications ADD COLUMN html character varying(50240);
 
 ALTER TABLE communications ALTER COLUMN sent_on DROP NOT NULL;
 
