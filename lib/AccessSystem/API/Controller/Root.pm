@@ -3,6 +3,7 @@ use Moose;
 use Time::HiRes 'time';
 use namespace::autoclean;
 use AccessSystem::Form::Person;
+use AccessSystem::Emailer;
 use DateTime;
 use Data::Dumper;
 use LWP::UserAgent;
@@ -538,7 +539,7 @@ sub user_guid_request: Chained('base'): PathPart('user_guid_request'): Args(0) {
         }
         );
     $c->stash->{email} = $member->generate_email($comms, $c->config);
-    $c->forward($c->view('Email'));
+    AccessSystem::Emailer->send($c->stash->{email});
     $comms->update({ status => 'sent'});
     $c->stash(
         json => {
@@ -582,7 +583,7 @@ sub confirm_telegram: Chained('base'): PathPart('confirm_telegram'): Args(0) {
         );
 
         $c->stash->{email} = $member->generate_email($comms, $c->config);
-        $c->forward($c->view('Email'));
+        AccessSystem::Emailer->send($c->stash->{email});
         $comms->update({ status => 'sent'});
         $success = 1;
    } else {
@@ -653,7 +654,7 @@ sub send_induction_acceptance: Chained('base'): PathPart('send_induction_accepta
             $msg = "Failed to send mail!";
         } else {
             $c->stash->{email} = $member->generate_email($comms, $c->config);
-            $c->forward($c->view('Email'));
+            AccessSystem::Emailer->send($c->stash->{email});
             $comms->update({ status => 'sent'});
             $success = 1;
         }
@@ -842,7 +843,7 @@ sub send_membership_email: Private {
         { dues_nice => $dues_nice, access => $access }
     );
     $c->stash->{email} = $member->generate_email($comms, $c->config);
-    $c->forward($c->view('Email'));
+    AccessSystem::Emailer->send($c->stash->{email});
     $comms->update({ status => 'sent'});
 }
 
@@ -894,7 +895,7 @@ sub send_reminder_email: Private {
         { paid_date => $paid_date, expires_date => $expires_date },
     );
     $c->stash->{email} = $member->generate_email($comms, $c->config);
-    $c->forward($c->view('Email'));
+    AccessSystem::Emailer->send($c->stash->{email});
     $comms->update({ status => 'sent' });
 }
 
@@ -933,7 +934,7 @@ sub send_box_reminder_email: Private {
         { dues_nice => $dues_nice, now_plus_one_month => $now_plus_one_month },
     );
     $c->stash->{email} = $member->generate_email($comms, $c->config);
-    $c->forward($c->view('Email'));
+    AccessSystem::Emailer->send($c->stash->{email});
     $comms->update({ status => 'sent'});
 }
 
@@ -969,7 +970,7 @@ The Access System.
 ",
     };
 
-    $c->forward($c->view('Email'));   
+    AccessSystem::Emailer->send($c->stash->{email});   
     $c->stash->{json} = $data;
     $c->forward('View::JSON');
 

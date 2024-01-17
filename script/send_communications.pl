@@ -6,9 +6,6 @@ use 5.28.0;
 
 use Time::HiRes 'time', 'sleep';
 use Config::General;
-use Email::Sender::Simple;
-use Email::Sender::Transport::SMTP;
-use Email::MIME;
 use DateTime;
 use Getopt::Long;
 
@@ -49,9 +46,6 @@ my $schema = AccessSystem::Schema->connect(
     $l_config{'Model::AccessDB'}{connect_info}{password},
     );
 
-my %m_config = Config::General->new("$ENV{CATALYST_HOME}/accesssystem_api.conf")->getall;
-my $smtp = $m_config{'View::Email'}{sender}{mailer_args};
-my $transport = Email::Sender::Transport::SMTP->new($smtp);
 if (!$debug) {
     delete $transport->{debug};
 }
@@ -70,7 +64,7 @@ while(my $comms = $unsent_comms->next) {
     }
     my $email = $comms->person->generate_email($comms, \%m_config);
     my $start_time = time;
-    if(Email::Sender::Simple->try_to_send($email, { transport => $transport})) {
+    if (AccessSystem::Emailer->send($email)) {
         $comms->update({ status => 'sent' });
         if ($debug) {
             say "Sent successfully";
