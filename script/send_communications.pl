@@ -2,7 +2,7 @@
 use warnings;
 use strict;
 
-use 5.30.0;
+use 5.28.0;
 
 use Time::HiRes 'time', 'sleep';
 use Config::General;
@@ -36,8 +36,6 @@ GetOptions(
     'id=i'   => \$id,
     );
 
-exit if !$id;
-
 if($debug) {
     print "Debug mode, only doing one entry\n";
     $mails_per_run = 1;
@@ -54,7 +52,9 @@ my $schema = AccessSystem::Schema->connect(
 my %m_config = Config::General->new("$ENV{CATALYST_HOME}/accesssystem_api.conf")->getall;
 my $smtp = $m_config{'View::Email'}{sender}{mailer_args};
 my $transport = Email::Sender::Transport::SMTP->new($smtp);
-
+if (!$debug) {
+    delete $transport->{debug};
+}
 my $unsent_comms = $schema->resultset('Communication')->search({
     status => 'unsent'
 }, { prefetch => 'person'});
@@ -70,7 +70,7 @@ while(my $comms = $unsent_comms->next) {
     }
     my $email = $comms->person->generate_email($comms, \%m_config);
     my $start_time = time;
-    if(Email::Sender::Simple->try_to_send($email)) {
+    if(Email::Sender::Simple->try_to_send($email, { transport => $transport})) {
         $comms->update({ status => 'sent' });
         if ($debug) {
             say "Sent successfully";

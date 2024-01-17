@@ -120,7 +120,7 @@ sub find_tool ($self, $name, $method, $args = undef) {
     }
 
     if ($tools_rs->count == 0) {
-        $tools_rs = $self->db->resultset('Tool');
+        $tools_rs = $self->db->resultset('Tool')->active;
     }
 
     my $fuzzy = Text::Fuzzy->new(lc $name);
@@ -313,7 +313,7 @@ Output a list of tool names.
 =cut
 
 sub tools ($self, $text, $message) {
-    my $tools = $self->db->resultset('Tool');
+    my $tools = $self->db->resultset('Tool')->active;
     $tools->result_class('DBIx::Class::ResultClass::HashRefInflator');
     if ($text =~ m{/tools ([\w\d\s]+)}) {
         (undef, $tools) = $tools->find_tool($1, undef, 'DBIx::Class::ResultClass::HashRefInflator');
@@ -405,7 +405,8 @@ sub find_member ($self, $text, $message, $args = undef) {
             return $message->reply("Didn't find a member with that name");
         }
         if (!$person && $people_rs->count > 1) {
-            return $message->reply("I found " . $people_rs->count . " members starting with that");
+            my @people = map { $_->is_valid ? $_->name : () } ($people_rs->all);
+            return $message->reply("I found " . scalar @people . " members matching that\n" . join("\n",@people)."\n");
         }
         # if ($person eq 'success') {
         #     $person = $person_or_keyb;

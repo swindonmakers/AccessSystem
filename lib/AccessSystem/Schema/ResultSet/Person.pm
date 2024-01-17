@@ -23,7 +23,7 @@ sub find_person {
     my $people;
     try {
         # Pg syntax, but not other databases, sigh
-        my $pgpeople = $self->search_rs({ 'me.name' => { '-ilike' => "$input%" }}, $args);
+        my $pgpeople = $self->search_rs({ 'me.name' => { '-ilike' => "%$input%" }}, $args);
         if ($pgpeople->count == 1) {
             $person = $pgpeople->first;
             return ($person, undef);
