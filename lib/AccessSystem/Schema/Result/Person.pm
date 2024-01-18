@@ -690,44 +690,6 @@ sub create_communication {
     return $self->communications_rs->create($comm_hash);
 }
 
-sub generate_email {
-    my ($self, $comms, $config) = @_;
-    my @parts;
-
-    if ($comms->plain_text) {
-        push @parts, Email::MIME->create(
-                attributes => {
-                    content_type => 'text/plain',
-                    charset => 'utf-8',
-                },
-                body => $comms->plain_text,
-            );
-    }
-    if ($comms->html) {
-        push @parts, Email::MIME->create(
-                attributes => {
-                    content_type => 'text/html',
-                    charset => 'utf-8',
-                },
-                body => $comms->html,
-            );
-    }
-
-    my $email = Email::MIME->create(
-        attributes => {
-            content_type => 'multipart/alternative',
-        },
-        header_str => [
-            From => 'info@swindon-makerspace.org',
-            To   => $comms->person->email,
-            Cc => $config->{emails}{cc},
-            Subject => $comms->subject,
-        ],
-        parts => \@parts
-        );
-
-    return $email;
-}
 
 sub door_colour_to_code {
     my ($self) = @_;
