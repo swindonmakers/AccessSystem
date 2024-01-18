@@ -46,9 +46,8 @@ my $schema = AccessSystem::Schema->connect(
     $l_config{'Model::AccessDB'}{connect_info}{password},
     );
 
-if (!$debug) {
-    delete $transport->{debug};
-}
+my $emailer = AccessSystem::Emailer->new();
+
 my $unsent_comms = $schema->resultset('Communication')->search({
     status => 'unsent'
 }, { prefetch => 'person'});
@@ -62,9 +61,9 @@ while(my $comms = $unsent_comms->next) {
     if($debug) {
         print "Sending to " . $comms->person->name . " type: " . $comms->type . "\n";
     }
-    my $email = $comms->person->generate_email($comms, \%m_config);
+    my $email = $emailer->generate_email($comms);
     my $start_time = time;
-    if (AccessSystem::Emailer->send($email)) {
+    if ($emailer->send($email)) {
         $comms->update({ status => 'sent' });
         if ($debug) {
             say "Sent successfully";

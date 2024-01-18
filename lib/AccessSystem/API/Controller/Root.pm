@@ -13,6 +13,11 @@ use Data::GUID;
 
 BEGIN { extends 'Catalyst::Controller' }
 
+has emailer => (
+    is => 'ro',
+    default => AccessSystem::Emailer->new(),
+    );
+
 #
 # Sets the actions in this controller to be registered with no prefix
 # so they function identically to actions created in MyApp.pm
@@ -538,8 +543,8 @@ sub user_guid_request: Chained('base'): PathPart('user_guid_request'): Args(0) {
             link => $c->uri_for('login'),
         }
         );
-    $c->stash->{email} = $member->generate_email($comms, $c->config);
-    AccessSystem::Emailer->send($c->stash->{email});
+    $c->stash->{email} = $self->emailer->generate_email($comms);
+    $self->emailer->send($c->stash->{email});
     $comms->update({ status => 'sent'});
     $c->stash(
         json => {
@@ -582,8 +587,8 @@ sub confirm_telegram: Chained('base'): PathPart('confirm_telegram'): Args(0) {
               telegram_chatid => $telegram_chatid }
         );
 
-        $c->stash->{email} = $member->generate_email($comms, $c->config);
-        AccessSystem::Emailer->send($c->stash->{email});
+        $c->stash->{email} = $self->emailer->generate_email($comms);
+        $self->emailer->send($c->stash->{email});
         $comms->update({ status => 'sent'});
         $success = 1;
    } else {
@@ -653,8 +658,8 @@ sub send_induction_acceptance: Chained('base'): PathPart('send_induction_accepta
             $success = 0;
             $msg = "Failed to send mail!";
         } else {
-            $c->stash->{email} = $member->generate_email($comms, $c->config);
-            AccessSystem::Emailer->send($c->stash->{email});
+            $c->stash->{email} = $self->emailer->generate_email($comms);
+            $self->emailer->send($c->stash->{email});
             $comms->update({ status => 'sent'});
             $success = 1;
         }
@@ -842,8 +847,8 @@ sub send_membership_email: Private {
         'send_membership_email',
         { dues_nice => $dues_nice, access => $access }
     );
-    $c->stash->{email} = $member->generate_email($comms, $c->config);
-    AccessSystem::Emailer->send($c->stash->{email});
+    $c->stash->{email} = $self->emailer->generate_email($comms);
+    $self->emailer->send($c->stash->{email});
     $comms->update({ status => 'sent'});
 }
 
@@ -894,8 +899,8 @@ sub send_reminder_email: Private {
         'reminder_email',
         { paid_date => $paid_date, expires_date => $expires_date },
     );
-    $c->stash->{email} = $member->generate_email($comms, $c->config);
-    AccessSystem::Emailer->send($c->stash->{email});
+    $c->stash->{email} = $self->emailer->generate_email($comms);
+    $self->emailer->send($c->stash->{email});
     $comms->update({ status => 'sent' });
 }
 
@@ -933,8 +938,8 @@ sub send_box_reminder_email: Private {
         'box_reminder_email',
         { dues_nice => $dues_nice, now_plus_one_month => $now_plus_one_month },
     );
-    $c->stash->{email} = $member->generate_email($comms, $c->config);
-    AccessSystem::Emailer->send($c->stash->{email});
+    $c->stash->{email} = $self->emailer->generate_email($comms);
+    $self->emailer->send($c->stash->{email});
     $comms->update({ status => 'sent'});
 }
 
@@ -970,7 +975,7 @@ The Access System.
 ",
     };
 
-    AccessSystem::Emailer->send($c->stash->{email});   
+    $self->emailer->send($c->stash->{email});   
     $c->stash->{json} = $data;
     $c->forward('View::JSON');
 
