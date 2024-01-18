@@ -15,7 +15,7 @@ BEGIN { extends 'Catalyst::Controller' }
 
 has emailer => (
     is => 'ro',
-    default => AccessSystem::Emailer->new(),
+    default => sub { AccessSystem::Emailer->new()} ,
     );
 
 #

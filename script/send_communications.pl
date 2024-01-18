@@ -11,6 +11,7 @@ use Getopt::Long;
 
 use lib "$ENV{CATALYST_HOME}/lib";
 use AccessSystem::Schema;
+use AccessSystem::Emailer;
 
 =head1 NAME send_communications
 
