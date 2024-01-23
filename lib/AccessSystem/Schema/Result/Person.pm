@@ -510,21 +510,24 @@ sub create_payment {
     # work this out after voucher setting cos it changes the dues
     if($self->balance_p < $self->dues) {
         warn "Member " . $self->bank_ref . " balance not enough for another month.\n";
-        if($valid_date && $valid_date->clone()->subtract(days => $OVERLAP_DAYS - 3) < $now
+        # Remind when actually expired, 5 days into the overlap
+        if($valid_date &&
+           $valid_date->clone()->subtract(days => 5) < $now
             && $valid_date >= $now->clone()->subtract(months => 1)) {
             # has (or is about to) expire
             # this will only send once!
             my $last = $self->last_payment;
+            my $expiry = $self->real_expiry($OVERLAP_DAYS);
             my $paid_date = sprintf("%s, %d %s %d",
                                     $last->paid_on_date->day_abbr,
                                     $last->paid_on_date->day,
                                     $last->paid_on_date->month_name,
                                     $last->paid_on_date->year);
             my $expires_date = sprintf("%s, %d %s %d",
-                                       $last->expires_on_date->day_abbr,
-                                       $last->expires_on_date->day,
-                                       $last->expires_on_date->month_name,
-                                       $last->expires_on_date->year);
+                                       $expiry->day_abbr,
+                                       $expiry->day,
+                                       $expiry->month_name,
+                                       $expiry->year);
             $self->create_communication('Swindon Makerspace membership check', 'reminder_email', { paid_date => $paid_date, expires_date => $expires_date });
         }
         return;
