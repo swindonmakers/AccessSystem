@@ -6,6 +6,7 @@ use 5.28.0;
 
 use Moo;
 use Config::General;
+use Email::MIME;
 use Email::Sender::Simple;
 use Email::Sender::Transport::SMTP;
 
