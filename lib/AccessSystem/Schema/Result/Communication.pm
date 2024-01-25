@@ -14,6 +14,7 @@ __PACKAGE__->add_columns(
     created_on => {
         data_type => 'datetime',
         set_on_create => 1,
+        default_value => \'CURRENT_TIMESTAMP'
     },
     sent_on => {
         data_type => 'datetime',

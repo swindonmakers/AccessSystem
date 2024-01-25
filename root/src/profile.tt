@@ -27,6 +27,12 @@
 <div class="col-lg-10 offset-2"> Sorry, no door codes when your membership is invalid </div>
 [% END %]
 
+<div class="col-lg-12"><strong>Your Vehicles:</strong></div>
+[% FOREACH vehicle = person.vehicles %]
+  <div class="col-lg-10 offset-2"> Plate: <strong>[% vehicle.plate_reg %]</strong> <a class="confirm" href="[% c.uri_for('delete_vehicle', { id => vehicle.plate_reg }) %]">Delete</a> </div>
+
+[% END %]
+
 <div class="col-lg-12"><strong>Your Access Tokens:</strong></div>
 [% FOREACH token = person.tokens %]
   <div class="col-lg-10 offset-2"> ID: <strong>[% token.id %]</strong> [% token.type %] [% IF person.tokens_rs.count > 1 %] <a class="confirm" href="[% c.uri_for('delete_token', { id => token.id }) %]">Delete</a> [% END %] </div>

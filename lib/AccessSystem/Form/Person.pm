@@ -11,6 +11,9 @@ extends 'HTML::FormHandler::Model::DBIC';
 with 'HTML::FormHandler::Widget::Theme::ASBootstrap4';
 #has '+widget_wrapper' => ( default => 'ASBootstrap3' );
 # with 'HTML::FormHandler::Widget::Theme::BootstrapFormMessages';
+
+has 'plate_reg' => ( is => 'rw', isa => 'Str', default => '' );
+
 has '+item_class' => ( default => 'Person' );
 sub build_form_element_attr {
    return { id => 'register-form' };
@@ -56,6 +59,42 @@ sub validate {
             ->add_error('Unrecognised voucher');
     }
 }
+
+# https://metacpan.org/pod/HTML::FormHandler::Manual::Cookbook#Handle-extra-database-fields ???
+
+around update_model => sub {
+    my $orig = shift;
+    my $self = shift;
+
+    my $item   = $self->item;
+    my $source = $self->source;
+
+    if ($self->value->{plate_reg}) {
+        $self->plate_reg(delete $self->value->{plate_reg});
+    }
+
+    $self->$orig(@_);
+
+    if ($self->plate_reg) {
+        my $pr = $self->plate_reg;
+        $pr =~ s/\W//g;
+        $pr = uc($pr);
+        $pr =~ s/_//g;
+        $self->item->update_or_create_related('vehicles' => { plate_reg => $pr });
+    }
+    
+    # {
+    #     use feature 'say';
+    #     say "In update_model, item=$item, source=$source\n";
+    # }
+
+    # if ($item->id) {
+    #     for my $v (@{$self->value->{vehicles}}) {
+    #         $v->{person_id} = $item->id;
+    #     }
+    # }
+
+};
 
 sub field_add_defaults {
     my ($attrs) = @_;
@@ -158,6 +197,26 @@ has_field address => field_add_defaults {
     },
     help_string => 'As it would appear on an envelope, for the membership register.',
 };
+
+# has_field 'vehicles' => field_add_defaults {
+#     type => 'Repeatable',
+# };
+
+# has_field 'vehicles.plate_reg' => field_add_defaults {
+has_field 'plate_reg' => field_add_defaults {
+    type => 'Text',
+    label => 'Car Reg Plate',
+    required => 0,
+    maxlength => 7,
+    wrapper_attr => { id => 'field-plate-reg', },
+    tags         => { no_errors => 1 },
+    messages => {
+        required => 'Please enter your car licence plate string (max 7 chars)',
+    },
+    help_string => 'The car park has number plate recognition, enter your plate for us to automatically add you to the system. If not entered you will need to manually check in every visit.',
+};
+# has_field 'vehicles.person'    => ( type => 'Hidden' );
+# has_field 'vehicles.person_id' => ( type => 'PrimaryKey' );
 
 has_field how_found_us => field_add_defaults {
     type => 'Select',
