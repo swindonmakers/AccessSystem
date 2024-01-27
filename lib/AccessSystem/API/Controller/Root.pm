@@ -228,6 +228,33 @@ sub delete_me :Chained('logged_in'): PathPart('deleteme'): Args(0) {
     }
 }
 
+sub delete_token :Chained('logged_in'): PathPart('delete_token'): Args(0) {
+    my ($self, $c) = @_;
+    my $token = $c->req->params->{token};
+
+    # These are GET reqs (cos lazy, and its a link)
+    # Must retain at least one token
+    if($c->stash->{person} && $c->stash->{person}->tokens_rs->count > 1) {
+        my $token_obj = $c->stash->{person}->tokens_rs->find({ id => $token });
+        if($token_obj) {
+            $token_obj->delete();
+        }
+    }
+    return $c->response->redirect($c->uri_for('profile'));
+}
+
+sub delete_vehicle :Chained('logged_in'): PathPart('delete_vehicle'): Args(0) {
+    my ($self, $c) = @_;
+    my $vehicle = $c->req->params->{vehicle};
+
+    # These are GET reqs (cos lazy, and its a link)
+    my $vehicle_obj = $c->stash->{person}->vehicles_rs->find({ plate_reg => $vehicle });
+    if($vehicle_obj) {
+        $vehicle_obj->delete();
+    }
+    return $c->response->redirect($c->uri_for('profile'));
+}
+
 sub who : Chained('base') : PathPart('who') : Args(0)  {
     my ($self, $c) = @_;
 
