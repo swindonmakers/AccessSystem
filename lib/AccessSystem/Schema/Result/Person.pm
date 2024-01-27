@@ -216,6 +216,7 @@ __PACKAGE__->has_many('usage', 'AccessSystem::Schema::Result::UsageLog', 'person
 __PACKAGE__->has_many('login_tokens', 'AccessSystem::Schema::Result::PersonLoginTokens', 'person_id');
 __PACKAGE__->has_many('children', 'AccessSystem::Schema::Result::Person', 'parent_id');
 __PACKAGE__->has_many('transactions', 'AccessSystem::Schema::Result::Transactions', 'person_id');
+__PACKAGE__->has_many('vehicles', 'AccessSystem::Schema::Result::Vehicle', 'person_id');
 __PACKAGE__->belongs_to('parent', 'AccessSystem::Schema::Result::Person', 'parent_id', { 'join_type' => 'left'} );
 __PACKAGE__->belongs_to('tier', 'AccessSystem::Schema::Result::Tier', 'tier_id');
 
@@ -245,7 +246,6 @@ sub update {
 }
 
 
-# FIXME: Magic number 
 sub is_valid {
     my ($self, $date) = @_;
     $date = DateTime->now();

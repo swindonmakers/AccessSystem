@@ -172,7 +172,7 @@ sub profile : Chained('logged_in') :PathPart('profile'): Args(0) {
     $things_rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
     my %things;
     foreach my $thing ($things_rs->all) {
-	$things{$thing->{id}} = $thing->{name};
+        $things{$thing->{id}} = $thing->{name};
     }
 
     $c->stash->{things} = \%things;
@@ -1003,8 +1003,36 @@ sub verify_token {
         return $ut_result->{response}{result}{data};
     } else {
         return 0;
+    }   
+}
+
+=head2 vehicles
+
+Plain-text list of vehicles, of currently paid-up members, sorted
+alphabetically.
+
+=cut
+
+sub vehicles : Chained('logged_in') :PathPart('vehicles') {
+    my ($self, $c) = @_;
+
+    my $v_rs = $c->model('AccessDB::Vehicle')->
+        search_rs({},
+            {
+                join => 'person',
+                order_by => 'plate_reg'
+            });
+    my $output_str = '';
+    my $now = DateTime->now();
+    foreach my $v ($v_rs->all) {
+        my $valid_until = $v->person->valid_until;
+        next if !$valid_until;
+        next if $valid_until && $valid_until <= $now;
+        $output_str .= $v->plate_reg . "\r\n";
     }
-    
+
+    $c->res->content_type('text/plain');
+    $c->res->body($output_str);
 }
 
 sub membership_register : Chained('logged_in') :PathPart('membership_register') {
@@ -1017,6 +1045,7 @@ sub membership_register : Chained('logged_in') :PathPart('membership_register') 
     $c->stash( register => $c->model('AccessDB::MemberRegister')->on_date($from_date),
                template => 'member_register.tt' );
 }
+
 
 =head2 end
 

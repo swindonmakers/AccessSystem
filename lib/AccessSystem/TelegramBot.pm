@@ -162,7 +162,7 @@ sub read_message ($self, $message) {
         },
         bankinfo      => {
             match => qr{^/bankinfo},
-            help  => '',
+            help  => '/bankinfo',
         },
         tools         => {
             match => qr{^/tools},
@@ -194,7 +194,7 @@ sub read_message ($self, $message) {
         },
         balance       => {
             match => qr{^/balance\b},
-            help  => '/balance\b',
+            help  => '/balance',
         },
         prices        => {
             match => qr{^/prices\b},
@@ -204,6 +204,10 @@ sub read_message ($self, $message) {
             match => qr{^/pay\b},
             help  => '/pay',
         },
+        add_vehicle   => {
+            match => qr{^/add_vehicle\b},
+            help => '/add_vehicle ab74cde'
+        }
         );
 
     if (ref($message) eq 'Telegram::Bot::Object::Message' && $message->text) {
@@ -233,6 +237,39 @@ sub read_message ($self, $message) {
     # if ($message->text =~ m{^/}) {
     #     $message->reply(qq<I don't know that command, sorry.>);
     # }
+}
+
+sub add_vehicle ($self, $text, $message) {
+    return unless $self->authorize($message, 'invalid_ok');
+
+    my $member = $self->member($message);
+
+    if($text !~ m{^/add_vehicle (.*)$}) {
+        $message->reply("You need to provide your vehicle's reg number (license plate number)");
+        return;
+    }
+    my $reg = $1;
+    $reg =~ s/\W//g;
+    $reg =~ s/_//g;
+    $reg = uc $reg;
+
+    if (length $reg > 7) {
+        $message->reply("That reg number, '$reg', seems invalid -- it is longer than 7 (non-space) characters");
+        return;
+    }
+
+    if (length $reg < 2) {
+        $message->reply("That reg number, '$reg', seems invalid -- it is shorter than 3 (non-space) characters");
+        return;
+    }
+
+    my $v = $member->find_or_new_related('vehicles' => { plate_reg => $reg });
+    if (!$v->in_storage) {
+        $v->insert();
+        return $message->reply("Added vehicle with registration number '$reg'.");
+    } else {
+        return $message->reply("You already had that one");
+    }
 }
 
 sub bankinfo ($self, $text, $message) {
