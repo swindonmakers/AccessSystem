@@ -84,12 +84,12 @@ sub allowed_to_thing {
         };
     } elsif( $person_rs->count > 1) {
         return {
-            error => 'More than 1 account. Talk to a director',
+            error => 'Token reused on accounts. Talk to a director',
             colour => 0x25,
         };
     } elsif( $person_rs->count == 1 && !$person_rs->first->is_valid) {
         return {
-            error => "Membership Expired/Unpaid",
+            error => "Membership expired/unpaid",
             colour => 0x22,
         };
     } else {
@@ -102,7 +102,7 @@ sub allowed_to_thing {
             });
         if(!$has_token->count) {
             return {
-                error => "RFID tag 0x($token) not recognised",
+                error => "RFID tag ($token) not recognised",
                 colour => 0x20,
             };
         } else {
@@ -116,7 +116,7 @@ sub allowed_to_thing {
         if(!$thing_rs->count) {
             return {
                 person => $person,
-                error => "($thing_guid) not recognised",
+                error => "Tool ($thing_guid) not recognised",
             }
         } else {
             return {

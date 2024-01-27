@@ -36,6 +36,13 @@ AccessSystem::API::Controller::Root - Root Controller for AccessSystem::API
 
 =head1 METHODS
 
+=cut
+
+sub auto {
+    my ($self, $c) = @_;
+    $ENV{CATALYST_HOME} ||= $c->stash->{home};
+}
+
 =head2 index
 
 The root page (/)
