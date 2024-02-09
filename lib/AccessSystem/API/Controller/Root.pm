@@ -543,9 +543,7 @@ sub user_guid_request: Chained('base'): PathPart('user_guid_request'): Args(0) {
             link => $c->uri_for('login'),
         }
         );
-    $c->stash->{email} = $self->emailer->generate_email($comms);
-    $self->emailer->send($c->stash->{email});
-    $comms->update({ status => 'sent'});
+    $self->emailer->send($comms);
     $c->stash(
         json => {
             success => $success,
@@ -587,9 +585,7 @@ sub confirm_telegram: Chained('base'): PathPart('confirm_telegram'): Args(0) {
               telegram_chatid => $telegram_chatid }
         );
 
-        $c->stash->{email} = $self->emailer->generate_email($comms);
-        $self->emailer->send($c->stash->{email});
-        $comms->update({ status => 'sent'});
+        $self->emailer->send($comms);
         $success = 1;
    } else {
         $msg = "I can't find a member with that email address, or there are more than one of them!";
@@ -650,7 +646,7 @@ sub send_induction_acceptance: Chained('base'): PathPart('send_induction_accepta
         ## Store the comms:
         my $comms = $member->create_communication(
             'Swindon Makerspace Induction Confirmation',
-            'send_induction_acceptance',
+            'inducted_on|' . $tool_id,
             { tool_name => $allowed_row->tool->name,
               link => $c->uri_for('confirm_induction', { token => $token }) },
             );
@@ -658,9 +654,7 @@ sub send_induction_acceptance: Chained('base'): PathPart('send_induction_accepta
             $success = 0;
             $msg = "Failed to send mail!";
         } else {
-            $c->stash->{email} = $self->emailer->generate_email($comms);
-            $self->emailer->send($c->stash->{email});
-            $comms->update({ status => 'sent'});
+            $self->emailer->send($comms);
             $success = 1;
         }
    } else {
@@ -847,9 +841,7 @@ sub send_membership_email: Private {
         'send_membership_email',
         { dues_nice => $dues_nice, access => $access }
     );
-    $c->stash->{email} = $self->emailer->generate_email($comms);
-    $self->emailer->send($c->stash->{email});
-    $comms->update({ status => 'sent'});
+    $self->emailer->send($comms);
 }
 
 sub nudge_member: Chained('base'): PathPart('nudge_member'): Args(1) {
@@ -899,9 +891,7 @@ sub send_reminder_email: Private {
         'reminder_email',
         { paid_date => $paid_date, expires_date => $expires_date },
     );
-    $c->stash->{email} = $self->emailer->generate_email($comms);
-    $self->emailer->send($c->stash->{email});
-    $comms->update({ status => 'sent' });
+    $self->emailer->send($comms);
 }
 
 sub box_reminder: Chained('base'): PathPart('box_reminder'): Args(1) {
@@ -938,9 +928,7 @@ sub send_box_reminder_email: Private {
         'box_reminder_email',
         { dues_nice => $dues_nice, now_plus_one_month => $now_plus_one_month },
     );
-    $c->stash->{email} = $self->emailer->generate_email($comms);
-    $self->emailer->send($c->stash->{email});
-    $comms->update({ status => 'sent'});
+    $self->emailer->send($comms);
 }
 
 =head2 membership_status_update
