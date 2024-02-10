@@ -23,7 +23,7 @@ Technologies
 
 * [Catalyst](https://metacpan.org/pod/Catalyst) - Perl Web Framework
 
-* [RapidApp](https://metacpan.org/pod/RadpiApp) - CRUD built atop Catalyst
+* [RapidApp](https://metacpan.org/pod/RapidApp) - CRUD built atop Catalyst
 
 * [DBIx::Class](https://metacpan.org/pod/DBIx::Class) - Perl ORM
 
