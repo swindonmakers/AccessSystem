@@ -46,3 +46,10 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         libcoro-perl \
     && cpanm Perl::LanguageServer \
     && rm -rf /var/lib/apt/lists/*
+
+# WORKDIR /opt
+# WORKDIR /workspaces
+
+# COPY . .
+
+# RUN carton install --cached
