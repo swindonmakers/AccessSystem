@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  access-system:
+    build: 
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    # volumes:
+    #   - ..:/opt
+    depends_on: 
+      - db
+  db:
+    image: postgres:11
+    environment:
+      POSTGRES_PASSWORD: test
