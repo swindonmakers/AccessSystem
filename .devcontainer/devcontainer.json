@@ -58,6 +58,7 @@
 				"tamasfe.even-better-toml",
 				"maattdd.gitless",
 				"mtxr.sqltools",
+				"mtxr.sqltools-driver-pg",
 				"ms-azuretools.vscode-docker"
 			]
 		}

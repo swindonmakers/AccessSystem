@@ -3,7 +3,7 @@ services:
   access-system:
     build: 
       context: .
-      dockerfile: .devcontainer/Dockerfile
+      dockerfile: Dockerfile
     # volumes:
     #   - ..:/opt
     depends_on: 
