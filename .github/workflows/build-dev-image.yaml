@@ -14,6 +14,7 @@ on:
 env:
   CONTAINER_REGISTRY: ghcr.io
   IMAGE_NAME: access-system-dev
+  BRANCH_NAME: ${{ github.head_ref || github.ref }} 
 
 jobs:
   build:
@@ -35,12 +36,13 @@ jobs:
     - name: 💾 Push image
       run: |
         IMAGE_ID=$CONTAINER_REGISTRY/$GITHUB_REPOSITORY_OWNER/$IMAGE_NAME
-        echo "Image ID: $IMAGE_ID"
-        echo "GITHUB_SHA: $GITHUB_SHA"
+        VERSION=$(echo "${BRANCH_NAME#refs/heads/}" | sed -e 's/[^a-zA-Z0-9]/-/g') # Get the branch name from the ref and replace non-alphanumeric characters with hyphens
+        [ "$VERSION" == "master" ] && VERSION=latest
+        echo "🆔 Image ID: $IMAGE_ID"
+        echo "#️⃣ GITHUB_SHA: $GITHUB_SHA"
+        echo "🎯 Version: $VERSION"
+        echo "🚀 Pushing image to registry........................................."
         docker tag $IMAGE_NAME $IMAGE_ID:$GITHUB_SHA
         docker push $IMAGE_ID:$GITHUB_SHA
-        VERSION=$(echo "$GITHUB_REF_NAME" | sed -e 's/[^a-zA-Z0-9]/-/g') # Get the branch name from the ref and replace non-alphanumeric characters with hyphens
-        [ "$VERSION" == "master" ] && VERSION=latest
-        echo "Version: $VERSION"
         docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
         docker push $IMAGE_ID:$VERSION
