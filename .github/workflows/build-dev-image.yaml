@@ -1,0 +1,46 @@
+name: Build Dev Container Base Image
+
+on:
+  schedule:
+    - cron: '0 8 1 * *' # Scheduled at 08:00 on the first day of every month
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch: # Manually triggered
+
+env:
+  CONTAINER_REGISTRY: ghcr.io
+  IMAGE_NAME: access-system-dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: 📦 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🏗️ Build image
+      run: docker build . --file Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID},sha=${GITHUB_SHA},ref=${GITHUB_REF}"
+
+    - name: 🔐 Log in to registry
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login $CONTAINER_REGISTRY -u $ --password-stdin
+
+    - name: 💾 Push image
+      run: |
+        IMAGE_ID=$CONTAINER_REGISTRY/$GITHUB_REPOSITORY_OWNER/$IMAGE_NAME
+        echo "Image ID: $IMAGE_ID"
+        echo "GITHUB_SHA: $GITHUB_SHA"
+        docker tag $IMAGE_NAME $IMAGE_ID:$GITHUB_SHA
+        docker push $IMAGE_ID:$GITHUB_SHA
+        VERSION=$(echo "$GITHUB_REF_NAME" | sed -e 's/[^a-zA-Z0-9]/-/g') # Get the branch name from the ref and replace non-alphanumeric characters with hyphens
+        [ "$VERSION" == "master" ] && VERSION=latest
+        echo "Version: $VERSION"
+        docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+        docker push $IMAGE_ID:$VERSION
