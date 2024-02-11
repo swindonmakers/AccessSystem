@@ -13,9 +13,9 @@ CREATE INDEX "vehicles_idx_person_id" on "vehicles" ("person_id");
 ALTER TABLE "vehicles" ADD CONSTRAINT "vehicles_fk_person_id" FOREIGN KEY ("person_id")
   REFERENCES "people" ("id") ON DELETE cascade ON UPDATE cascade DEFERRABLE;
 
-ALTER TABLE communications ALTER COLUMN created_on SET DEFAULT 'CURRENT_TIMESTAMP';
+ALTER TABLE communications ALTER COLUMN created_on SET DEFAULT CURRENT_TIMESTAMP;
 
-ALTER TABLE communications ALTER COLUMN html TYPE character varying(10240);
+-- ALTER TABLE communications ALTER COLUMN html TYPE character varying(50240);
 
 
 COMMIT;

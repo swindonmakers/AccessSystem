@@ -331,7 +331,7 @@ sub identify ($self, $text, $message) {
             $message->reply("I can't find a member with that email address, try again or check " . $self->base_url . "profile");
         }
     } else {
-        $message->reply("That didn't look like an email address, try again?");
+        $message->reply('To identify using your makerspace email address type: /identify you@example.com');
     }
 }
 
