@@ -17,8 +17,17 @@ has config => (
     });
 
 sub send {
-    my ($self, $email, $debug) = @_;
+    my ($self, $comm, $debug) = @_;
     $debug ||= 0;
+
+    my $email;
+
+    if ($comm->isa('DBIx::Class::Core')) {
+        $email = $self->generate_email($comm);
+    } else {
+        $email = $comm;
+        $comm = undef;
+    }
 
     my $smtp = $self->config->{'View::Email'}{sender}{mailer_args};
     my $transport = Email::Sender::Transport::SMTP->new($smtp);
@@ -27,7 +36,15 @@ sub send {
         delete $transport->{debug};
     }
 
-    return Email::Sender::Simple->try_to_send($email, { transport => $transport});
+    my $ret = Email::Sender::Simple->try_to_send($email, { transport => $transport});
+    if ($comm and $ret) {
+        $comm->update({
+            status => 'sent',
+            sent_on => \'CURRENT_TIMESTAMP'
+        });
+    }
+
+    return $ret;
 }
 
 sub generate_email {

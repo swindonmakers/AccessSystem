@@ -15,9 +15,10 @@ sub find_person {
 
     $input =~ s/^\s+//;
     $input =~ s/\s+$//;
-    my $person = $self->find({ 'me.name' => $input }, $args);
-    if ($person) {
-        return $person;
+    my $person;
+    my $person_rs = $self->search_rs({ 'me.name' => $input }, $args);
+    if ($person_rs->count == 1) {
+        return $person_rs->first;
     }
 
     my $people;
