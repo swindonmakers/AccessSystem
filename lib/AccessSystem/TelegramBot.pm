@@ -7,12 +7,18 @@ use Telegram::Bot::Object::InlineKeyboardMarkup;
 use Telegram::Bot::Object::InlineKeyboardButton;
 use Config::General;
 use Data::Dumper;
+use Data::GUID;
 use LWP::Simple;
 use LWP::UserAgent;
 use Text::Fuzzy;
 use JSON 'decode_json';
 use lib "$ENV{BOT_HOME}/lib";
 use AccessSystem::Schema;
+use AccessSystem::Emailer;
+
+BEGIN {
+    $ENV{CATALYST_HOME} ||= $ENV{BOT_HOME};
+}
 
 has _token => undef;
 has token => sub {
@@ -207,6 +213,10 @@ sub read_message ($self, $message) {
         add_vehicle   => {
             match => qr{^/add_vehicle\b},
             help => '/add_vehicle ab74cde'
+        },
+        resend_inductions => {
+            match => qr{^/resend_inductions\b},
+            help => '"/resend_inductions" (for yourself) or "/resend_inductions Fred Bloggs"'
         }
         );
 
@@ -864,7 +874,82 @@ sub pay ($self, $text, $message, $args = undef) {
     });
 }
 
+=head2 resend_inductions
 
+=cut
+
+sub resend_inductions ($self, $text, $message) {
+    my $calling_member = $self->authorize($message);
+    my $inductee_member;
+    my $do_time_limit;
+
+    if ($text =~ m!^/resend_inductions (.*?)$!) {
+        $do_time_limit = 1;
+
+        ($inductee_member, my $inductee_member_rs) = $self->db->resultset('Person')->find_person($1);
+
+        if (!$inductee_member && !$inductee_member_rs->count) {
+            return $message->reply("Didn't find a member with that name");
+        }
+        if (!$inductee_member && $inductee_member_rs->count > 1) {
+            my @people = map { $_->is_valid ? $_->name : () } ($inductee_member_rs->all);
+            return $message->reply("I found " . scalar @people . " members matching that\n" . join("\n",@people)."\n");
+        }
+    } else {
+        $inductee_member = $calling_member;
+    }
+    if(!$inductee_member->is_valid) {
+        return $message->reply("I found ".$inductee_member->name.", but they had are no longer a valid member, not sending any.");
+    }
+
+    my $missing_inductions = $self->db->resultset('Allowed')->search(
+    {
+        pending_acceptance => "true",
+        accepted_on => undef,
+        person_id => $inductee_member->id
+    });
+
+    my $n = 0;
+    my $time_limited = 0;
+    my $emailer = AccessSystem::Emailer->new;
+    my $week_ago = DateTime->now->subtract(days => 7);
+
+    while(my $allowed = $missing_inductions->next) {
+        my $token = Data::GUID->new->as_string();
+        my $confirm = $allowed->person->confirmations->create({
+            token => $token,
+            storage => {
+                tool_id => $allowed->tool_id,
+                person_id => $allowed->person_id,
+            },
+        });
+        my $url = $self->base_url . 'confirm_induction?token=' . $token;
+        my $comm = $allowed->person->create_communication(
+            'Swindon Makerspace Induction Confirmation',
+            'inducted_on|' . $allowed->tool_id,
+            {
+                tool_name => $allowed->tool->name,
+                link => $url 
+            },
+        );
+        if ($do_time_limit and $comm && $comm->sent_on && $comm->sent_on >= $week_ago) {
+            $confirm->delete;
+            $time_limited++;
+            next;
+        }
+
+        $n++;
+        $emailer->send($comm, 1);
+    }
+
+    if ($n == 0 && $time_limited > 0) {
+        return $message->reply($inductee_member->name. " has pending inductions, but they are too recent for you to resend.")
+    } elsif ($n == 0) {
+        return $message->reply("I found ".$inductee_member->name.", but they had no pending inductions, so nothing happened.");
+    } else {
+        return $message->reply($inductee_member->name." has been sent $n emails ($time_limited not sent because too recent).");
+    }
+}
 
 =head1 generic_keyboard
 

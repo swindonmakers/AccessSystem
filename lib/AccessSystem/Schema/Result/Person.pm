@@ -630,7 +630,9 @@ sub create_communication {
     my ($self, $subject, $type, $tt_vars) = @_;
     $type =~ s/\.tt$//;
 
-    my $check_exists = $self->communications_rs->search_rs({type => $type});
+    my $check_exists = $self->communications_rs->search_rs({
+        type => $type,
+    });
     if($check_exists->count == 1) {
         # should be only one per type!?
         return $check_exists->first;
@@ -661,10 +663,14 @@ sub create_communication {
         return undef;
     }
 
+    my $tt_type = $type;
+    $tt_type =~ s/\|.*//;
+    my $tt_path = 
+
     my $any_parts;
-    if (-e "${tt_path_base}/$type/$type.txt") {
+    if (-e "${tt_path_base}/$tt_type/$tt_type.txt") {
         my $raw = "";
-        my $process = $tt->process("$type/$type.txt", {member => $self, %$tt_vars}, \$raw);
+        my $process = $tt->process("$tt_type/$tt_type.txt", {member => $self, %$tt_vars}, \$raw);
         if (!$process) {
             print STDERR $tt->error;
             return undef;
@@ -672,10 +678,10 @@ sub create_communication {
         $comm_hash->{plain_text} = $raw;
         $any_parts++;
     }
-    if (-e "${tt_path_base}/$type/$type.html") {
+    if (-e "${tt_path_base}/$tt_type/$tt_type.html") {
        # print STDERR "Found ${tt_path_base}/$type/$type.html\n";
         my $raw = "";
-        my $process = $tt->process("$type/$type.html", {member => $self, %$tt_vars}, \$raw);
+        my $process = $tt->process("$tt_type/$tt_type.html", {member => $self, %$tt_vars}, \$raw);
         if (!$process) {
             print STDERR $tt->error;
             return undef;
@@ -686,7 +692,7 @@ sub create_communication {
     }
 
     if (!$any_parts) {
-        print STDERR "When sending communication type $type, neither ${tt_path_base}/$type.txt nor ${tt_path_base}/$type.html exist";
+        print STDERR "When sending communication type $type, neither ${tt_path_base}/$tt_type/$tt_type.txt nor ${tt_path_base}/$tt_type/$tt_type.html exist";
         return undef;
     }
 
