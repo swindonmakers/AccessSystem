@@ -1,8 +1,6 @@
 name: Build Dev Container Base Image
 
 on:
-  schedule:
-    - cron: '0 8 1 * *' # Scheduled at 08:00 on the first day of every month
   push:
     branches:
       - master
