@@ -40,3 +40,6 @@ requires 'Text::CSV_XS';
 requires 'Feature::Compat::Try';
 requires 'Email::Sender::Simple';
 requires 'Email::Sender::Transport::SMTP';
+requires 'WWW::Mechanize::Chrome';
+requires 'Log::Log4perl';
+requires 'HTML::TreeBuilder';
