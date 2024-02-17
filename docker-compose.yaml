@@ -1,9 +1,7 @@
 version: '3.8'
 services:
   access-system:
-    build: 
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/swindonmakers/access-system-dev:latest
     # volumes:
     #   - ..:/opt
     depends_on: 
