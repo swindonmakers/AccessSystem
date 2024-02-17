@@ -4,6 +4,7 @@
 
 .plx/
 .vscode/perl-lang/
+*.code-workspace
 
 # exception for email template assets
 !root/img/*.png
