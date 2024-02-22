@@ -50,11 +50,11 @@ INSTALL
 
 * Install cpanm, either via [App::cpanminus](https://metacpan.org/pod/App::cpanminus) or wget [cpanm](http://xrl.us/cpanm), make the result executable.
 
-* Install carton: cpanm -S Carton
+* Install carton: `cpanm -S Carton`
 
 * Checkout this git repo, cd into the repo directory.
 
-* Install Perl dependencies for this system: carton install --cached
+* Install Perl dependencies for this system: `carton install --cached`
 
 SETUP
 -----
