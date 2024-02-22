@@ -32,6 +32,8 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         libtimedate-perl \
         liburi-perl \
         libscalar-list-utils-perl \
+        # postgres
+        libpq-dev \
     && cpanm -S Carton \
 # for Perl::LanguageServer
     && apt-get -y install  --no-install-recommends \
@@ -47,9 +49,14 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && cpanm Perl::LanguageServer \
     && rm -rf /var/lib/apt/lists/*
 
-# WORKDIR /opt
-# WORKDIR /workspaces
+COPY cpanfile* vendor /workspaces/AccessSystem/
 
-# COPY . .
+WORKDIR /workspaces/AccessSystem
 
-# RUN carton install --cached
+RUN groupadd --gid 1001 swmakers \
+    && useradd --uid 1001 --gid swmakers --shell /bin/bash --create-home swmakers \
+    && chown -R swmakers:swmakers /workspaces/AccessSystem
+
+USER swmakers
+
+RUN carton install --cached
