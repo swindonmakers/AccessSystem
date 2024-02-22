@@ -32,8 +32,9 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         libtimedate-perl \
         liburi-perl \
         libscalar-list-utils-perl \
-        # postgres
+        # database support
         libpq-dev \
+        sqlite3 \
     && cpanm -S Carton \
 # for Perl::LanguageServer
     && apt-get -y install  --no-install-recommends \
