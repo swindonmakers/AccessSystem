@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-docker-compose
 {
-	"name": "Existing Docker Compose (Extend)",
+	"name": "Swindon Makerspace Access System devcontainer",
 
 	// Update the 'dockerComposeFile' list if you have more compose files or use different names.
 	// The .devcontainer/docker-compose.yml file contains any overrides you need/want to make.
@@ -24,7 +24,7 @@
 			"installOhMyZsh": true,
 			"installOhMyZshConfig": true,
 			"upgradePackages": true,
-			"username": "devcontainer",
+			"username": "automatic",
 			"userUid": "automatic",
 			"userGid": "automatic"
 		},
@@ -38,7 +38,7 @@
 	// "features": {},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+	"forwardPorts": [3000, 3001],
 
 	// Uncomment the next line if you want start specific services in your Docker Compose config.
 	// "runServices": [],
@@ -59,11 +59,9 @@
 				"maattdd.gitless",
 				"mtxr.sqltools",
 				"mtxr.sqltools-driver-pg",
-				"ms-azuretools.vscode-docker"
+				"alexcvzz.vscode-sqlite"
 			]
 		}
-	}
-
-	// Uncomment to connect as an existing user other than the container default. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "devcontainer"
+	},
+	"remoteUser": "swmakers"
 }
