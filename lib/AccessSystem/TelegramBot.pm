@@ -940,6 +940,9 @@ sub resend_inductions ($self, $text, $message) {
 
         $n++;
         $emailer->send($comm, 1);
+        # Gah, the db has person_id/created_on as a key, 2 in the same
+        # second no worky
+        sleep 1;
     }
 
     if ($n == 0 && $time_limited > 0) {
