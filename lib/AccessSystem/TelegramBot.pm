@@ -86,11 +86,19 @@ Check if we know who this is, but allow the command to continue if they aren't p
 
 Only allowed via private message.
 
+    'director'
+
+Only allowed for directors (inductors on the door).  Implies private.
+
 =cut
 
 sub authorize ($self, $message, @tags) {
     my $member = $self->member($message);
     my %tags = map {$_ => 1} @tags;
+
+    if ($tags{director}) {
+        $tags{private}++;
+    }
 
     if (!$member) {
         $message->reply("I don't know who you are.  Please use /identify <your email address> and then try again.");
@@ -105,7 +113,19 @@ sub authorize ($self, $message, @tags) {
         );
         return undef;
     }
-    if ($message->chat->type ne 'private' && $tags{private}) {
+
+    # !$member->allowed->find({ tool_id => $tool->id, is_admin => 1})
+    if ($tags{director}) {
+        my $door = $self->db->resultset('Tool')->find({name => "The Door"});
+        if ($member->allowed->search({ tool_id => $door->id, is_admin => 1})->count == 0) {
+            $message->reply("This command is limited to directors.");
+            return undef;
+        }
+    }
+
+    # Strangely, this comes out "private" on the test bot and a false value on the production one?
+    if ($tags{private} and $message->chat->type and $message->chat->type ne 'private') {
+        say STDERR "authorize private, type is ", $message->chat->type;
         $message->reply("This command should be done in a private chat");
         return undef;
     }
@@ -217,6 +237,10 @@ sub read_message ($self, $message) {
         resend_inductions => {
             match => qr{^/resend_inductions\b},
             help => '"/resend_inductions" (for yourself) or "/resend_inductions Fred Bloggs"'
+        },
+        door_log      => {
+            match => qr{^/door_log\b},
+            help => 'Display the last 10 users of the door (directors-only).'
         }
         );
 
@@ -685,9 +709,6 @@ sub make_inductor ($self, $text, $message, $args = undef) {
     ## Must be an admin, or existing inductor
     my $allowed = $member->allowed->find({ tool_id => $door->id });
     return if !$allowed;
-    # if (!$allowed->is_admin) {
-    #     return $message->reply("You're not allowed to do that");
-    # }
 
     if (!$args && $text =~ m{^/make_inductor\s(['\w\s]+)\son\s([\w\s\d]+)$}) {
         my ($name, $tool_name) = ($1, $2);
@@ -874,6 +895,7 @@ sub pay ($self, $text, $message, $args = undef) {
     });
 }
 
+
 =head2 resend_inductions
 
 =cut
@@ -952,6 +974,38 @@ sub resend_inductions ($self, $text, $message) {
     } else {
         return $message->reply($inductee_member->name." has been sent $n emails ($time_limited not sent because too recent).");
     }
+}
+
+=head2 door_log
+
+Get the log of the most recent N users of the door.
+
+=cut
+
+sub door_log ($self, $text, $message) {
+    return unless $self->authorize($message, 'director');
+
+    my $door_id = $self->db->resultset('Tool')->find({name => "The Door"})->id;
+    my $n = 10;
+
+    my $logs = $self->db->resultset('UsageLog')->search({
+        tool_id => $door_id
+    }, {
+        order_by => {'-desc' => 'accessed_date'}, 
+        rows => $n,
+        prefetch => ['person']
+    });
+
+    my $out;
+    while (my $row = $logs->next) {
+        # status is 'started' / 'rejected'
+        my $name = $row->person ? $row->person->name : '---';
+        $out .= sprintf("%s | %8s | %s | %s\n", $row->accessed_date, $row->status, $row->token_id, $name);
+    }
+
+    $out = "<pre>$out</pre>";
+
+    return $message->reply($out, { parse_mode => 'html' } );
 }
 
 =head1 generic_keyboard
