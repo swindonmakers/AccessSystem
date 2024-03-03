@@ -11,7 +11,7 @@ use Email::Sender::Simple;
 use Email::Sender::Transport::SMTP;
 
 has config => (
-    is => 'rw',
+    is => 'lazy',
     default => sub {
         return { Config::General->new("$ENV{CATALYST_HOME}/accesssystem_api.conf")->getall };
     });
