@@ -312,3 +312,13 @@ Dec 2023
 
 * emails now using templating (see root/src/emails/)
 * TODO: add / fix tests! eg using https://metacpan.org/pod/Email::Sender::Transport::Test
+
+26.02.2024:
+
+Run chromium headless, install xvfb and run xvfb-run --auto-servernum carton exec perl script/parking_signin.pl
+xvfb-run --auto-servernum
+
+03.03.2024:
+
+* https://developers.google.com/drive/api/guides/manage-sharing#python
+* https://metacpan.org/pod/Google::API::Client

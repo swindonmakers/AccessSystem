@@ -8,6 +8,7 @@ Log::Log4perl->easy_init($ERROR);  # Set priority of root logger to ERROR
 
 use WWW::Mechanize::Chrome;
 use HTML::TreeBuilder;
+use Imager;
 
 my $reg = shift;
 
@@ -61,4 +62,7 @@ say $_->as_text for @paras;
 
 # Your vehicle is a .
 
-
+sub save_frame {
+    my( $mech, $framePNG ) = @_;
+    print $framePNG->{data};    
+}
