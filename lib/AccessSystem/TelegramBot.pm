@@ -1017,48 +1017,22 @@ sub check_valid_members ($self, $text, $message) {
 
     if ($text =~ m{^/check_valid_members\s*(\d+)?$}) {
         my $months = $1;
-        $months ||= 6;
-
-        my $dtf = $self->db->storage->datetime_parser;
-        my $now = DateTime->now();
-        my $n_months = $now->clone->subtract(months => $months);
 
         # fetch all members whose expiry dates are a) expired b) in
         # the last N months, and have a telegram chatid set
 
-        ## oops this returns one entry per payment row, we only care
-        ## about the  most recent payment
-        ## fetch payments first (max per person?)
-        my $recent_payments_rs = $self->db->resultset('Dues')->search_rs(
-            { },
-            {
-                columns => ['person_id', { 'max_expires' => { max => 'expires_on_date', '-as' => 'max_expires'}}],
-                group_by => 'person_id',
-            });
+        my $ex_members_rs = $self->db->resultset('Person')
+            ->ex_members($months, {'me.telegram_chatid' => { '!=' => undef }});
 
-        my $ex_members_rs = $recent_payments_rs->as_subselect_rs->search_rs(
-            {
-                'me.max_expires' =>
-                { '-between' => [ $dtf->format_datetime($n_months),
-                                  $dtf->format_datetime($now)],
-                },
-                    'person.telegram_chatid' => { '!=' => undef },
-            },
-            {
-                select => ['person.id', 'person.telegram_chatid', 'person.name'],
-                as     => ['p_id', 'p_telegram_chatid', 'p_name'],
-                join => 'person',
-            });
-
-        print STDERR "check_valid_members, found ", $ex_members_rs->count, " ex members in $months\n";
+        print STDERR "check_valid_members, found ", $ex_members_rs->count, " ex members in " . $months || 6 . "\n";
         my @in_names = ();
         my $in_count = 0;
         while(my $db_member = $ex_members_rs->next) {
             # yup could also be empty string..
-            next if !$db_member->get_column('p_telegram_chatid');
-            my $chat_member = $message->_brain->getChatMember($message->chat->id, $db_member->get_column('p_telegram_chatid'));
+            next if !$db_member->get_column('telegram_chatid');
+            my $chat_member = $message->_brain->getChatMember($message->chat->id, $db_member->get_column('telegram_chatid'));
             if($chat_member) {
-                push @in_names, $db_member->get_column('p_name');
+                push @in_names, $db_member->get_column('name');
                 $in_count++;
             }
             # rate limit is 30 calls per second
