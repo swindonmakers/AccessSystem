@@ -63,6 +63,9 @@ has chat_rights => sub { return {}; };
 
 has waiting_on_response => sub { return {}; };
 
+has last_inductee => undef;
+has last_induction_tool => undef;
+
 sub init {
     my $self = shift;
     $self->add_listener(\&read_message);
@@ -519,11 +522,26 @@ sub induct_member ($self, $text, $message, $args = undef) {
     if (!$args && $text =~ m{^/induct\s(['\w\s]+)\son\s([\w\d\s]+)$}) {
         my ($name, $tool_name) = ($1, $2);
 
+        if (lc $name eq 'same') {
+            if (not $self->last_inductee) {
+                return $message->reply("Can't use same as a member name yet");
+            }
+            $name = $self->last_inductee;
+        }
+
         ($person_or_keyb, undef) = $self->db->resultset('Person')->find_person($name);
         $p_status = $person_or_keyb ? 'success' : undef;
         if (!$p_status) {
             return $message->reply("Didn't find a member with that name");
         }
+
+        if (lc $tool_name eq 'same') {
+            if (not $self->last_induction_tool) {
+                return $message->reply("Can't use same as a tool yet");
+            }
+            $tool_name = $self->last_induction_tool;
+        }
+
         ($t_status, $tool_or_keyb) = $self->find_tool($tool_name, 'induct_member');
         if ($p_status eq 'success') {
             $person = $person_or_keyb;
@@ -561,9 +579,14 @@ sub induct_member ($self, $text, $message, $args = undef) {
         }
         my $p_allowed = $person->find_or_create_related('allowed', { tool_id => $tool->id, is_admin => 0 });
         $p_allowed->discard_changes();
+
+        $self->last_inductee($person->name);
+        $self->last_induction_tool($tool->name);
+
         # send a confirmation email or telegram msg
         if ($p_allowed->pending_acceptance) {
             $self->confirm_induction($message, $p_allowed);
+
             return $message->reply("Ok, inducted " . $person->name ." on " . $tool->name . ' (they should have a confirmation message)');
         } else {
             print "No need to confirm, already accepted\n";
