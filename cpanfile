@@ -39,5 +39,6 @@ requires 'Try::Tiny';
 requires 'Text::CSV_XS';
 requires 'Feature::Compat::Try';
 requires 'Email::Sender::Simple';
-requires 'Email::Sender::Transport::SMTP';
+requires 'Email::Sender::Transport::SMTP'; 
 requires 'DBIx::Class::EasyFixture';
+requires 'Time::HiRes';

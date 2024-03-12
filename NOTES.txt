@@ -313,3 +313,34 @@ Dec 2023
 * TODO: add / fix tests! eg using https://metacpan.org/pod/Email::Sender::Transport::Test
 
 # carton exec script/accesssystem_api_server.pl --port 9001 &
+
+March 2024
+
+    my $chat_id = $message->chat->id;
+    my $chat = $message->_brain->getChat($chat_id);
+    my $response = '';
+
+    say "Chat";
+    #say Dumper($chat);
+    
+    say "active_usernames: ". $chat->active_usernames;
+    say Dumper($chat->active_usernames);
+
+    if(!$chat->active_usernames || !@{$chat->active_usernames}) {
+        return $message->reply("Can't get chat usernames!\n");
+    }
+    my $all_members_rs = $self->db->resultset('Person')->search_rs({ telegram_username => { '-in' => $chat->active_usernames } });
+    # $all_members_rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
+    # bonus exercise: users in active_usernames who are not in all_members
+    # my @missing = grep 
+    foreach my $member ($all_members_rs->all) {
+        if(!$member->is_valid) {
+            $response .= "\n" . $member->name . " is no longer paid-up.";
+        } else {
+            $response .= "\n" . $member->name . " is ok.";
+        }        
+    }
+
+    return $message->reply($response);
+
+.. members_only tidyup .. it appears that "active_members" returns "sod all" even tho its an admin and a supergroup.. so redone this in a different fashion!
