@@ -12,6 +12,7 @@ use LWP::Simple;
 use LWP::UserAgent;
 use Text::Fuzzy;
 use JSON 'decode_json';
+use Time::HiRes 'usleep';
 use lib "$ENV{BOT_HOME}/lib";
 use AccessSystem::Schema;
 use AccessSystem::Emailer;
@@ -91,17 +92,13 @@ Only allowed via private message.
 
     'director'
 
-Only allowed for directors (inductors on the door).  Implies private.
+Only allowed for directors (inductors on the door).
 
 =cut
 
 sub authorize ($self, $message, @tags) {
     my $member = $self->member($message);
     my %tags = map {$_ => 1} @tags;
-
-    if ($tags{director}) {
-        $tags{private}++;
-    }
 
     if (!$member) {
         $message->reply("I don't know who you are.  Please use /identify <your email address> and then try again.");
@@ -244,8 +241,11 @@ sub read_message ($self, $message) {
         door_log      => {
             match => qr{^/door_log\b},
             help => 'Display the last 10 users of the door (directors-only).'
-        }
-        );
+        },
+        check_valid_members => {
+            match => qr{^/check_valid_members\b},
+            help => 'Check if current group members are valid'
+        });
 
     if (ref($message) eq 'Telegram::Bot::Object::Message' && $message->text) {
         print STDERR $message->text, "\n" if ($message->text =~ q{^/});
@@ -1006,7 +1006,7 @@ Get the log of the most recent N users of the door.
 =cut
 
 sub door_log ($self, $text, $message) {
-    return unless $self->authorize($message, 'director');
+    return unless $self->authorize($message, 'director', 'private');
 
     my $door_id = $self->db->resultset('Tool')->find({name => "The Door"})->id;
     my $n = 10;
@@ -1029,6 +1029,42 @@ sub door_log ($self, $text, $message) {
     $out = "<pre>$out</pre>";
 
     return $message->reply($out, { parse_mode => 'html' } );
+}
+
+=head2 check_valid_members
+
+=cut
+
+sub check_valid_members ($self, $text, $message) {
+    return unless $self->authorize($message, 'director');
+
+    if ($text =~ m{^/check_valid_members\s*(\d+)?$}) {
+        my $months = $1;
+
+        # fetch all members whose expiry dates are a) expired b) in
+        # the last N months, and have a telegram chatid set
+
+        my $ex_members_rs = $self->db->resultset('Person')
+            ->ex_members($months, {'me.telegram_chatid' => { '!=' => undef }});
+
+        print STDERR "check_valid_members, found ", $ex_members_rs->count, " ex members in " . $months || 6 . "\n";
+        my @in_names = ();
+        my $in_count = 0;
+        while(my $db_member = $ex_members_rs->next) {
+            # yup could also be empty string..
+            next if !$db_member->get_column('telegram_chatid');
+            my $chat_member = $message->_brain->getChatMember($message->chat->id, $db_member->get_column('telegram_chatid'));
+            if($chat_member) {
+                push @in_names, $db_member->get_column('name');
+                $in_count++;
+            }
+            # rate limit is 30 calls per second
+            usleep 33;
+        }
+        my $response = "Found $in_count members who shouldn't be here:" . join("\n", @in_names);
+        return $message->reply($response);
+    }
+    return  $message->reply("Usage: /check_valid_members <months> (optional)\n");
 }
 
 =head1 generic_keyboard

@@ -10,6 +10,27 @@ use SQL::Abstract;
 #use SQL::Abstract::Plugin::ExtraClauses;
 use base 'DBIx::Class::ResultSet';
 
+=head1 NAME
+
+AccessSystem::Schema::ResultSet::Person
+
+=head1 DESCRIPTION
+
+Methods to filter a subset of people out of all the registered ones.
+
+=head1 METHODS
+
+=head2 find_person
+
+Attempt to lookup a person by name, a shortened version of the name
+can be providied, if a single matching person exists, we return the
+Person row object. If we can't find a single match, we return a
+resultset representing the filtered people.
+
+Returns an array: ($person | undef, $people | undef)
+
+=cut
+
 sub find_person {
     my ($self, $input, $args) = @_;
 
@@ -43,6 +64,23 @@ sub find_person {
     warn "Add more people-finding magic here: $input failed\n";
     return (undef, $people);
 }
+
+=head2 allowed_to_thing
+
+Check if a person (represented by one of their rfid token ids), is
+allowed to use/interact with a tool (represented by the tools guid
+id). If they are allowed, returns the Person row object, if not
+returns an error message, and a colour code representing the error.
+
+Returns a hashref:
+
+    { person => $person }
+
+or
+
+    { error => 'Membership expired/unpaid', colour => 0x22 }
+
+=cut
 
 sub allowed_to_thing {
     my ($self, $token, $thing_guid) = @_;
@@ -224,6 +262,10 @@ sub get_person_from_hash {
     return 0;
 }
 
+=head2 membership_stats
+
+=cut
+
 # Example response for /memberstats that now includes weekend
 
 # Current Total Members: X
@@ -310,6 +352,49 @@ Current Total Members: " . ($data{valid_members}{count}{count} || 0) . "\n";
                 $_->{valid_until}) } (@{ $data{recent_expired}{people} }) );
 
     return \%data;
+}
+
+=head2 ex_members
+
+Arguments: Left in the last N months, Left at least N months ago
+
+Filters the people for members whose most recent payment has expired.
+
+=cut
+
+sub ex_members {
+    my ($self, $last_months, $cond, $months_ago) = @_;
+    
+    $last_months ||= 6;
+
+    my $dtf = $self->result_source->schema->storage->datetime_parser;
+    my $now = DateTime->now();
+    my $n_months = $now->clone->subtract(months => $last_months);
+
+    # Most recent payment for each person
+    my $recent_payments_rs = $self->search_rs(
+        { },
+        {
+            '+columns' => [ { 'max_expires' => { max => 'payments.expires_on_date', '-as' => 'max_expires'}}],
+            group_by => 'me.id',
+            join => 'payments',
+        });
+
+    # Filter for "expired in last N months"
+    # If "months_ago" supplied, must be at least that long ago
+    return $recent_payments_rs->as_subselect_rs->search_rs(
+        {
+            'me.max_expires' =>
+            { '-between' => [ $dtf->format_datetime($n_months),
+                              $dtf->format_datetime($months_ago ? $now->clone->subtract(months => $months_ago) : $now)],
+            },
+                %$cond
+        },
+        {
+            select => ['me.id', 'me.telegram_chatid', 'me.name'],
+            as     => ['id', 'telegram_chatid', 'name'],
+        });
+
 }
 
 1;
