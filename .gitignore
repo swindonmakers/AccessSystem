@@ -8,6 +8,15 @@
 # exception for email template assets
 !root/img/*.png
 
+Makefile
+META.yml
+MYMETA.json
+MYMETA.yml
+pm_to_blib
+
+blib/
+vendor/
+inc/
 local/
 local-*/
 ofx/
