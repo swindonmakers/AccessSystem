@@ -9,4 +9,10 @@ our $VERSION = '15.0';
 
 __PACKAGE__->load_namespaces();
 
+sub the_door {
+    my ($self) = @_;
+
+    return $self->resultset('Tool')->find({ name => 'The Door'});
+}
+
 1;
