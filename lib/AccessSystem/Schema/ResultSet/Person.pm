@@ -89,6 +89,7 @@ sub allowed_to_thing {
         {
             'allowed.tool_id' => $thing_guid,
             'tokens.id' => $token,
+            'allowed.pending_acceptance' => 'false',
         }, {
             '+columns' => [{ 'trainer' => 'allowed.is_admin'}],
             join => ['allowed', 'tokens' ],
