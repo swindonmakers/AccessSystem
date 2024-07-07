@@ -289,7 +289,7 @@ sub verify: Chained('base') :PathPart('verify') :Args(0) {
             $c->stash(
                 json => {
                     person => { name => $result->{person}->name },
-                    trainer => $result->{person}->get_column('trainer'),
+                    inductor => $result->{person}->get_column('trainer'),
                     access => 1,
                     cache => $result->{person}->tier->restrictions->{'times'} ? 0 : 1,
                     colour => $result->{person}->door_colour_to_code || 0x01,
