@@ -21,6 +21,7 @@ __PACKAGE__->add_columns(
         data_type => 'varchar',
         size => 255,
     },
+    # started, rejected, running, finished
     status => {
         data_type => 'varchar',
         size => 20,
@@ -29,6 +30,11 @@ __PACKAGE__->add_columns(
         data_type => 'datetime',
         set_on_create => 1,
     },
+    # seconds
+    running_for => {
+        data_type => 'integer',
+        default_value => 0,
+    }
 );
 
 __PACKAGE__->set_primary_key('tool_id', 'accessed_date');
