@@ -76,7 +76,7 @@ sub generate_email {
             content_type => 'multipart/alternative',
         },
         header_str => [
-            From => 'info@swindon-makerspace.org',
+            From => '"Swindon Makerspace" <info@swindon-makerspace.org>',
             To   => $comms->person->email,
             Cc => $self->config->{emails}{cc},
             Subject => $comms->subject,

@@ -289,7 +289,7 @@ sub verify: Chained('base') :PathPart('verify') :Args(0) {
             $c->stash(
                 json => {
                     person => { name => $result->{person}->name },
-                    trainer => $result->{person}->get_column('trainer'),
+                    inductor => $result->{person}->get_column('trainer'),
                     access => 1,
                     cache => $result->{person}->tier->restrictions->{'times'} ? 0 : 1,
                     colour => $result->{person}->door_colour_to_code || 0x01,
@@ -314,6 +314,7 @@ sub verify: Chained('base') :PathPart('verify') :Args(0) {
         }
 
         ## Log results:
+        ## NB: tool_access will update this row with a running_for / time later
         $c->model('AccessDB::UsageLog')->create(
             {
                 person_id => $result && $result->{person} && $result->{person}->id || undef,
@@ -340,6 +341,20 @@ sub verify: Chained('base') :PathPart('verify') :Args(0) {
     $c->res->content_length(length($c->res->body));
 }
 
+=head2 msglog
+
+Query Params:
+
+=over
+
+=item thing = GUID of the thing controller doing the checking
+
+=item msg = text of the message to save
+
+=back
+
+=cut
+
 sub msg_log: Chained('base'): PathPart('msglog'): Args() {
     my ($self, $c) = @_;
     
@@ -361,6 +376,71 @@ sub msg_log: Chained('base'): PathPart('msglog'): Args() {
     }
     
     $c->forward('View::JSON');
+}
+
+=head2 tool_access
+
+Update UsageLog/state for a tool
+
+Query Params:
+
+=over
+
+=item token = user's access token id
+
+=item thing = GUID of the thing controller doing the checking
+
+=item msg = description of whats happening
+
+=item state = 1 (on), 0 (off)
+
+=item active_time = number of seconds tool has been active
+
+=back
+
+=cut
+
+sub tool_access: Chained('base'): PathPart('tool_access'): Args() {
+    my ($self, $c) = @_;
+
+    # Need person that owns this token:
+    my $allowed_to = $c->model('AccessDB::Person')->allowed_to_thing(
+        $c->req->params->{token},
+        $c->req->params->{thing},
+       );
+    if ($allowed_to) {
+        # existing usagelog, as created by verify
+        # will fail/find an old one, if tool was used for less than 5mins
+        # time updated every 5 mins, new use sends active_time=0
+        my $usage = $c->model('AccessDB::UsageLog')->find({
+            'tokens.id' => $c->req->params->{token},
+            tool_id => $c->req->params->{thing},
+            person_id => $allowed_to->{person}->id,
+            status => { '!=' => 'finished' },
+            running_for => { '<=' => $c->req->params->{active_time} },
+        }, {
+            join => {'person' => 'tokens'}
+        });
+        # might not exist, tool controller caches member tokens for 24hrs
+        # aka didnt call verify
+        if(!$usage) {
+            # No verify, or starting a new job somehow (running_for is lower)
+            $usage = $c->model('AccessDB::UsageLog')->create({
+                person_id => $allowed_to->{person}->id,
+                tool_id => $c->req->params->{thing},
+                token_id => $c->req->params->{token},
+                status => 'started',
+            });
+        }
+        $usage->update({
+            running_for => $c->req->params->{active_time},
+            status => ($c->req->params->{state} ? 'running' : 'finished'),
+        });
+        $c->stash(json => { logged => 1 });
+    } else {
+        $c->stash(json => { error => 'Person not allowed to use Tool!?'});
+    }
+
 }
 
 ## Thing X (from correct IP Y) says person T inducts person S to use it:

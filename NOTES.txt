@@ -18,7 +18,7 @@ also add concessionary override entry - via multi choice
 test /editme!
 
 
-perl -Ilib -Mlocal::lib=/usr/src/perl/libs/access_system/perl5/ -MAccessSystem::Schema -le'AccessSystem::Schema->connect("dbi:SQLite:test.db")->create_ddl_dir(undef, undef, 'sql/', "2.0")'
+carton exec perl -Ilib -MAccessSystem::Schema -le'AccessSystem::Schema->connect("dbi:SQLite:test.db")->create_ddl_dir(undef, undef, "sql/", "2.0")'
 
 emvtool -r 1 -p 8477 cap
 
