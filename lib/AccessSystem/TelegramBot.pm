@@ -925,6 +925,7 @@ sub pay ($self, $text, $message, $args = undef) {
 
 sub resend_inductions ($self, $text, $message) {
     my $calling_member = $self->authorize($message);
+    return if !$calling_member;
     my $inductee_member;
     my $do_time_limit;
 
