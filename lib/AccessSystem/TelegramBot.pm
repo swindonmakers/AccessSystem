@@ -200,6 +200,10 @@ sub read_message ($self, $message) {
             match => qr{^/add_tool},
             help  => '/add_tool <tool>',
         },
+        tool_ctrl     => {
+            match => qr{^/tool_ctrl\b},
+            help  => '/tool_ctrl <name> [<status>]',
+        },
         find_member => {
             match => qr{^/whois\b},,
             help  => '/whois <name>',
@@ -267,7 +271,19 @@ sub read_message ($self, $message) {
             }
         }
 
-        print "No command matched for text ".$message->text."\n";
+        # Message is a reply text to something we asked for:
+        if($message->reply_to_message
+           && $self->waiting_on_response->{$message->from->id}
+           && $self->waiting_on_response->{$message->from->id}{reply_id} == $message->reply_to_message->message_id
+          ) {
+            # Assume its the response!
+            # $self->waiting_on_response->{$message->reply_to_message->from->id}{reply_text} = $message->text;
+            my $waiting = $self->waiting_on_response->{$message->from->id};
+            my $method = $waiting->{action};
+            $self->$method($message->reply_to_message->text,
+                           $message,
+                           ['tool_ctrl', 'reply', $message->text]);
+        }
     } elsif (ref($message) eq 'Telegram::Bot::Object::Message' && $message->new_chat_members) {
         $self->check_if_ban($message);
     } elsif (ref($message) eq 'Telegram::Bot::Object::CallbackQuery') {
@@ -498,19 +514,31 @@ Output a list of tool names.
 
 sub tools ($self, $text, $message) {
     my $tools = $self->db->resultset('Tool')->active;
-    $tools->result_class('DBIx::Class::ResultClass::HashRefInflator');
+    my $t;
+    #$tools->result_class('DBIx::Class::ResultClass::HashRefInflator');
     if ($text =~ m{/tools ([\w\d\s]+)}) {
-        (undef, $tools) = $tools->find_tool($1, undef, 'DBIx::Class::ResultClass::HashRefInflator');
+        ($t, $tools) = $self->db->resultset('Tool')->find_tool($1, undef); # , 'DBIx::Class::ResultClass::HashRefInflator');
     }
 
     my $tool_str = join("\n",
                         map {
-                            $_->{name} . ($_->{requires_induction}
+                            $_->name . ($_->requires_induction
                                             ? ' (induction)'
                                             : '')
                         }
-                        grep { $_->{name} !~ /oneall_login_callback/ }
+                        grep { $_->name !~ /oneall_login_callback/ }
                         ($tools->all));
+    if(!$t && $tools->count == 1) {
+        $t = $tools->first;
+    }
+    if ($t) {
+        my $ts = $t->current_status;
+        if($ts) {
+            $tool_str .= " Status: " . $ts->status . "\n" . $ts->description;
+        } else {
+            $tool_str .= " Status: Unknown";
+        }
+    }
     $tool_str ||= '<None found>';
     $message->reply($tool_str);
 }
@@ -566,6 +594,145 @@ sub add_tool ($self, $text, $message, $args = undef) {
         }
         return $message->answer('Created');
     }
+}
+
+=head2 tool_ctrl
+
+View/Change the status of a tool.
+
+/tool_ctrl Tool Name <status>
+
+=cut
+
+sub tool_ctrl ($self, $text, $message, $args = undef) {
+    my $member = $self->authorize($message);
+    return if !$member;
+
+    my ($tool, $status, $desc, $t_status, $tool_or_keyb);
+
+    # Something's very wrong if we have no Door .. 
+    my $door = $self->db->resultset('Tool')->find({ name => 'The Door' });
+    return $message->reply("Something's broken, we have no Door")
+        if !$door;
+
+    # must be admin or inductor
+    my $allowed = $member->allowed->find({ tool_id => $door->id });
+    return $message->reply("Something's broken, you're not allowed/valid")
+        if !$allowed;
+    # pending door (not paid yet)
+    return $message->reply("Something's broken, you haven't paid yet?")
+        if $allowed->pending_acceptance;
+
+    # Initial visit, parse what user typed in, capture tool name and status
+    if (!$args && $text =~ m{/tool_ctrl ([\w\d ]+) ([\w]+)$}) {
+        my $tool_name = $1;
+        $status = $2;
+        my $text = 'Status must be "dead", "broken", or "working"';
+        if($status !~ /dead|broken|working/) {
+            # Unknown or missing status, exit:
+            return $message->reply($text);
+        }
+        print "TS Name: $tool_name\n";
+
+        ($t_status, $tool_or_keyb) = $self->find_tool($tool_name, 'tool_ctrl');
+        if($t_status eq 'success') {
+            # We found the unique tool, store it (else see keyboard below)
+            $tool = $tool_or_keyb;
+            # Keep the status and tool text for after the reply:
+            $self->waiting_on_response->{$message->from->id} =
+            {tool => $tool};
+        }
+        $self->waiting_on_response->{$message->from->id}{status} = $status;
+        # Save original msg id, as thats what we want to force-reply to?
+        $self->waiting_on_response->{$message->from->id}{orig_msg_id} = $message->message_id;
+    }
+
+    if($args) {
+        # 2nd or 3rd visit, either the tool keyboard result or the description reply
+        # waiting should contain all collected info until now:
+        my $waiting = $self->waiting_on_response->{$message->from->id};
+        $desc = $waiting->{reply_text};
+        if($args->[1] eq 'tool') {
+            $tool = $self->db->resultset('Tool')->find({name => $args->[2]});
+            $waiting->{tool} = $tool;
+        }
+        if($args->[1] eq 'reply') {
+            $desc = $args->[2];
+            $waiting->{reply_text} = $desc;
+        }
+        $tool ||= $waiting->{tool};
+        $desc ||= $waiting->{reply_text};
+        $status ||= $waiting->{status};
+    }
+
+    if ($tool && !$desc) {
+        # we've figured out the tool, but no description yet:
+        # shortcut to end if not director or inductor
+        my $member_inductor = $member->allowed->find({ tool_id => $tool->id });
+        if (!$allowed->is_admin && ($member_inductor && !$member_inductor->is_admin)) {
+            # member is not a director, and not an inductor on the tool, exit
+            return $message->reply("Only directors or inductors can set a tool status");
+        }
+
+        $self->waiting_on_response->{$message->from->id}{action} = 'tool_ctrl';
+        # FIXME: needs to be the original user's message id:
+        my $new_msg = $message->_brain->sendMessage({
+            text    => 'Describe the changed status',
+            chat_id => $message->chat->id,
+            reply_parameters => Telegram::Bot::Object::ReplyParameters->new({message_id => $self->waiting_on_response->{$message->from->id}{orig_msg_id} }),
+            reply_markup => Telegram::Bot::Object::ForceReply->new({
+                force_reply => JSON::true,
+                input_field_placeholder => 'The frobulator is broken',
+                selective => JSON::true,
+            })
+        });
+        $self->waiting_on_response->{$message->from->id}{reply_id} = $new_msg->message_id;
+        return $new_msg;
+    }
+    
+    if($tool && $desc) {
+        # Finished getting all the data, pull it out of the store
+        # and delete that (for less confusion)
+        my $waiting = $self->waiting_on_response->{$message->from->id};
+        $tool ||= $waiting->{tool};
+        $desc ||= $waiting->{reply_text};
+        $status ||= $waiting->{status};
+        delete $self->waiting_on_response->{$message->from->id};
+
+        my $text = 'Status must be "dead", "broken", or "working"';
+        if($status =~ /dead|broken|working/) {
+            my $ts = $tool->create_related('statuses', {
+                status => $status,
+                who_id => $member->id,
+                description => $desc
+            });
+            if ($ts) {
+                $text = 'Status updated.';
+            }
+        }
+        return $message->reply($text);
+    }
+
+    if ($t_status eq 'keyboard') {
+        # No unique tool found, do the keyboard dance
+        my $waiting = $self->waiting_on_response->{$message->from->id} || {};
+        $waiting->{action} = 'tool_ctrl';
+        $waiting->{type} = 'tool';
+        $waiting->{text} = 'text';
+        $waiting->{status} = $status;
+        $self->waiting_on_response->{$message->from->id} = $waiting;
+
+        return $message->_brain->sendMessage(
+            {
+                chat_id => $message->chat->id,
+                text    => "No exact match for tool, pick one:",
+                reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new(
+                    {
+                        inline_keyboard => $tool_or_keyb,
+                    })
+            });
+    }
+    return $message->reply("Try /tool_ctrl <name of tool, letters, numbers and whitespace allowed> <dead|broken|working>");
 }
 
 =head2 find_member (whois)
@@ -1241,9 +1408,10 @@ sub generic_keyboard ($self, $method, $values, $colcount, $endbuttons, $order=un
 sub resolve_callback ($self, $callback) {
     my $waiting = $self->waiting_on_response->{$callback->from->id};
     # Remove keyboard from message now that we're dealing with it!
+
     my $msg = $callback->_brain->editMessageText({'chat_id' => $callback->message->chat->id, 'message_id' => $callback->message->message_id, text => $callback->message->text . ' (done and keyboard removed)', reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new({inline_keyboard => []}) });
     if (!$msg) {
-        die "Failed to remove inline keyboard\n";
+        print "Failed to remove inline keyboard\n";
     }
 
     ## This shouldnt happen once the keyboard is gone .. (it might if someone else clicks who isnt the expected user!)
