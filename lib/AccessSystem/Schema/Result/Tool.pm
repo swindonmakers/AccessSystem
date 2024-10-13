@@ -82,7 +82,7 @@ sub current_status {
     my $last = $self->statuses_rs->search(
         {},
         {
-            order_by => [{ '-desc' => 'when' }],
+            order_by => [{ '-desc' => 'entered_at' }],
             rows => 1,
         })->single;
 
