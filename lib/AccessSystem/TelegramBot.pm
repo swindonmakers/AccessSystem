@@ -570,8 +570,12 @@ sub induct_member ($self, $text, $message, $args = undef) {
     if ($tool && $person) {
         ## we're done here, actually try and do the induction
         # should we do this check before the find_person loop?
-        if (!$member->allowed->find({ tool_id => $tool->id, is_admin => 1})) {
-            return $message->reply("You're not allowed to induct people on the " . $tool->name);
+        my $allowed = $member->allowed->find({ tool_id => $tool->id });
+        if (!$allowed) {
+            return $message->reply("You're not even inducted on the " . $tool->name . " yet!");
+        }
+        if (!$allowed->is_admin) {
+            return $message->reply("You're not an inductor on the " . $tool->name);
         }
         # do this in find_person?
         if (!$person->is_valid) {
