@@ -9,6 +9,7 @@ use Config::General;
 use Email::MIME;
 use Email::Sender::Simple;
 use Email::Sender::Transport::SMTP;
+use Scalar::Util qw/blessed/;
 
 has config => (
     is => 'lazy',
@@ -22,7 +23,7 @@ sub send {
 
     my $email;
 
-    if ($comm->isa('DBIx::Class::Core')) {
+    if (blessed $comm && $comm->isa('DBIx::Class::Core')) {
         $email = $self->generate_email($comm);
     } else {
         $email = $comm;

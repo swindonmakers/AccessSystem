@@ -1062,11 +1062,13 @@ sub membership_status_update : Chained('base') :PathPart('membership_status_upda
 
     use Data::Dumper;
     $c->log->debug(Dumper($data));
-    $c->stash->{email} = {
-            to => $c->config->{emails}{cc},
-            from => 'info@swindon-makerspace.org',
-            subject => 'Swindon Makerspace membership status',
-            body => "
+    $c->stash->{email} = Email::MIME->create({
+        header_str => [
+            From => 'info@swindon-makerspace.org',
+            To => $c->config->{emails}{cc},
+            Subject => 'Swindon Makerspace membership status',
+           ],
+        body => "
 Dear Directors,
 
 " . $data->{msg_text} . "\n\n" . $data->{recently} ."
@@ -1075,7 +1077,7 @@ Regards,
 
 The Access System.
 ",
-    };
+    });
 
     $self->emailer->send($c->stash->{email});   
     $c->stash->{json} = $data;
