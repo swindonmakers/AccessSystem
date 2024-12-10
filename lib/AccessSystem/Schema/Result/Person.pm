@@ -533,13 +533,11 @@ sub create_payment {
         return;
     }
     if (!$valid_date) {
-        $self->update_door_access();
         $self->create_communication('Your Swindon Makerspace membership has started', 'first_payment');
     }
 
     if($valid_date && $valid_date < $now) {
         # renewed payments
-        $self->update_door_access();
         $self->create_communication('Your Swindon Makerspace membership has restarted', 'rejoin_payment');
     }
     # Only add $OVERLAP  extra days if a first or renewal payment - these
@@ -552,6 +550,7 @@ sub create_payment {
     }
 
     my $payment_size = $self->dues;
+    $self->update_door_access();
     my $expires_on = $valid_date->clone->add(months => 1, %extra_days);
     if($self->balance_p >= $self->dues * 12 * 0.9) {
         # Special case, they paid for a year in advance (we assume!)
@@ -727,9 +726,7 @@ sub update_door_access {
     # This entry should exist, but covid policy may have removed it..
     my $door = $self->result_source->schema->the_door();
     my $door_allowed = $self->allowed->find_or_create({ tool_id => $door->id });
-    if($door_allowed->pending_acceptance eq 'true') {
-        $door_allowed->update({ pending_acceptance => 'false', accepted_on => DateTime->now()});
-    }
+    $door_allowed->update({ pending_acceptance => 'false', accepted_on => DateTime->now()});
 }
 
 1;
