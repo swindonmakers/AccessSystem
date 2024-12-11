@@ -50,7 +50,8 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && cpanm Perl::LanguageServer \
     && rm -rf /var/lib/apt/lists/*
 
-COPY cpanfile* vendor /workspaces/AccessSystem/
+COPY cpanfile* /workspaces/AccessSystem/
+COPY vendor/ /workspaces/AccessSystem/vendor/
 
 WORKDIR /workspaces/AccessSystem
 
