@@ -25,11 +25,18 @@ jobs:
     - name: 📦 Checkout code
       uses: actions/checkout@v4
 
-    - name: 🏗️ Build image
-      run: docker build . --file Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID},sha=${GITHUB_SHA},ref=${GITHUB_REF}"
-
     - name: 🔐 Log in to registry
-      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login $CONTAINER_REGISTRY -u $ --password-stdin
+      run: |
+        echo "${{ secrets.GITHUB_TOKEN }}" | docker login $CONTAINER_REGISTRY -u $ --password-stdin
+
+    - name: 🏗️ Build image
+      run: |
+        docker build . \
+          --file .devcontainer/Dockerfile \
+          --tag $IMAGE_NAME \
+          --label "runnumber=${GITHUB_RUN_ID},sha=${GITHUB_SHA},ref=${GITHUB_REF}" \
+          --cache-from=type=gha \
+          --cache-to=type=gha,mode=max
 
     - name: 💾 Push image
       run: |
