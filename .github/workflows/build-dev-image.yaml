@@ -27,29 +27,45 @@ jobs:
     - name: 📦 Checkout code
       uses: actions/checkout@v4
 
-    - name: 🔐 Log in to registry
-      run: |
-        echo "${{ secrets.GITHUB_TOKEN }}" | docker login $CONTAINER_REGISTRY -u $ --password-stdin
+    - name: 🏷️ Generate Docker metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          ${{ env.CONTAINER_REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch,priority=610
+          type=ref,event=pr
+          type=semver,pattern={{raw}}
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=semver,pattern=v{{major}}
+          type=sha,format=long
+          type=raw,value=latest,enable={{is_default_branch}}
+        annotations: |
+          runnumber=${{ github.run_id }}
+          sha=${{ github.sha }}
+          ref=${{ github.ref }}
 
-    - name: 🏗️ Build image
-      run: |
-        docker build . \
-          --file .devcontainer/Dockerfile \
-          --tag $IMAGE_NAME \
-          --label "runnumber=${GITHUB_RUN_ID},sha=${GITHUB_SHA},ref=${GITHUB_REF}" \
-          --cache-from=type=gha \
-          --cache-to=type=gha,mode=max
+    - name: 🔐 Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.CONTAINER_REGISTRY }}
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: 💾 Push image
-      run: |
-        IMAGE_ID=$CONTAINER_REGISTRY/$GITHUB_REPOSITORY_OWNER/$IMAGE_NAME
-        VERSION=$(echo "${BRANCH_NAME#refs/heads/}" | sed -e 's/[^a-zA-Z0-9]/-/g') # Get the branch name from the ref and replace non-alphanumeric characters with hyphens
-        [ "$VERSION" == "master" ] && VERSION=latest
-        echo "🆔 Image ID: $IMAGE_ID"
-        echo "#️⃣ GITHUB_SHA: $GITHUB_SHA"
-        echo "🎯 Version: $VERSION"
-        echo "🚀 Pushing image to registry........................................."
-        docker tag $IMAGE_NAME $IMAGE_ID:$GITHUB_SHA
-        docker push $IMAGE_ID:$GITHUB_SHA
-        docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
-        docker push $IMAGE_ID:$VERSION
+    - name: 🛠️ Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: 🚀 Build and push image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: .devcontainer/Dockerfile
+        push: false
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        annotations: ${{ steps.meta.outputs.annotations }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
