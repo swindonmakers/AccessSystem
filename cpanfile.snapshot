@@ -1190,22 +1190,6 @@ DISTRIBUTIONS
       Module::Build::Tiny 0.035
       URI::Escape 0
       perl 5.008001
-  Cpanel-JSON-XS-4.37
-    pathname: R/RU/RURBAN/Cpanel-JSON-XS-4.37.tar.gz
-    provides:
-      Cpanel::JSON::XS 4.37
-      Cpanel::JSON::XS::Type undef
-    requirements:
-      Carp 0
-      Config 0
-      Encode 1.9801
-      Exporter 0
-      ExtUtils::MakeMaker 0
-      Pod::Text 2.08
-      XSLoader 0
-      overload 0
-      strict 0
-      warnings 0
   Crypt-Blowfish-2.14
     pathname: D/DP/DPARIS/Crypt-Blowfish-2.14.tar.gz
     provides:
@@ -7877,19 +7861,6 @@ DISTRIBUTIONS
       XML::RegExp 0.04
     requirements:
       ExtUtils::MakeMaker 0
-  XS-Parse-Keyword-0.39
-    pathname: P/PE/PEVANS/XS-Parse-Keyword-0.39.tar.gz
-    provides:
-      XS::Parse::Infix 0.39
-      XS::Parse::Infix::Builder 0.39
-      XS::Parse::Keyword 0.39
-      XS::Parse::Keyword::Builder 0.39
-    requirements:
-      ExtUtils::CBuilder 0
-      ExtUtils::CChecker 0.11
-      ExtUtils::ParseXS 3.16
-      Module::Build 0.4004
-      perl 5.014
   YAML-1.15
     pathname: I/IN/INGY/YAML-1.15.tar.gz
     provides:
