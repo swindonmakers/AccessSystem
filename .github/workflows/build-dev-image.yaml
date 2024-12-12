@@ -27,6 +27,11 @@ jobs:
     - name: 📦 Checkout code
       uses: actions/checkout@v4
 
+    - name: 🧰 Get branch name
+      run: | # Get the branch name from the ref and replace non-alphanumeric characters with hyphens
+        BRANCH=$(echo "${BRANCH_NAME#refs/heads/}" | sed -e 's/[^a-zA-Z0-9]/-/g')
+        echo "BRANCH=$BRANCH" >> $GITHUB_ENV
+
     - name: 🏷️ Generate Docker metadata
       id: meta
       uses: docker/metadata-action@v5
@@ -43,6 +48,7 @@ jobs:
           type=semver,pattern=v{{major}}
           type=sha,format=long
           type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=${{ env.BRANCH_NAME }},priority=10
         annotations: |
           runnumber=${{ github.run_id }}
           sha=${{ github.sha }}
