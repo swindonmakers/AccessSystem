@@ -552,7 +552,6 @@ DISTRIBUTIONS
     requirements:
       Carp::Clan 0
       Catalyst::Component::InstancePerContext 0
-      Catalyst::Devel 1.0
       Catalyst::Runtime 5.80005
       CatalystX::Component::Traits 0.14
       DBD::SQLite 0
@@ -563,7 +562,6 @@ DISTRIBUTIONS
       Module::Runtime 0.012
       Moose 1.12
       MooseX::MarkAsMethods 0.13
-      MooseX::NonMoose 0.16
       MooseX::Types 0
       MooseX::Types::LoadableClass 0.009
       Storable 0
