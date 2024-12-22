@@ -1,7 +1,8 @@
 
 FROM mcr.microsoft.com/devcontainers/base:buster
 
-ENV PATH="/workspaces/AccessSystem/local/bin:${PATH}"
+ENV CATALYST_HOME="/workspaces/AccessSystem"
+ENV PATH="${CATALYST_HOME}/local/bin:${PATH}"
 
 WORKDIR /workspaces/AccessSystem
 
@@ -57,10 +58,10 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && cpanm Perl::LanguageServer \
     && rm -rf /var/lib/apt/lists/*
 
-COPY cpanfile* /workspaces/AccessSystem/
-COPY vendor/ /workspaces/AccessSystem/vendor/
+COPY cpanfile* "${CATALYST_HOME}/"
+COPY vendor/ "${CATALYST_HOME}/vendor/"
 
-RUN chown -R swmakers:swmakers /workspaces/AccessSystem
+RUN chown -R swmakers:swmakers "${CATALYST_HOME}"
 
 USER swmakers
 
