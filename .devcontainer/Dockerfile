@@ -1,6 +1,13 @@
 
 FROM mcr.microsoft.com/devcontainers/base:buster
 
+ENV PATH="/workspaces/AccessSystem/local/bin:${PATH}"
+
+WORKDIR /workspaces/AccessSystem
+
+RUN groupadd --gid 1001 swmakers \
+    && useradd --uid 1001 --gid swmakers --shell /bin/bash --create-home swmakers
+
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
         perl=5.28.1-6+deb10u1 \
@@ -53,11 +60,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 COPY cpanfile* /workspaces/AccessSystem/
 COPY vendor/ /workspaces/AccessSystem/vendor/
 
-WORKDIR /workspaces/AccessSystem
-
-RUN groupadd --gid 1001 swmakers \
-    && useradd --uid 1001 --gid swmakers --shell /bin/bash --create-home swmakers \
-    && chown -R swmakers:swmakers /workspaces/AccessSystem
+RUN chown -R swmakers:swmakers /workspaces/AccessSystem
 
 USER swmakers
 
