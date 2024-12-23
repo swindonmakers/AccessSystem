@@ -1,0 +1,31 @@
+# use_request_uri_for_path 1
+using_frontend-proxy 1
+
+<HTML::FormHandlerX::Field::noCAPTCHA>
+  site_key 6LdHZx0TAAAAAMuUdG-NScgCCbJ_HMyL1bdeM9vp
+  secret_key 6LdHZx0TAAAAAEAnQyttqqhDkEVXfUcsnDLPGmvi
+</HTML::FormHandlerX::Field::noCAPTCHA>
+<View::Email>
+  <sender>
+     mailer SMTP
+     <mailer_args>
+       host mailhog
+       port 1025
+       helo localhost
+       sasl_username info@swindon-makerspace.org
+       sasl_password password
+       debug 1
+    </mailer_args>
+  </sender>
+</View::Email>
+<OneAll>
+  subdomain swindon-makerspace
+  domain swindon-makerspace.api.oneall.com
+  public_key <look this up>
+  private_key <look this up>
+  callback_url https://localhost/oneall_login_callback
+</OneAll>
+<authen_cookie>
+  name access_system
+  mac_secret C7B626AC-87A8-4C10-B5CC-D98BED2DBE0B
+</authen_cookie>

@@ -1,0 +1,10 @@
+<Model::AccessDB>
+  <connect_info>
+    dsn DBI:SQLite:db/dev.db
+  </connect_info>
+</Model::AccessDB>
+<Sendinblue>
+  api-key <look this up>
+</Sendinblue>
+base_url http://localhost:3000/
+overlap_days 14

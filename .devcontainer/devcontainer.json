@@ -17,6 +17,8 @@
 	// The optional 'workspaceFolder' property is the path VS Code should open by default when
 	// connected. This is typically a file mount in .devcontainer/docker-compose.yml
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+	// Features to add to the dev container. More info: https://containers.dev/features.
 	"features": {
 		"ghcr.io/devcontainers/features/common-utils:2": {
 			"installZsh": true,
@@ -34,9 +36,6 @@
 		}
 	},
 
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
-
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [3000, 3001],
 
@@ -46,8 +45,9 @@
 	// Uncomment the next line if you want to keep your containers running after VS Code shuts down.
 	// "shutdownAction": "none",
 
-	// Uncomment the next line to run commands after the container is created.
-	// "postCreateCommand": "cat /etc/os-release",
+	// Run commands after the container is created.
+	"postCreateCommand": ".devcontainer/init-sqlite -d dev.db",
+	"postStartCommand": ".devcontainer/start-services",
 
 	// Configure tool-specific properties.
 	"customizations": {
@@ -57,11 +57,15 @@
 				"cfgweb.vscode-perl",
 				"tamasfe.even-better-toml",
 				"maattdd.gitless",
-				"mtxr.sqltools",
-				"mtxr.sqltools-driver-pg",
-				"alexcvzz.vscode-sqlite"
+				"EditorConfig.EditorConfig"
 			]
-		}
+		},
+		"jetbrains" : {
+			"settings": {
+				"com.intellij:app:HttpConfigurable.use_proxy_pac": true
+			},
+			"backend" : "IntelliJ"
+		},
 	},
 	"remoteUser": "swmakers"
 }

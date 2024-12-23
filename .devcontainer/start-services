@@ -1,0 +1,17 @@
+#!/bin/bash
+
+export PERL5LIB="/workspace/AccessSystem/local/lib/perl5/"
+# export PATH="/workspace/AccessSystem/local/bin:${PATH}"
+
+echo "Initializing service configuration..."
+.devcontainer/init-config
+
+echo "Starting services in the background..."
+
+echo "Starting database admin (RapidApp) @ http://localhost:3001/admin"
+carton exec perl script/accesssystem_daemon_devcontainer.pl start 
+
+echo "Starting API server @ http://localhost:3000"
+carton exec perl script/accesssystem_api_daemon_devcontainer.pl start
+
+echo "It may take a few seconds for the services to be up. Please wait..."
