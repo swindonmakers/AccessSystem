@@ -1,3 +1,9 @@
 services:
   access-system:
     image: ghcr.io/swindonmakers/access-system-dev:latest
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
