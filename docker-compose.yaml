@@ -1,12 +1,3 @@
-version: '3.8'
 services:
   access-system:
     image: ghcr.io/swindonmakers/access-system-dev:latest
-    # volumes:
-    #   - ..:/opt
-    depends_on: 
-      - db
-  db:
-    image: postgres:11
-    environment:
-      POSTGRES_PASSWORD: test
