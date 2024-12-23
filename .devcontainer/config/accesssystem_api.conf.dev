@@ -1,4 +1,3 @@
-# use_request_uri_for_path 1
 using_frontend-proxy 1
 
 <HTML::FormHandlerX::Field::noCAPTCHA>
