@@ -19,10 +19,10 @@ using_frontend-proxy 1
 </View::Email>
 <OneAll>
   subdomain swindon-makerspace
-  domain swindon-makerspace.api.oneall.com
-  public_key <look this up>
-  private_key <look this up>
-  callback_url https://localhost/oneall_login_callback
+  domain mock-login:8080
+  public_key <not-needed-for-dev>
+  private_key <not-needed-for-dev>
+  callback_url http://access-system/oneall_login_callback
 </OneAll>
 <authen_cookie>
   name access_system
