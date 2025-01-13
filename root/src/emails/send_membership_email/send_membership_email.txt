@@ -27,7 +27,7 @@ This is useful for seeing if anyone is in the space, getting help/ideas on proje
 
 
 If you drive to the Makerspace please don't forget that each time you visit you need to register your car in the parking lot here.
-www.parkinggenie.co.uk/22959
+https://www.parkinggenie.co.uk/22959
 You can also use the tablets in the entrances to the building, use one of the makerspace's laptops where the link is bookmarked, or scan the QR code in the Makerspace
 
 Information such as equipment documentation and ongoing project notes can be found on our wiki, located at https://github.com/swindonmakers/wiki/wiki/.
