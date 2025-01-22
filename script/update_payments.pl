@@ -91,6 +91,8 @@ sub fiddle_payment {
         $trans->{name} = 'JORN FEVRIER SM0301';
     } elsif($trans->{name} =~ /C Hinton BGC/) {
         $trans->{name} = 'C Hinton BGC SM0416';
+    } elsif($trans->{name} =~ /Davis Kieran FOR MEMBERSHIP BGC/) {
+        $trans->{name} = 'Davis Kieran SM0477';
     }
     $trans->{name} =~ s/o/0/gi;
     $trans->{name} =~ s/sm/SM/ig;
