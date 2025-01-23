@@ -552,7 +552,6 @@ DISTRIBUTIONS
     requirements:
       Carp::Clan 0
       Catalyst::Component::InstancePerContext 0
-      Catalyst::Devel 1.0
       Catalyst::Runtime 5.80005
       CatalystX::Component::Traits 0.14
       DBD::SQLite 0
@@ -563,7 +562,6 @@ DISTRIBUTIONS
       Module::Runtime 0.012
       Moose 1.12
       MooseX::MarkAsMethods 0.13
-      MooseX::NonMoose 0.16
       MooseX::Types 0
       MooseX::Types::LoadableClass 0.009
       Storable 0
@@ -6944,40 +6942,51 @@ DISTRIBUTIONS
       Scalar::Util 1.14
       Test::More 0.42
       perl 5.005
-  Telegram-Bot-0.021
-    pathname: J/JU/JUSTIN/Telegram-Bot-0.021.tar.gz
+  Telegram-Bot-0.027
+    pathname: J/JK/JKG/Telegram-Bot-0.027.tar.gz
     provides:
-      Telegram::Bot 0.021
-      Telegram::Bot::Brain 0.021
-      Telegram::Bot::Object::Animation 0.021
-      Telegram::Bot::Object::Audio 0.021
-      Telegram::Bot::Object::Base 0.021
-      Telegram::Bot::Object::CallbackGame 0.021
-      Telegram::Bot::Object::Chat 0.021
-      Telegram::Bot::Object::ChatPhoto 0.021
-      Telegram::Bot::Object::Contact 0.021
-      Telegram::Bot::Object::Document 0.021
-      Telegram::Bot::Object::EncryptedCredentials 0.021
-      Telegram::Bot::Object::EncryptedPassportElement 0.021
-      Telegram::Bot::Object::Game 0.021
-      Telegram::Bot::Object::InlineKeyboardButton 0.021
-      Telegram::Bot::Object::InlineKeyboardMarkup 0.021
-      Telegram::Bot::Object::Invoice 0.021
-      Telegram::Bot::Object::Location 0.021
-      Telegram::Bot::Object::LoginUrl 0.021
-      Telegram::Bot::Object::Message 0.021
-      Telegram::Bot::Object::MessageEntity 0.021
-      Telegram::Bot::Object::PassportData 0.021
-      Telegram::Bot::Object::PhotoSize 0.021
-      Telegram::Bot::Object::Poll 0.021
-      Telegram::Bot::Object::PollOption 0.021
-      Telegram::Bot::Object::Sticker 0.021
-      Telegram::Bot::Object::SuccessfulPayment 0.021
-      Telegram::Bot::Object::User 0.021
-      Telegram::Bot::Object::Venue 0.021
-      Telegram::Bot::Object::Video 0.021
-      Telegram::Bot::Object::VideoNote 0.021
-      Telegram::Bot::Object::Voice 0.021
+      Telegram::Bot 0.027
+      Telegram::Bot::Brain 0.027
+      Telegram::Bot::Object::Animation 0.027
+      Telegram::Bot::Object::Audio 0.027
+      Telegram::Bot::Object::Base 0.027
+      Telegram::Bot::Object::CallbackGame 0.027
+      Telegram::Bot::Object::CallbackQuery 0.027
+      Telegram::Bot::Object::Chat 0.027
+      Telegram::Bot::Object::ChatInviteLink 0.027
+      Telegram::Bot::Object::ChatJoinRequest 0.027
+      Telegram::Bot::Object::ChatMember 0.027
+      Telegram::Bot::Object::ChatMemberUpdated 0.027
+      Telegram::Bot::Object::ChatPhoto 0.027
+      Telegram::Bot::Object::Contact 0.027
+      Telegram::Bot::Object::Document 0.027
+      Telegram::Bot::Object::EncryptedCredentials 0.027
+      Telegram::Bot::Object::EncryptedPassportElement 0.027
+      Telegram::Bot::Object::ForceReply 0.027
+      Telegram::Bot::Object::ForceReplyMarkup 0.027
+      Telegram::Bot::Object::Game 0.027
+      Telegram::Bot::Object::InlineKeyboardButton 0.027
+      Telegram::Bot::Object::InlineKeyboardMarkup 0.027
+      Telegram::Bot::Object::InlineQuery 0.027
+      Telegram::Bot::Object::Invoice 0.027
+      Telegram::Bot::Object::KeyboardButton 0.027
+      Telegram::Bot::Object::Location 0.027
+      Telegram::Bot::Object::LoginUrl 0.027
+      Telegram::Bot::Object::Message 0.027
+      Telegram::Bot::Object::MessageEntity 0.027
+      Telegram::Bot::Object::PassportData 0.027
+      Telegram::Bot::Object::PhotoSize 0.027
+      Telegram::Bot::Object::Poll 0.027
+      Telegram::Bot::Object::PollOption 0.027
+      Telegram::Bot::Object::ReplyKeyboardMarkup 0.027
+      Telegram::Bot::Object::ReplyParameters 0.027
+      Telegram::Bot::Object::Sticker 0.027
+      Telegram::Bot::Object::SuccessfulPayment 0.027
+      Telegram::Bot::Object::User 0.027
+      Telegram::Bot::Object::Venue 0.027
+      Telegram::Bot::Object::Video 0.027
+      Telegram::Bot::Object::VideoNote 0.027
+      Telegram::Bot::Object::Voice 0.027
     requirements:
       ExtUtils::MakeMaker 0
       IO::Socket::SSL 2.037

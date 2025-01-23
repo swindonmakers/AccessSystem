@@ -64,6 +64,8 @@ has chat_rights => sub { return {}; };
 
 has waiting_on_response => sub { return {}; };
 
+has parked => sub { return {}; };
+
 has last_inductee => undef;
 has last_induction_tool => undef;
 
@@ -100,7 +102,7 @@ sub authorize ($self, $message, @tags) {
     my $member = $self->member($message);
     my %tags = map {$_ => 1} @tags;
 
-    if (!$member) {
+    if (!$member && !$tags{dontwarn}) {
         $message->reply("I don't know who you are.  Please use /identify <your email address> and then try again.");
         return undef;
     }
@@ -234,6 +236,10 @@ sub read_message ($self, $message) {
             match => qr{^/add_vehicle\b},
             help => '/add_vehicle ab74cde'
         },
+        park => {
+            match => qr{^/park\b},
+            help => '/park <optional plate reg>',
+        },
         resend_inductions => {
             match => qr{^/resend_inductions\b},
             help => '"/resend_inductions" (for yourself) or "/resend_inductions Fred Bloggs"'
@@ -260,6 +266,8 @@ sub read_message ($self, $message) {
                 return $self->$method($message_text, $message);
             }
         }
+
+        print "No command matched for text ".$message->text."\n";
     } elsif (ref($message) eq 'Telegram::Bot::Object::Message' && $message->new_chat_members) {
         $self->check_if_ban($message);
     } elsif (ref($message) eq 'Telegram::Bot::Object::CallbackQuery') {
@@ -290,7 +298,7 @@ sub add_vehicle ($self, $text, $message) {
     $reg =~ s/_//g;
     $reg = uc $reg;
 
-    if (length $reg > 7) {
+    if (length $reg > 10) {
         $message->reply("That reg number, '$reg', seems invalid -- it is longer than 7 (non-space) characters");
         return;
     }
@@ -307,6 +315,108 @@ sub add_vehicle ($self, $text, $message) {
     } else {
         return $message->reply("You already had that one");
     }
+}
+
+sub park ($self, $text, $message, $args = undef) {
+    my ($reg, $keyb, $r_status, $member);
+
+    if($self->authorize($message, 'invalid_ok', 'dontwarn')) {
+        $member = $self->member($message);
+    }
+
+    if(!$args) {
+        if ($text =~ m{^/park (.*)$}) {
+            $reg = $1;
+        } else {
+            if(!$member) {
+                return $message->reply('Try /park MYPLATE.');
+            }
+        }
+    }
+
+    # Reply from the keyboard
+    if($args) {
+        my $waiting = $self->waiting_on_response->{$message->from->id};
+        if($args->[1] eq 'reg') {
+            $reg = $args->[2];
+        }
+    }
+
+    if(!$reg) {
+        # None stored, 1 stored, or more than one (make pick list)
+        my $v_count = $member->vehicles_rs->count;
+        if($v_count == 0) {
+            return $message->reply("You didn't supply a registration number and you don't have any stored, use /add_vehicle to save one");
+        } elsif($v_count == 1) {
+            $reg = $member->vehicles_rs->first->plate_reg;
+        } else {
+            $keyb = $self->generic_keyboard(
+                'park',
+                { map { $_->plate_reg => 'reg|' . $_->plate_reg } ($member->vehicles_rs->all) },
+                2,
+                ['Cancel']);
+        }
+    }
+
+    if (!$reg) {
+        warn "parking, still no reg? text='$text', args='" . Data::Dumper::Dumper($args);
+    }
+    
+    if($reg) {
+        # check in case this was a typed in one
+        $reg =~ s/\W//g;
+        $reg =~ s/_//g;
+        $reg = uc $reg;
+
+        if (length $reg > 10) {
+            $message->reply("That reg number, '$reg', seems invalid -- it is longer than 9 (non-space) characters");
+            return;
+        }
+
+        if (length $reg < 2) {
+            $message->reply("That reg number, '$reg', seems invalid -- it is shorter than 3 (non-space) characters");
+            return;
+        }
+
+        # check we didnt park this one already lately
+        if($self->parked->{$message->from->id} &&
+           $self->parked->{$message->from->id}{time}
+           && $self->parked->{$message->from->id}{time} > DateTime->now->subtract('minutes' => 5)) {
+            return $message->reply("This is rate-limited per-user to 5-min intervals, if you mistyped, try again in 5mins, or use the url: https://www.parkinggenie.co.uk/22959");
+        }
+        
+        my $ua = LWP::UserAgent->new();
+        my $resp = $ua->post('https://ccp-apim-qrcodeexemption.azure-api.net/CCPFunctionQrCodeExemption/site/22959/exemption/' . $reg, Content => '');
+        if($resp->is_success) {
+            my $cont = decode_json($resp->decoded_content);
+            if($cont->{success}) {
+                $self->parked->{$message->from->id}{time} = DateTime->now();
+                my $msg = $cont->{message};
+                # $msg =~ s/^Your vehicle is a([\s\w]+)\.//m;
+                return $message->reply("Parked. " . $msg);
+            }
+        }
+        print STDERR Data::Dumper::Dumper($resp);
+        return $message->reply("Tried to park $reg, but failed, sorry!");
+    }
+
+    if($keyb) {
+        my $waiting = $self->waiting_on_response->{$message->from->id} || {};
+        $waiting->{action} = 'park';
+        $waiting->{text} = $text;
+        $self->waiting_on_response->{$message->from->id} = $waiting;
+
+        return $message->_brain->sendMessage(
+            {
+                chat_id => $message->chat->id,
+                text    => "More than one reg number stored, pick one:",
+                reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new(
+                    {
+                        inline_keyboard => $keyb,
+                    })
+            });
+    }
+    return $message->reply("Try /park <reg plate> or /help");
 }
 
 sub bankinfo ($self, $text, $message) {

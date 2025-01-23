@@ -32,7 +32,7 @@ requires 'DBD::Pg';
 requires 'DateTime::Format::Pg';
 requires 'List::Util';
 requires 'Mojo::Base';
-requires 'Telegram::Bot::Brain';
+requires 'Telegram::Bot::Brain', '0.027';
 requires 'DBIx::Class::InflateColumn::Serializer::JSON';
 requires 'Text::Fuzzy';
 requires 'Try::Tiny';
