@@ -1004,13 +1004,17 @@ sub pay ($self, $text, $message, $args = undef) {
         } elsif ($args->[1] eq 'cancel') {
             ## ended selections - cancel whole thing
             delete $self->waiting_on_response->{$message->from->id};
-            return $message->answer('Canceled');
+            return $message->reply('Cancelled');
         } elsif ($args->[1] eq 'pay') {
             ## ended selections create transaction
             delete $self->waiting_on_response->{$message->from->id};
-            my ($status, $msg) = $member->add_debit($waiting->{total},
-                                                    join(",",@{$waiting->{products}}));
-            return $message->answer($msg);
+            my ($status, $msg, $bal) = $member->add_debit(
+                $waiting->{total},
+                join(",",@{$waiting->{products}}));
+            if($bal < 0) {
+                $msg = 'Paid: Your balance is now negative, £5 is the maximum you can go below 0, please pay some in. Use /balance to check.';
+            }
+            return $message->reply($msg);
         }
     } else {
         $self->waiting_on_response->{$message->from->id} = {
