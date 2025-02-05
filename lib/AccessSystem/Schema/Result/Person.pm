@@ -601,14 +601,14 @@ sub add_debit {
     }
     if($amount =~/\D/) {
         return (0, 'Amount must be a positive integer of pence');
-    } elsif($self->balance_p < $amount) {
+    } elsif($self->balance_p + 400 < $amount) {
         return (0, 'Not enough money for that transaction');
     } else {
         my $tr = $self->create_related('transactions', {
             reason   => $reason,
             amount_p => -1*$amount,
         });
-        
+
         return (1, 'Success', $self->balance_p);
     }
 }

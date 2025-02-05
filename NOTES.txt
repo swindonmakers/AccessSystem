@@ -344,3 +344,23 @@ March 2024
     return $message->reply($response);
 
 .. members_only tidyup .. it appears that "active_members" returns "sod all" even tho its an admin and a supergroup.. so redone this in a different fashion!
+
+
+insert into allowed (person_id, tool_id, added_on, is_admin) select person_id, '69F67AEC-0277-11EF-9DD6-430397B5F489', current_timestamp, 0 from allowed where tool_id in (select id from tools where name ilike '%blaster%') on conflict do nothing;
+
+July 2024
+
+* oneall https://app.oneall.com/applications/application/providers/?applicationid=527391
+* More social networks? Discord needs a "team" and verifications
+** https://discord.com/developers/applications/1267148296003125311/verification-onboarding
+* facebook / instagram needs an account with a phone number
+** https://developers.facebook.com/async/registration/dialog/?src=default
+
+Aug 2024
+
+TelegramBot, sendMessage reply_markup - ForceReply
+** working
+
+* /tools - if single item requested (eg /tools laser) - also show status/description
+** buggy - with >1 status returns 2 lasers..
+** need "most recent status".. 
