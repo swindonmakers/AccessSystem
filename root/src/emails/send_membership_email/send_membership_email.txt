@@ -12,7 +12,7 @@ Sort Code: 20-84-58
 Account: 83789160
 Bank Ref: [% member.bank_ref %]
 
-We can now setup an RFID tag and connect it to your account. 
+We will now provide you with a RFID tag and connect it to your account (or supply your own). 
 Please pop along to the next Wednesday open evening or message us on telegram to help arrange this
 
 Please do make sure you have read the Member's Guide (which you just
