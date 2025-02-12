@@ -982,9 +982,11 @@ sub send_reminder_email: Private {
 
     my $comms_type = 'reminder_email';
     my $member = $c->stash->{member};
-    if(my $comms = $member->communications_rs->search_rs({
-        type => $comms_type,
-                                             })->first) {
+    # don't manually remind people more than once a day!
+    my $comms = $member->communications_rs->search_rs(
+        { type => $comms_type })->first;
+    if($comms
+       && $comms->sent_on > DateTime->now->clone->subtract(days => 1)) {
         $c->stash->{message} = 'Already reminded on ' . $comms->sent_on->iso8601();
         return;
     }
@@ -1000,7 +1002,7 @@ sub send_reminder_email: Private {
                             $last->expires_on_date->month_name,
                             $last->expires_on_date->year);
     ## Store the comms:
-    my $comms = $member->create_communication(
+    $comms = $member->create_communication(
         'Swindon Makerspace membership check',
         'reminder_email',
         { paid_date => $paid_date, expires_date => $expires_date },
