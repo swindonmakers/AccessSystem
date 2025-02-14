@@ -528,7 +528,13 @@ sub create_payment {
                                        $expiry->day,
                                        $expiry->month_name,
                                        $expiry->year);
-            $self->create_communication('Swindon Makerspace membership check', 'reminder_email', { paid_date => $paid_date, expires_date => $expires_date });
+            # create new reminder email (only if previously cancelled
+            # by new payment)
+            $self->create_communication(
+                'Swindon Makerspace membership check',
+                'reminder_email',
+                { paid_date => $paid_date, expires_date => $expires_date },
+                1);
         }
         return;
     }
@@ -539,6 +545,9 @@ sub create_payment {
     if($valid_date && $valid_date < $now) {
         # renewed payments
         $self->create_communication('Your Swindon Makerspace membership has restarted', 'rejoin_payment');
+        # rejoined, so remove any "reminder" email, so that if they
+        # subsequently stop paying again, they get a new reminder (!)
+        $self->communications_rs->find({type => 'reminder_email'})->delete;
     }
     # Only add $OVERLAP  extra days if a first or renewal payment - these
     # ensure member remains valid if standing order is not an
@@ -628,14 +637,14 @@ sub recent_transactions {
 }
 
 sub create_communication {
-    my ($self, $subject, $type, $tt_vars) = @_;
+    my ($self, $subject, $type, $tt_vars, $force) = @_;
+    $force ||= 0;
     $type =~ s/\.tt$//;
 
     my $check_exists = $self->communications_rs->search_rs({
         type => $type,
     });
-    if($check_exists->count == 1) {
-        # should be only one per type!?
+    if($check_exists->count == 1 && !$force) {
         return $check_exists->first;
     }
 
