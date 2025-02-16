@@ -1,0 +1,86 @@
+#!/bin/sh
+
+# Function to display usage
+usage() {
+  echo "Initialize an SQLite database for development in db/ folder\n"
+  echo "Options:"
+  echo "\t -d <sqlite_db_filename>, e.g. dev.db"
+  echo "\t -f Force recreate the database file if it exists"
+  echo "\nUsage: $0 -d <sqlite_db_filename> [-f]"
+  exit 1
+}
+
+force_recreate=false
+
+# Parse command line arguments
+while getopts ":d:f" opt; do
+  case ${opt} in
+    d )
+      db_filename=$OPTARG
+      ;;
+    f )
+      force_recreate=true
+      ;;
+    \? )
+      usage
+      ;;
+  esac
+done
+
+# Check if the db_filename is provided
+if [ -z "$db_filename" ]; then
+    usage
+fi
+
+# Check if the filename ends with .db
+if [ "${db_filename##*.}" != "db" ]; then
+    echo "Error: The database filename must end with .db"
+    usage
+fi
+
+# Create the db folder if it doesn't exist
+db_folder="$(dirname "$0")/../db"
+mkdir -p "$db_folder"
+
+# Create the SQLite database file
+db_path="$db_folder/$db_filename"
+
+# Check if the database file already exists
+if [ -f "$db_path" ]; then
+    if [ "$force_recreate" = true ]; then
+      # Create a backup of the existing database file with the current date and time
+      timestamp=$(date +"%Y-%m-%d_%H:%M")
+      cp "$db_path" "$db_path.$timestamp.bak"
+      echo "Existing database file backed up as $db_filename.$timestamp.bak"
+    else
+        echo "Database file $db_filename already exists. Use -f to force recreate."
+        exit 0
+    fi
+fi
+
+# Create or overwrite the SQLite database file
+sqlite3 "$db_path" "VACUUM;"
+
+# Find the latest SQLite schema file
+sql_folder="$(dirname "$0")/../sql"
+latest_sql_file=$(ls -1t "$sql_folder"/AccessSystem-Schema*SQLite.sql | head -n 1)
+
+# Check if the latest SQL file is found
+if [ -z "$latest_sql_file" ]; then
+  echo "No SQLite schema file found in $sql_folder"
+  exit 1
+fi
+
+# Run the latest SQL schema file on the database
+echo "Initializing database $db_filename with $latest_sql_file...\n"
+sqlite3 "$db_path" -cmd ".echo on" ".read $latest_sql_file"
+
+echo "\nDatabase $db_filename created and initialized with $latest_sql_file"
+
+# use the .devcontainer/seed-sqlite.sql file to populate the database
+seed_sql_file="$(dirname "$0")/seed-sqlite.sql"
+if [ -f "$seed_sql_file" ]; then
+  echo "Seeding database $db_filename with $seed_sql_file...\n"
+  sqlite3 "$db_path" -cmd ".echo on" ".read $seed_sql_file"
+  echo "\nDatabase $db_filename seeded with $seed_sql_file"
+fi
