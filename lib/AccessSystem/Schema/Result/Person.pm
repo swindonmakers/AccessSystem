@@ -534,7 +534,7 @@ sub create_payment {
                 'Swindon Makerspace membership check',
                 'reminder_email',
                 { paid_date => $paid_date, expires_date => $expires_date },
-                1);
+                );
         }
         return;
     }
