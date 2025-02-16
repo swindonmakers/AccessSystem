@@ -644,8 +644,11 @@ sub create_communication {
     my $check_exists = $self->communications_rs->search_rs({
         type => $type,
     });
-    if($check_exists->count == 1 && !$force) {
-        return $check_exists->first;
+    if($check_exists->count == 1) {
+        if(!$force) {
+            return $check_exists->first;
+        }
+        $check_exists->delete;
     }
 
     # templates in $ENV{CATALYST_HOME}/root/src/emails/<type>/<type>.txt / .html
