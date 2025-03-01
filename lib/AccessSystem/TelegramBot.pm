@@ -513,6 +513,8 @@ Output a list of tool names.
 =cut
 
 sub tools ($self, $text, $message) {
+    return unless $self->authorize($message);
+
     my $tools = $self->db->resultset('Tool')->active;
     my $t;
     #$tools->result_class('DBIx::Class::ResultClass::HashRefInflator');
@@ -534,10 +536,29 @@ sub tools ($self, $text, $message) {
     if ($t) {
         my $ts = $t->current_status;
         if($ts) {
-            $tool_str .= " Status: " . $ts->status . "\n" . $ts->description;
+            $tool_str .= "\nStatus: " . $ts->status . "\nReason: " . $ts->description;
         } else {
             $tool_str .= " Status: Unknown";
         }
+
+        my $inductors = join("\n", map {
+            (
+             $_->person->is_valid ?
+             ($_->person->name . ($_->is_admin ? ' (inductor)' : ''))
+             : ()
+            )
+                             }
+            ($t->allowed_people->search(
+                 { 'me.is_admin' => 1 },
+                 {
+                     order_by => [
+                         {'-asc' => 'person.name'}
+                     ],
+                     prefetch => 'person',
+                 }))
+                             );
+        $inductors ||= 'Nobody!?';
+        $tool_str .= "\nInductors:\n$inductors";
     }
     $tool_str ||= '<None found>';
     $message->reply($tool_str);
