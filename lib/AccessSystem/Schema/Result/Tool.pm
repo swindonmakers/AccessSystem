@@ -124,8 +124,9 @@ sub induct_student {
     }
     
     my $added = $self->allowed_people_rs->find_or_create({
-        person => $student,
-        is_admin => 0,
+        person      => $student,
+        is_admin    => 0,
+        inducted_by => $admin_check->person
     });
     return {
         person => $student,
