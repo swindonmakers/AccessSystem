@@ -36,12 +36,10 @@ __PACKAGE__->add_columns(
     },
     # was 'content'
     plain_text => {
-        data_type => 'varchar',
-        size => 10240,
+        data_type => 'text',
     },
     html => {
-        data_type => 'varchar',
-        size => 10240,
+        data_type => 'text',
         is_nullable => 1,
     },
     );

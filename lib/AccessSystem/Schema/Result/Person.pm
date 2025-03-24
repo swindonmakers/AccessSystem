@@ -547,7 +547,8 @@ sub create_payment {
         $self->create_communication('Your Swindon Makerspace membership has restarted', 'rejoin_payment');
         # rejoined, so remove any "reminder" email, so that if they
         # subsequently stop paying again, they get a new reminder (!)
-        $self->communications_rs->find({type => 'reminder_email'})->delete;
+        my $r_email = $self->communications_rs->find({type => 'reminder_email'});
+        $r_email->delete if $r_email;
     }
     # Only add $OVERLAP  extra days if a first or renewal payment - these
     # ensure member remains valid if standing order is not an

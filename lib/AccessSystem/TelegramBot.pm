@@ -250,11 +250,11 @@ sub read_message ($self, $message) {
         },
         door_log      => {
             match => qr{^/door_log\b},
-            help => 'Display the last 10 users of the door (directors-only).'
+            help => '/door_log -- Display the last 10 users of the door (directors-only).'
         },
         check_valid_members => {
             match => qr{^/check_valid_members\b},
-            help => 'Check if current group members are valid'
+            help => '/check_valid_members -- Check if current group members are valid'
         });
 
     if (ref($message) eq 'Telegram::Bot::Object::Message' && $message->text) {
@@ -879,7 +879,7 @@ sub induct_member ($self, $text, $message, $args = undef) {
         if (!$person->is_valid) {
             return $message->reply("I found " . $person->name ." but they aren't a paid-up member");
         }
-        my $p_allowed = $person->find_or_create_related('allowed', { tool_id => $tool->id, is_admin => 0 });
+        my $p_allowed = $person->find_or_create_related('allowed', { tool_id => $tool->id, is_admin => 0, inducted_by => $member });
         $p_allowed->discard_changes();
 
         $self->last_inductee($person->name);
