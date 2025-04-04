@@ -1,0 +1,29 @@
+@startuml
+title Checking a token at the Door
+control Door
+actor RFIDToken
+entity DoorHardware
+entity AccessServer
+database Database
+RFIDToken -> DoorHardware : Tap token
+DoorHardware -> DoorHardware : Check cache
+DoorHardware -> AccessServer : Verify Token+Door
+AccessServer -> Database : Find User for Token
+AccessServer -> Database : Find Door
+AccessServer -> Database : Has User paid
+AccessServer -> Database : Can User access Door
+
+opt successful case
+
+     AccessServer -> DoorHardware : Allowed yes (access:1, cache: 1)
+     DoorHardware -> DoorHardware : Change led to green or user colour
+     DoorHardware -> Door : Open
+
+else some kind of failure
+
+     AccessServer -> DoorHardware : Allowed no (access:0)
+     DoorHardware -> DoorHardware : Change led to red
+
+end
+
+@enduml
