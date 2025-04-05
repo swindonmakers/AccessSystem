@@ -446,7 +446,8 @@ sub import_transaction {
     my $dt_parser = $schema->storage->datetime_parser;
     warn "$transaction->{dtposted}\n";
     my $trans_search = $self->search_related('transactions')->search(
-        { added_on => $dt_parser->format_datetime($transaction->{dtposted}) });
+        { added_on => $dt_parser->format_datetime($transaction->{dtposted}),
+        amount_p => $transaction->{trnamt} * 100 });
     if($trans_search->count) {
         warn "Already imported transaction $transaction->{name} $transaction->{dtposted}\n";
         return 1;
