@@ -36,6 +36,7 @@ $json = decode_json($json) or die "Couldn't parse $json_fn as json";
 
 my $message_id_to_sender;
 my $prev_inductor;
+my $count = 0;
 
 for my $message (@{$json->{messages}}) {
     next unless defined $message->{from};
@@ -51,14 +52,12 @@ for my $message (@{$json->{messages}}) {
         my $inductee_name = $1;
         my $tool_name = $2;
 
-        next unless $inductee_name =~ m/James Mastros|Jess Robinson/;
-
         say "'$inductee_name' on '$tool_name'";
 
         my $inductee = $schema->resultset('Person')->find_person($inductee_name);
         if (not $inductee) {
             say STDERR "Cannot find person row for '$inductee_name'?";
-            exit;
+            next;
         }
 
         my $inductor_tg_id;
@@ -68,8 +67,13 @@ for my $message (@{$json->{messages}}) {
                 die "This is a reply, but the message it is a reply to does not exist?";
             }
 
-            $inductor_tg_id = $message_id_to_sender->{$message->{reply_to_message_id}}
-        } else {
+            my $from_id = $message_id_to_sender->{$message->{reply_to_message_id}};
+            # If this was a "pick tool" we end up with a reply to the bot msg, not helpful
+            if($from_id ne 'user1468813658') {
+                $inductor_tg_id = $from_id;
+            }
+        }
+        if(!$inductor_tg_id) {
             # Sadly, making this a reply was only implemented fairly recently, so we have to do some degree of guessing here.
             # We assume that there's not enough lag between a /induct command and the response that multiple inductors have tried
             # to induct somebody before the first one gets a reply.
@@ -81,7 +85,8 @@ for my $message (@{$json->{messages}}) {
 
         my $inductor = $schema->resultset('Person')->find({ telegram_chatid => $inductor_tg_id });
         if (!$inductor) {
-            die "Cannot find Person for tg id $inductor_tg_id";
+            say "Cannot find Person for tg id $inductor_tg_id";
+            next;
         }
 
         my $tool = $schema->resultset('Tool')->find({ name => $tool_name });
@@ -97,9 +102,12 @@ for my $message (@{$json->{messages}}) {
         }
 
         $allowed->update({ inducted_by_id => $inductor->id });
+        $count++;
     }
 
     if ($text =~ m!^/induct!) {
         $prev_inductor = $message->{from_id};
     }
 }
+
+say "Updated $count inductions";
