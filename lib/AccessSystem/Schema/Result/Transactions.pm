@@ -26,7 +26,7 @@ __PACKAGE__->add_columns(
     },
 );
 
-__PACKAGE__->set_primary_key('person_id', 'added_on');
+__PACKAGE__->set_primary_key('person_id', 'added_on', 'amount_p');
 __PACKAGE__->belongs_to('person', 'AccessSystem::Schema::Result::Person', 'person_id');
 
 1;
