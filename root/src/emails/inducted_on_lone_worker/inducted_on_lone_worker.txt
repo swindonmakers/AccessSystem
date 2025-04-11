@@ -1,0 +1,12 @@
+Dear [% member.name %],
+
+You have been inducted on the [% tool_name %]. Please confirm that you understand the safety induction for using the tool, and that you take responsibility for your actions while using it.
+
+This is a device that cannot be used alone. This is part of our lone worker policy which requires someone else with you while you operate this tool
+Lone Worker Policy: https://docs.google.com/document/d/1LaXj98inD7u4OqyTqB3ti0CncsweOFBzkg4SHGtdQDQ/edit?usp=sharing
+
+Follow this link to confirm: [% link %]
+
+Regards,
+
+Swindon Makerspace
