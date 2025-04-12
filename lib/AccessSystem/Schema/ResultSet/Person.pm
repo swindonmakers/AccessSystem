@@ -89,51 +89,61 @@ sub allowed_to_thing {
         {
             'allowed.tool_id' => $thing_guid,
             'tokens.id' => $token,
-            'allowed.pending_acceptance' => 'false',
         }, {
-            '+columns' => [{ 'trainer' => 'allowed.is_admin'}],
-            join => ['allowed', 'tokens' ],
+#            '+columns' => [{ 'trainer' => 'allowed.is_admin'}],
+           prefetch => ['allowed' ],
+            join => ['allowed', 'tokens'],
         });
-    
-    if($person_rs->count == 1 && $person_rs->first->is_valid ) {
-        ## time restrictions for weekenders
-        my $person = $person_rs->first;
-        if ($person->tier->restrictions->{'times'}) {
-            my $now = DateTime->now(time_zone => 'Europe/London');
-            my $r_allow = 0;
-            foreach my $time (@{ $person->tier->restrictions->{'times'} }) {
-                # 'from' => '6:00:00', 'to' => '7:23:59'
-                my ($f_dow, $f_hour, $f_minute) = split(':', $time->{from});
-                my ($t_dow, $t_hour, $t_minute) = split(':', $time->{to});
-                if ($now->day_of_week >= $f_dow && $now->day_of_week <= $t_dow
-                    && $now->hour >= $f_hour && $now->hour <= $t_hour
-                    && $now->minute >= $f_minute && $now->minute <= $t_minute
-                    ) {
-                    $r_allow = 1;
-                }
-            }
-            if (!$r_allow) {
-                return {
-                    error => 'No access for Weekend Member',
-                    colour => 0x21,
-                };
-            }
-        }
-        return {
-            person => $person,
-        };
-    } elsif( $person_rs->count > 1) {
+
+    if( $person_rs->count > 1) {
         return {
             error => 'Token reused on accounts. Talk to a director',
             colour => 0x25,
         };
-    } elsif( $person_rs->count == 1 && !$person_rs->first->is_valid) {
+    }
+    my $person = $person_rs->first;
+    if($person && $person->allowed->first->pending_acceptance eq 'false') {
+        if($person->is_valid) {
+            ## time restrictions for weekenders
+            my $person = $person_rs->first;
+            if ($person->tier->restrictions->{'times'}) {
+                my $now = DateTime->now(time_zone => 'Europe/London');
+                my $r_allow = 0;
+                foreach my $time (@{ $person->tier->restrictions->{'times'} }) {
+                    # 'from' => '6:00:00', 'to' => '7:23:59'
+                    my ($f_dow, $f_hour, $f_minute) = split(':', $time->{from});
+                    my ($t_dow, $t_hour, $t_minute) = split(':', $time->{to});
+                    if ($now->day_of_week >= $f_dow && $now->day_of_week <= $t_dow
+                        && $now->hour >= $f_hour && $now->hour <= $t_hour
+                        && $now->minute >= $f_minute && $now->minute <= $t_minute
+                       ) {
+                        $r_allow = 1;
+                    }
+                }
+                if (!$r_allow) {
+                    return {
+                        error => 'No access for Weekend Member',
+                        colour => 0x21,
+                    };
+                }
+            }
+            return {
+                person => $person,
+            };
+        } else {
+            return {
+                error => "Membership expired/unpaid",
+                colour => 0x22,
+            };
+        }
+        # no Person or not accepted
+    } elsif($person && $person->allowed->first->pending_acceptance eq 'true') {
         return {
-            error => "Membership expired/unpaid",
-            colour => 0x22,
+            error => 'Induction not confirmed/Pay up please',
+            colour => 0x24,
         };
+        # no person, look up token instead
     } else {
-        my $person;
         my $has_token = $self->search(
             {
                 'tokens.id' => $token,
@@ -148,24 +158,24 @@ sub allowed_to_thing {
         } else {
             $person = $has_token->first;
         }
-        
-        my $thing_rs = $self->result_source->schema->resultset('Tool')->search(
-            {
-                'id' => $thing_guid,
-            });
-        if(!$thing_rs->count) {
-            return {
-                person => $person,
-                error => "Tool ($thing_guid) not recognised",
-            }
-        } else {
-            return {
-                error => "You are not inducted on this tool",
-                person => $person,
-                thing => $thing_rs->first,
-                colour => 0x24,
-            };
+    }
+
+    my $thing_rs = $self->result_source->schema->resultset('Tool')->search(
+        {
+            'id' => $thing_guid,
+        });
+    if(!$thing_rs->count) {
+        return {
+            person => $person,
+            error => "Tool ($thing_guid) not recognised",
         }
+    } else {
+        return {
+            error => "You are not inducted on this tool",
+            person => $person,
+            thing => $thing_rs->first,
+            colour => 0x24,
+        };
     }
 
     return { error => 'I have no idea what happened there, but that did\'t work', colour => 0x23 };
