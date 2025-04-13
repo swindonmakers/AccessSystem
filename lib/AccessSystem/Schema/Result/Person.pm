@@ -481,13 +481,13 @@ sub create_payment {
     my $schema = $self->result_source->schema;
 
     ## minor(?) side effects:
-    
+
     # if no valid date (havent paid yet), and created date longer than
     # a week? ago, then email member to see why they havent yet
 
     # if no valid date yet, but we now make a payment (first ever),
     # email member to notify them
-    
+
     my $valid_date = $self->valid_until;
     if($valid_date && $valid_date->clone->subtract(days => $OVERLAP_DAYS) > DateTime->now) {
         warn "Member " . $self->bank_ref . " not about to expire.\n";

@@ -59,7 +59,11 @@ __PACKAGE__->add_columns(
     },
     requires_induction => {
         data_type => 'boolean',
-#        default_value => 'false', #'
+        default_value => \'false',
+    },
+    lone_working_allowed => {
+        data_type => 'boolean',
+        default_value => \'true',
     },
     team => {
         data_type => 'varchar',
@@ -74,6 +78,7 @@ __PACKAGE__->add_unique_constraint('name' => ['name']);
 __PACKAGE__->has_many('allowed_people', 'AccessSystem::Schema::Result::Allowed', 'tool_id');
 __PACKAGE__->has_many('logs', 'AccessSystem::Schema::Result::MessageLog', 'tool_id');
 __PACKAGE__->has_many('statuses', 'AccessSystem::Schema::Result::ToolStatus', 'tool_id');
+__PACKAGE__->has_many('required_dependencies', 'AccessSystem::Schema::Result::RequiredTool', 'tool_id');
 
 sub current_status {
     my ($self) = @_;
@@ -87,7 +92,6 @@ sub current_status {
         })->single;
 
     return $last;
-    
 }
 
 sub induct_student {

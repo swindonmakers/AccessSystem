@@ -528,7 +528,7 @@ sub tools ($self, $text, $message) {
                                             ? ' (induction)'
                                             : '')
                         }
-                        grep { $_->name !~ /oneall_login_callback/ }
+                        grep { $_->name !~ /oneall_login_callback/ && $_->name !~ /policy/i}
                         ($tools->all));
     if(!$t && $tools->count == 1) {
         $t = $tools->first;

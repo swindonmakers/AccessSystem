@@ -82,7 +82,7 @@ around update_model => sub {
         $pr =~ s/_//g;
         $self->item->update_or_create_related('vehicles' => { plate_reg => $pr });
     }
-    
+   
     # {
     #     use feature 'say';
     #     say "In update_model, item=$item, source=$source\n";
@@ -379,7 +379,19 @@ has_field membership_guide => field_add_defaults {
     messages => {
        required => 'Please read and agree to the Membership Guide',
     },
-    help_string => '<a target="_blank" href="https://docs.google.com/document/d/1ruqYeKe7kMMnNzKh_LLo2aeoFufMfQsdX987iU6zgCI/edit?usp=sharing">Membership Guide</a>'
+    help_string => '<a target="_blank" href="https://docs.google.com/document/d/1aN5Av5Qw--z31qGUhOl-NAiisJi5eZLWK7v47Li5uFU/edit?usp=sharing">Membership Guide</a>'
+};
+
+has_field health_and_safety => field_add_defaults {
+    type => 'Checkbox',
+    required => 1,
+    label => 'I have read and agree to comply with the Health & Safety Policy *',
+    wrapper_attr => { id => 'field-health-safety', },
+    tags         => { no_errors => 1 },
+    messages => {
+       required => 'Please read and agree to the Health & Safety Policy',
+    },
+    help_string => '<a target="_blank" href="https://docs.google.com/document/d/1pXfTIk18UgviNkf0vwIlEfScDKVwEMTiiK4tR8h6pxQ/edit?usp=sharing">Health &amp; Safety Policy</a>'
 };
 
 ## required checks if this is true as well as set, defaults to 0/1
