@@ -638,6 +638,35 @@ sub recent_transactions {
                                           
 }
 
+sub create_induction_email {
+    my ($self, $allowed, $base_url) = @_;
+
+    my $token = Data::GUID->new->as_string();
+    my $confirm = $self->confirmations->create({
+        token => $token,
+        storage => {
+            tool_id => $allowed->tool_id,
+            person_id => $allowed->person_id,
+        },
+    });
+
+    my $url = $base_url . 'confirm_induction?token=' . $token;
+    my $t_name = $allowed->tool->name;
+    $t_name =~ s/\W/_/g;
+    $t_name = lc($t_name);
+    my $comm = $self->create_communication(
+        'Swindon Makerspace Induction Confirmation',
+        'inducted_on|' . $t_name,
+        {
+            tool_name => $allowed->tool->name,
+            link => $url,
+            lone_working_allowed => ($allowed->tool->lone_working_allowed ? 1 : 0)
+        },
+    );
+
+    return ($comm, $confirm);
+}
+
 sub create_communication {
     my ($self, $subject, $type, $tt_vars, $force) = @_;
     $force ||= 0;
@@ -660,10 +689,10 @@ sub create_communication {
     my $tt_path_base = "$ENV{CATALYST_HOME}/root/src/emails";
 
     my $comm_hash = {
-            created_on => undef,
-            type => $type,
-            status => 'unsent',
-            subject => $subject,
+        created_on => undef,
+        type => $type,
+        status => 'unsent',
+        subject => $subject,
     };
 
 
@@ -678,32 +707,40 @@ sub create_communication {
         return undef;
     }
 
-    my $tt_type = $type;
-    $tt_type =~ s/\|.*//;
-    my $tt_path = 
 
+    my $tt_type_no_pipe = $type;
+    $tt_type_no_pipe =~ s/\|.*//;
+    my $tt_type_defang = $type;
+    $tt_type_defang =~ s/\W/_/g;
+
+    my $tt_type;
     my $any_parts;
-    if (-e "${tt_path_base}/$tt_type/$tt_type.txt") {
-        my $raw = "";
-        my $process = $tt->process("$tt_type/$tt_type.txt", {member => $self, %$tt_vars}, \$raw);
-        if (!$process) {
-            print STDERR $tt->error;
-            return undef;
+    # Look for eg: inducted_on_health_and_safety_policy then inducted_on
+    foreach $tt_type ($tt_type_defang, $tt_type_no_pipe) {
+        next if($comm_hash->{plain_text});
+        if (-e "${tt_path_base}/$tt_type/$tt_type.txt") {
+            my $raw = "";
+            my $process = $tt->process("$tt_type/$tt_type.txt", {member => $self, %$tt_vars}, \$raw);
+            if (!$process) {
+                print STDERR $tt->error;
+                return undef;
+            }
+            $comm_hash->{plain_text} = $raw;
+            $any_parts++;
         }
-        $comm_hash->{plain_text} = $raw;
-        $any_parts++;
-    }
-    if (-e "${tt_path_base}/$tt_type/$tt_type.html") {
-       # print STDERR "Found ${tt_path_base}/$type/$type.html\n";
-        my $raw = "";
-        my $process = $tt->process("$tt_type/$tt_type.html", {member => $self, %$tt_vars}, \$raw);
-        if (!$process) {
-            print STDERR $tt->error;
-            return undef;
+        next if($comm_hash->{html});
+        if (-e "${tt_path_base}/$tt_type/$tt_type.html") {
+            # print STDERR "Found ${tt_path_base}/$type/$type.html\n";
+            my $raw = "";
+            my $process = $tt->process("$tt_type/$tt_type.html", {member => $self, %$tt_vars}, \$raw);
+            if (!$process) {
+                print STDERR $tt->error;
+                return undef;
+            }
+            # print STDERR "Raw: $raw\n";
+            $comm_hash->{html} = $raw;
+            $any_parts++;
         }
-        # print STDERR "Raw: $raw\n";
-        $comm_hash->{html} = $raw;
-        $any_parts++;
     }
 
     if (!$any_parts) {

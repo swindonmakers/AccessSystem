@@ -813,22 +813,7 @@ sub send_induction_acceptance: Chained('base'): PathPart('send_induction_accepta
     if ($allowed->count == 1) {
         my $allowed_row = $allowed->first;
         my $member = $allowed_row->person;
-        my $token = Data::GUID->new->as_string();
-        $member->confirmations->create({
-            token => $token,
-            storage => {
-                tool_id => $tool_id,
-                person_id => $person_id,
-                },
-        });
-        ## Store the comms:
-        my $comms = $member->create_communication(
-            'Swindon Makerspace Induction Confirmation',
-            'inducted_on|' . $tool_id,
-            { tool_name => $allowed_row->tool->name,
-              link => $c->uri_for('confirm_induction', { token => $token }) },
-              lone_working_allowed => $allowed_row->tool->loan_working_allowed
-           );
+        my ($comms, $confirm) = $member->create_induction_email($allowed_row, $c->request->base);
         if (!$comms) {
             $success = 0;
             $msg = "Failed to create or find mail!";

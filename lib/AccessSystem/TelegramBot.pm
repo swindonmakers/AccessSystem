@@ -1267,23 +1267,9 @@ sub resend_inductions ($self, $text, $message) {
     my $week_ago = DateTime->now->subtract(days => 7);
 
     while(my $allowed = $missing_inductions->next) {
-        my $token = Data::GUID->new->as_string();
-        my $confirm = $allowed->person->confirmations->create({
-            token => $token,
-            storage => {
-                tool_id => $allowed->tool_id,
-                person_id => $allowed->person_id,
-            },
-        });
-        my $url = $self->base_url . 'confirm_induction?token=' . $token;
-        my $comm = $allowed->person->create_communication(
-            'Swindon Makerspace Induction Confirmation',
-            'inducted_on|' . $allowed->tool_id,
-            {
-                tool_name => $allowed->tool->name,
-                link => $url 
-            },
-        );
+        my ($comm, $confirm) = $allowed->person->create_induction_email(
+            $allowed, $self->base_url);
+
         if ($do_time_limit and $comm && $comm->sent_on && $comm->sent_on >= $week_ago) {
             $confirm->delete;
             $time_limited++;
