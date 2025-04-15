@@ -69,6 +69,9 @@ has parked => sub { return {}; };
 has last_inductee => undef;
 has last_induction_tool => undef;
 
+has teacher_icon => "\x{1F9D1}\x{200D}\x{1F3EB}";
+has lone_worker_icon => "2\x{20e3}";
+
 sub init {
     my $self = shift;
     $self->add_listener(\&read_message);
@@ -525,10 +528,12 @@ sub tools ($self, $text, $message) {
     my $tool_str = join("\n",
                         map {
                             $_->name . ($_->requires_induction
-                                            ? ' (induction)'
-                                            : '')
+                                            ? " " . $self->teacher_icon
+                                        : '')
+                                . ($_->lone_working_allowed ? ''
+                                   : " " . $self->lone_worker_icon )
                         }
-                        grep { $_->name !~ /oneall_login_callback/ }
+                        grep { $_->name !~ /oneall_login_callback/ && $_->name !~ /policy/i}
                         ($tools->all));
     if(!$t && $tools->count == 1) {
         $t = $tools->first;
@@ -1006,7 +1011,7 @@ sub inductions ($self, $text, $message) {
             return $message->reply("I can't find a person named $name");
         }
 
-        my $str = join("\n", map { $_->tool->name . ($_->pending ? ' (pending)' : ''). ($_->is_admin ? ' (inductor)' : '') } ($person->allowed));
+        my $str = join("\n", map { $_->tool->name . ($_->pending ? ' (pending)' : ''). ($_->is_admin ? " " . $self->teacher_icon : '') . ($_->tool->lone_working_allowed ? '' : " " . $self->lone_worker_icon )} ($person->allowed));
         if (!$str) {
             $str = 'Nothing !?';
         }
@@ -1267,23 +1272,9 @@ sub resend_inductions ($self, $text, $message) {
     my $week_ago = DateTime->now->subtract(days => 7);
 
     while(my $allowed = $missing_inductions->next) {
-        my $token = Data::GUID->new->as_string();
-        my $confirm = $allowed->person->confirmations->create({
-            token => $token,
-            storage => {
-                tool_id => $allowed->tool_id,
-                person_id => $allowed->person_id,
-            },
-        });
-        my $url = $self->base_url . 'confirm_induction?token=' . $token;
-        my $comm = $allowed->person->create_communication(
-            'Swindon Makerspace Induction Confirmation',
-            'inducted_on|' . $allowed->tool_id,
-            {
-                tool_name => $allowed->tool->name,
-                link => $url 
-            },
-        );
+        my ($comm, $confirm) = $allowed->person->create_induction_email(
+            $allowed, $self->base_url);
+
         if ($do_time_limit and $comm && $comm->sent_on && $comm->sent_on >= $week_ago) {
             $confirm->delete;
             $time_limited++;

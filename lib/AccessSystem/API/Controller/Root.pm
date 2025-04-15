@@ -441,6 +441,7 @@ sub tool_access: Chained('base'): PathPart('tool_access'): Args() {
         $c->stash(json => { error => 'Person not allowed to use Tool!?'});
     }
 
+    $c->forward('View::JSON');
 }
 
 ## Thing X (from correct IP Y) says person T inducts person S to use it:
@@ -812,24 +813,10 @@ sub send_induction_acceptance: Chained('base'): PathPart('send_induction_accepta
     if ($allowed->count == 1) {
         my $allowed_row = $allowed->first;
         my $member = $allowed_row->person;
-        my $token = Data::GUID->new->as_string();
-        $member->confirmations->create({
-            token => $token,
-            storage => {
-                tool_id => $tool_id,
-                person_id => $person_id,
-                },
-        });
-        ## Store the comms:
-        my $comms = $member->create_communication(
-            'Swindon Makerspace Induction Confirmation',
-            'inducted_on|' . $tool_id,
-            { tool_name => $allowed_row->tool->name,
-              link => $c->uri_for('confirm_induction', { token => $token }) },
-            );
+        my ($comms, $confirm) = $member->create_induction_email($allowed_row, $c->request->base);
         if (!$comms) {
             $success = 0;
-            $msg = "Failed to send mail!";
+            $msg = "Failed to create or find mail!";
         } else {
             $self->emailer->send($comms);
             $success = 1;
@@ -988,6 +975,11 @@ sub finish_new_member: Private {
         'allowed',
         { tool_id => '1A9E3D66-E90F-11E5-83C1-1E346D398B53', is_admin => 0 })
         for $c->stash->{member}->children;
+
+    # have read+accepted H&S policy:
+    $c->stash->{member}->create_related(
+        'allowed',
+        { tool_id => '0E899E10-188C-11F0-8E38-5C924532D5BD', is_admin => 0, pending_acceptance => 0 });
     $c->forward('send_membership_email');   
 }
     

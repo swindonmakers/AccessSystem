@@ -90,9 +90,8 @@ sub allowed_to_thing {
             'allowed.tool_id' => $thing_guid,
             'tokens.id' => $token,
         }, {
-#            '+columns' => [{ 'trainer' => 'allowed.is_admin'}],
            prefetch => ['allowed' ],
-            join => ['allowed', 'tokens'],
+           join => ['allowed', 'tokens'],
         });
 
     if( $person_rs->count > 1) {
@@ -102,7 +101,8 @@ sub allowed_to_thing {
         };
     }
     my $person = $person_rs->first;
-    if($person && $person->allowed->first->pending_acceptance eq 'false') {
+    # print STDERR "Accept: ", $person->allowed->first->pending_acceptance, "\n";
+    if($person && !$person->allowed->first->pending_acceptance) {
         if($person->is_valid) {
             ## time restrictions for weekenders
             my $person = $person_rs->first;
@@ -127,9 +127,24 @@ sub allowed_to_thing {
                     };
                 }
             }
-            return {
-                person => $person,
-            };
+
+            # Check required dep tools:
+            my $deps_ok = 1;
+            foreach my $dep ( $person->allowed->first->tool->required_dependencies_rs->all ) {
+                my $check = $self->allowed_to_thing($token, $dep->required_id);
+                if($check->{error}) {
+                    $deps_ok = 0;
+                    return {
+                        error => $check->{error},
+                        colour => 0x24,
+                       };
+                }
+            }
+            if($deps_ok) {
+                return {
+                    person => $person,
+                };
+            }
         } else {
             return {
                 error => "Membership expired/unpaid",
@@ -171,7 +186,7 @@ sub allowed_to_thing {
         }
     } else {
         return {
-            error => "You are not inducted on this tool",
+            error => sprintf("%s not accepted. See email", $thing_rs->first->name),
             person => $person,
             thing => $thing_rs->first,
             colour => 0x24,
