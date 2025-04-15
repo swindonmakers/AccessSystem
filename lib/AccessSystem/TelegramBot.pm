@@ -69,6 +69,9 @@ has parked => sub { return {}; };
 has last_inductee => undef;
 has last_induction_tool => undef;
 
+has teacher_icon => "\x{1F9D1}\x{200D}\x{1F3EB}";
+has lone_worker_icon => "2\x{20e3}";
+
 sub init {
     my $self = shift;
     $self->add_listener(\&read_message);
@@ -525,8 +528,10 @@ sub tools ($self, $text, $message) {
     my $tool_str = join("\n",
                         map {
                             $_->name . ($_->requires_induction
-                                            ? ' (induction)'
-                                            : '')
+                                            ? " " . $self->teacher_icon
+                                        : '')
+                                . ($_->lone_working_allowed ? ''
+                                   : " " . $self->lone_worker_icon )
                         }
                         grep { $_->name !~ /oneall_login_callback/ && $_->name !~ /policy/i}
                         ($tools->all));
@@ -1006,7 +1011,7 @@ sub inductions ($self, $text, $message) {
             return $message->reply("I can't find a person named $name");
         }
 
-        my $str = join("\n", map { $_->tool->name . ($_->pending ? ' (pending)' : ''). ($_->is_admin ? ' (inductor)' : '') } ($person->allowed));
+        my $str = join("\n", map { $_->tool->name . ($_->pending ? ' (pending)' : ''). ($_->is_admin ? " " . $self->teacher_icon : '') . ($_->tool->lone_working_allowed ? '' : " " . $self->lone_worker_icon )} ($person->allowed));
         if (!$str) {
             $str = 'Nothing !?';
         }

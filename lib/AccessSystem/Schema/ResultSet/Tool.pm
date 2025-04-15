@@ -43,11 +43,17 @@ sub find_tool {
 sub active {
     my ($self) = @_;
 
-    return $self->search_rs(
-        [
-         'statuses.status' => { '-not_in' => [qw/dead test psuedotool/] },
-         'statuses.status' => undef,
-        ],
+    my $recent_statuses = $self->search_rs({
+        'statuses.id' => [{
+            '=' => $self->result_source->schema->
+                resultset('ToolStatus')->search_rs(
+                    { 'tool_id' => { '-ident' => 'me.id' } },
+                    { 'alias'   => 'sub_query' }
+            )->get_column('id')->max_rs->as_query },
+                          undef],
+             'statuses.status' => [{'-not_in' => [qw/dead test psuedotool/] }, undef],
+            
+        },
         {
             join => 'statuses',
             order_by => 'me.name'
