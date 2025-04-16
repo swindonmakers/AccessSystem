@@ -1,12 +1,21 @@
 Dear [% member.name %],
 
-We have updated our health and safety policy
-To continue accessing the makerspace please carefully read the health and saftey policy and click the link below once you have agreed
-Health and Safety Policy: https://docs.google.com/document/d/1pXfTIk18UgviNkf0vwIlEfScDKVwEMTiiK4tR8h6pxQ/edit?usp=sharing
+We have updated our health and safety policy. To continue accessing the
+makerspace please carefully read the health and safety policy and
+click the link below once you have agreed.
 
-These changes are due to insurance policy updates and to keep ourselves open must be adheard to by all members
-<p>We also have our lone worker policy which applies to certain machines
-Lone Worker Policy: https://docs.google.com/document/d/1LaXj98inD7u4OqyTqB3ti0CncsweOFBzkg4SHGtdQDQ/edit?usp=sharing
+Health and Safety Policy:
+
+https://docs.google.com/document/d/1pXfTIk18UgviNkf0vwIlEfScDKVwEMTiiK4tR8h6pxQ/edit?usp=sharing
+
+These changes are due to insurance policy updates and to keep
+ourselves open must be adhered to by all members.  We also have a
+lone worker policy which applies to certain machines. Please read this
+as well.
+
+Lone Worker Policy:
+
+https://docs.google.com/document/d/1LaXj98inD7u4OqyTqB3ti0CncsweOFBzkg4SHGtdQDQ/edit?usp=sharing
 
 Thanks for keeping the Swindon Makerspace a safe place to make all the things
 confirm: [% link %]

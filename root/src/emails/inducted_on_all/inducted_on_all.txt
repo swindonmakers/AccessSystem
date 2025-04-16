@@ -1,0 +1,27 @@
+Dear [% member.name %],
+
+You asked to resend all your pending inductions, here are your confirmation links:
+
+[% FOREACH thing IN links %]
+  [% thing.tool %][% IF !thing.lone_worker_allowed; ' (No lone working)'; END %] : [% thing.link %]
+[% END %]
+
+[% IF h_and_s %]
+We have updated our health and safety policy
+To continue accessing the makerspace please carefully read the health and saftey policy and click the link below once you have agreed
+Health and Safety Policy: https://docs.google.com/document/d/1pXfTIk18UgviNkf0vwIlEfScDKVwEMTiiK4tR8h6pxQ/edit?usp=sharing
+
+These changes are due to insurance policy updates and to keep ourselves open must be adheard to by all members
+
+Thanks for keeping the Swindon Makerspace a safe place to make all the things
+[% END %]
+
+Lone Working Tools
+
+Tools that are marked 'No lone working' above are subject to our Lone Working Policy and require someone else with you while you operate the tool
+
+Lone Worker Policy: https://docs.google.com/document/d/1LaXj98inD7u4OqyTqB3ti0CncsweOFBzkg4SHGtdQDQ/edit?usp=sharing
+
+Regards,
+
+Swindon Makerspace
