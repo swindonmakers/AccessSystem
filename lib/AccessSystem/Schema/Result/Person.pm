@@ -638,6 +638,47 @@ sub recent_transactions {
                                           
 }
 
+sub create_all_induction_email {
+    my ($self, $base_url, $force) = @_;
+
+    my @links = ();
+    my $allowed_rs = $self->allowed->search_rs({
+        pending_acceptance => "true",
+    });
+
+    my $h_and_s = 0;
+    while(my $allowed = $allowed_rs->next) {
+        my $token = Data::GUID->new->as_string();
+        my $confirm = $self->confirmations->create({
+            token => $token,
+            storage => {
+                tool_id => $allowed->tool_id,
+                person_id => $allowed->person_id,
+            },
+        });
+        my $url = $base_url . 'confirm_induction?token=' . $token;
+        
+        push @links, { link => $url, tool => $allowed->tool->name, lone_worker_allowed => $allowed->tool->lone_working_allowed };
+        $h_and_s = 1 if $allowed->tool->name =~ /^Health and/;
+    }
+
+    if(!@links) {
+        # None found to send, exit:
+        return;
+    }
+    my $comm = $self->create_communication(
+        'Swindon Makerspace Induction(s)',
+        'inducted_on_all',
+        {
+            links => \@links,
+            h_and_s => $h_and_s,
+        },
+        $force
+    );
+
+    return $comm;
+}
+
 sub create_induction_email {
     my ($self, $allowed, $base_url) = @_;
 

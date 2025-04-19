@@ -143,6 +143,7 @@ sub allowed_to_thing {
             if($deps_ok) {
                 return {
                     person => $person,
+                    thing => $person->allowed->first->tool,
                 };
             }
         } else {

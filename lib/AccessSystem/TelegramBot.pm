@@ -1229,7 +1229,6 @@ sub pay ($self, $text, $message, $args = undef) {
     });
 }
 
-
 =head2 resend_inductions
 
 =cut
@@ -1259,42 +1258,14 @@ sub resend_inductions ($self, $text, $message) {
         return $message->reply("I found ".$inductee_member->name.", but they had are no longer a valid member, not sending any.");
     }
 
-    my $missing_inductions = $self->db->resultset('Allowed')->search(
-    {
-        pending_acceptance => "true",
-        accepted_on => undef,
-        person_id => $inductee_member->id
-    });
-
-    my $n = 0;
-    my $time_limited = 0;
-    my $emailer = AccessSystem::Emailer->new;
-    my $week_ago = DateTime->now->subtract(days => 7);
-
-    while(my $allowed = $missing_inductions->next) {
-        my ($comm, $confirm) = $allowed->person->create_induction_email(
-            $allowed, $self->base_url);
-
-        if ($do_time_limit and $comm && $comm->sent_on && $comm->sent_on >= $week_ago) {
-            $confirm->delete;
-            $time_limited++;
-            next;
-        }
-
-        $n++;
+    my $comm = $inductee_member->create_all_induction_email($self->base_url, 'force resend');
+    if ($comm) {
+        my $emailer = AccessSystem::Emailer->new;
         $emailer->send($comm, 1);
-        # Gah, the db has person_id/created_on as a key, 2 in the same
-        # second no worky
-        sleep 1;
+        return $message->reply($inductee_member->name. " has pending inductions, has been sent a bunch of inductions.")
     }
+    return $message->reply($inductee_member->name. " has no pending inductions");
 
-    if ($n == 0 && $time_limited > 0) {
-        return $message->reply($inductee_member->name. " has pending inductions, but they are too recent for you to resend.")
-    } elsif ($n == 0) {
-        return $message->reply("I found ".$inductee_member->name.", but they had no pending inductions, so nothing happened.");
-    } else {
-        return $message->reply($inductee_member->name." has been sent $n emails ($time_limited not sent because too recent).");
-    }
 }
 
 =head2 door_log
