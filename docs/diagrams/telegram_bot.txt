@@ -1,0 +1,10 @@
+@startuml
+title Telegram Bot Commands
+control Door
+actor TelegramUser
+entity TelegramBot
+database Database
+TelegramUser -> TelegramBot : Input command
+TelegramBot -> Database : Check or change database
+TelegramBot -> TelegramUser : Output response
+@enduml
