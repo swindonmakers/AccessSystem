@@ -126,11 +126,12 @@ sub induct_student {
             error => "The token ($student_token) isn't associated with any user",
         };
     }
-    
+
+    my $admin = $admin_check->first->person;
     my $added = $self->allowed_people_rs->find_or_create({
         person      => $student,
         is_admin    => 0,
-        inducted_by => $admin_check->person
+        inducted_by => $admin
     });
     return {
         person => $student,
