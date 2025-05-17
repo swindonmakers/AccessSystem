@@ -513,7 +513,7 @@ sub assign: Chained('base'): PathPart('assign'): Args(0) {
     if($c->req->params->{admin_token} && $c->req->params->{person_id} && $c->req->params->{thing} && $c->req->params->{token_id}) {
         # Does the admin token exist, and are they allowed to use the tag assigner
         my $person_thing = $c->model('AccessDB::Person')->allowed_to_thing($c->req->params->{admin_token}, $c->req->params->{thing});
-        if($person_thing->{person} && $person_thing->{thing} =~/TagAssigner/) {
+        if($person_thing->{person} && $person_thing->{thing}->name =~/TagAssigner/) {
             # check new token isnt already in use:
             if(!$c->model('AccessDB::AccessToken')->find({id => $c->req->params->{token_id}})) {
                 # my $p_id = $c->req->params->{person_id}+0;
