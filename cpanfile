@@ -42,3 +42,4 @@ requires 'Email::Sender::Simple';
 requires 'Email::Sender::Transport::SMTP'; 
 requires 'DBIx::Class::EasyFixture';
 requires 'Time::HiRes';
+requires 'Date::Holidays::GB';
