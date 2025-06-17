@@ -1,6 +1,14 @@
 
 FROM mcr.microsoft.com/devcontainers/base:buster
 
+ENV CATALYST_HOME="/workspaces/AccessSystem"
+ENV PATH="${CATALYST_HOME}/local/bin:${PATH}"
+
+WORKDIR /workspaces/AccessSystem
+
+RUN groupadd --gid 1001 swmakers \
+    && useradd --uid 1001 --gid swmakers --shell /bin/bash --create-home swmakers
+
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
         perl=5.28.1-6+deb10u1 \
@@ -32,6 +40,9 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         libtimedate-perl \
         liburi-perl \
         libscalar-list-utils-perl \
+        # database support
+        libpq-dev \
+        sqlite3 \
     && cpanm -S Carton \
 # for Perl::LanguageServer
     && apt-get -y install  --no-install-recommends \
@@ -46,3 +57,12 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         libcoro-perl \
     && cpanm Perl::LanguageServer \
     && rm -rf /var/lib/apt/lists/*
+
+COPY cpanfile* "${CATALYST_HOME}/"
+COPY vendor/ "${CATALYST_HOME}/vendor/"
+
+RUN chown -R swmakers:swmakers "${CATALYST_HOME}"
+
+USER swmakers
+
+RUN carton install --cached
