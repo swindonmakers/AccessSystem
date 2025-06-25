@@ -7,6 +7,7 @@ use Digest::MD5 qw(md5_hex);
 use Feature::Compat::Try;
 use DateTime;
 use SQL::Abstract;
+use Date::Holidays::GB::EAW qw/is_holiday/;
 #use SQL::Abstract::Plugin::ExtraClauses;
 use base 'DBIx::Class::ResultSet';
 
@@ -117,6 +118,12 @@ sub allowed_to_thing {
                         && $now->hour >= $f_hour && $now->hour <= $t_hour
                         && $now->minute >= $f_minute && $now->minute <= $t_minute
                        ) {
+                        $r_allow = 1;
+                    }
+                }
+                # All restrictions lifted on bank hols
+                if (!$r_allow) {
+                    if (is_holiday(year => $now->year, month => $now->month, day => $now->day)) {
                         $r_allow = 1;
                     }
                 }
