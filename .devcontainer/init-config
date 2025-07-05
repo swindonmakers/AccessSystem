@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Define the source and destination directories
+src_dir="$(dirname "$0")/config"
+dest_dir="$(dirname "$0")/.."
+
+# Find all .conf.dev files in the source directory
+IFS=$'\n' read -rd '' -a config_files <<< "$(find "$src_dir" -name "*.conf.dev" -exec basename {} \;)"
+
+# Function to copy and rename files
+copy_and_rename() {
+  local src_file="$1"
+  local dest_file="$2"
+
+  if [ ! -f "$dest_file" ]; then
+    cp "$src_file" "$dest_file"
+    echo "Copied $src_file to $dest_file"
+  else
+    echo "File $dest_file already exists, not overwriting"
+  fi
+}
+
+# Process each config file
+for config_file in "${config_files[@]}"; do
+  src_file="$src_dir/$config_file"
+  dest_file="$dest_dir/${config_file%.dev}"
+
+  if [ -f "$src_file" ]; then
+    copy_and_rename "$src_file" "$dest_file"
+  else
+    echo "Source file $src_file does not exist"
+  fi
+done
