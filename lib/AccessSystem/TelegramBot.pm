@@ -16,6 +16,7 @@ use Time::HiRes 'usleep';
 use lib "$ENV{BOT_HOME}/lib";
 use AccessSystem::Schema;
 use AccessSystem::Emailer;
+use AccessSystem::HTTPApis;
 
 BEGIN {
     $ENV{CATALYST_HOME} ||= $ENV{BOT_HOME};
@@ -64,6 +65,7 @@ has chat_rights => sub { return {}; };
 
 has waiting_on_response => sub { return {}; };
 
+has external_apis => sub { AccessSystem::HTTPApis->new() };
 has parked => sub { return {}; };
 
 has last_inductee => undef;
@@ -403,18 +405,16 @@ sub park ($self, $text, $message, $args = undef) {
            && $self->parked->{$message->from->id}{time} > DateTime->now->subtract('minutes' => 5)) {
             return $message->reply("This is rate-limited per-user to 5-min intervals, if you mistyped, try again in 5mins, or use the url: https://www.parkinggenie.co.uk/22959");
         }
-        
-        my $ua = LWP::UserAgent->new();
-        my $resp = $ua->post('https://ccp-apim-qrcodeexemption.azure-api.net/CCPFunctionQrCodeExemption/site/22959/exemption/' . $reg, Content => '');
-        if($resp->is_success) {
-            my $cont = decode_json($resp->decoded_content);
-            if($cont->{success}) {
-                $self->parked->{$message->from->id}{time} = DateTime->now();
-                my $msg = $cont->{message};
-                # $msg =~ s/^Your vehicle is a([\s\w]+)\.//m;
-                return $message->reply("Parked. " . $msg);
-            }
+
+        my $external = $self->external_apis;
+        my $resp = $external->park($reg);
+        if($resp->{success}) {
+            $self->parked->{$message->from->id}{time} = DateTime->now();
+            my $msg = $resp->{message};
+            # $msg =~ s/^Your vehicle is a([\s\w]+)\.//m;
+            return $message->reply("Parked. " . $resp->{message});
         }
+
         print STDERR Data::Dumper::Dumper($resp);
         return $message->reply("Tried to park $reg, but failed, sorry!");
     }
