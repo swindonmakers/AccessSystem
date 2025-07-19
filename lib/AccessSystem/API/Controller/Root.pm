@@ -619,17 +619,27 @@ sub park: Chained('base'): PathPart('park'): Args(0) {
                         my $msg = $resp->{message} || $resp->{error};
                         print STDERR "Auto-Parking response: $msg\n";
                     }
-                    $c->stash(
-                        json => {
-                            message => "Parked $success vehicles",
-                            success => 1,
-                        });
+                    if($success) {
+                        $c->stash(
+                            json => {
+                                message => "Parked $success vehicles",
+                                success => 1,
+                            });
+                    } else {
+                        $c->stash(
+                            json => {
+                                notparked => "Failed to park your car!",
+                                success => 0,
+                            });
+                    }
                 }
             }
         }
     }
     $c->log->debug(Data::Dumper::Dumper($c->stash->{json}));
     $c->forward('View::JSON');
+    $c->res->body($c->res->body() . "\n");
+    $c->res->content_length(length($c->res->body));
 }
 
 sub record_transaction: Chained('base'): PathPart('transaction'): Args(0) {

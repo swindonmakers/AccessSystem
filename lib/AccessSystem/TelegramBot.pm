@@ -245,6 +245,10 @@ sub read_message ($self, $message) {
             match => qr{^/add_vehicle\b},
             help => '/add_vehicle ab74cde'
         },
+        remove_vehicle   => {
+            match => qr{^/remove_vehicle\b},
+            help => '/remove_vehicle ab74cde'
+        },
         park => {
             match => qr{^/park\b},
             help => '/park <optional plate reg>',
@@ -336,6 +340,79 @@ sub add_vehicle ($self, $text, $message) {
     } else {
         return $message->reply("You already had that one");
     }
+}
+
+sub remove_vehicle ($self, $text, $message, $args = undef) {
+    return unless $self->authorize($message, 'invalid_ok');
+
+    my ($reg, $keyb, $r_status, $member);
+    $member = $self->member($message);
+
+    if(!$args) {
+        if($text =~ m{^/remove_vehicle (.*)$}) {
+            my $reg = $1;
+            $reg =~ s/\W//g;
+            $reg =~ s/_//g;
+            $reg = uc $reg;
+        }
+    }
+
+    # Reply from the keyboard
+    if($args) {
+        my $waiting = $self->waiting_on_response->{$message->from->id};
+        if($args->[1] eq 'reg') {
+            $reg = $args->[2];
+        }
+    }
+
+    if(!$reg) {
+        # None supplied, make pick list
+        my $v_count = $member->vehicles_rs->count;
+        if($v_count == 0) {
+            return $message->reply("You didn't supply a registration number and you don't have any stored, use /add_vehicle to save one");
+        } elsif($v_count == 1) {
+            $reg = $member->vehicles_rs->first->plate_reg;
+        } else {
+            $keyb = $self->generic_keyboard(
+                'remove_vehicle',
+                { map { $_->plate_reg => 'reg|' . $_->plate_reg } ($member->vehicles_rs->all) },
+                2,
+                ['Cancel']);
+        }
+    }
+
+    if (!$reg && !$keyb) {
+        warn "parking, still no reg? text='$text', args='" . Data::Dumper::Dumper($args);
+    }
+
+    if($reg) {
+        my $v = $member->vehicles->find({ plate_reg => $reg });
+        if(!$v) {
+            return $message->reply("You didn't have a vehicle with plat $reg");
+        } else {
+            $v->delete;
+            return $message->reply("Removed vehicle with plate $reg");
+        }
+    }
+
+    if($keyb) {
+        my $waiting = $self->waiting_on_response->{$message->from->id} || {};
+        $waiting->{action} = 'remove_vehicle';
+        $waiting->{text} = $text;
+        $self->waiting_on_response->{$message->from->id} = $waiting;
+
+        return $message->_brain->sendMessage(
+            {
+                chat_id => $message->chat->id,
+                text    => "More than one reg number stored, pick one:",
+                reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new(
+                    {
+                        inline_keyboard => $keyb,
+                    })
+            });
+    }
+
+    return $message->reply("Try /remove_vehicle <reg plate> or /help");
 }
 
 sub park ($self, $text, $message, $args = undef) {
