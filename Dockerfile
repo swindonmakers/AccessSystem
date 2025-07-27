@@ -1,10 +1,14 @@
 
-FROM mcr.microsoft.com/devcontainers/base:buster
+FROM debian:bookworm
+# FROM mcr.microsoft.com/devcontainers/base:buster
 
+# =5.28.1-6+deb10u1 \
+        # libparse-debianchangelog-perl \
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
-        perl=5.28.1-6+deb10u1 \
+        perl \ 
         cpanminus \
+        build-essential \
         libalgorithm-diff-perl \
         libalgorithm-diff-xs-perl \
         libalgorithm-merge-perl \
@@ -23,7 +27,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         libio-string-perl \
         liblocale-gettext-perl \
         liblwp-mediatypes-perl \
-        libparse-debianchangelog-perl \
         libsub-name-perl \
         libswitch-perl \
         libtext-charwidth-perl \

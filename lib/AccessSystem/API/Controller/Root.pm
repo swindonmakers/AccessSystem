@@ -565,6 +565,83 @@ sub assign: Chained('base'): PathPart('assign'): Args(0) {
     $c->forward('View::JSON');
 }
 
+sub park: Chained('base'): PathPart('park'): Args(0) {
+    my ($self, $c) = @_;
+
+    my $token_id = $c->req->params->{token};
+    my $tool_id = $c->req->params->{thing};
+
+    if(!$tool_id || !$token_id) {
+        $c->stash(
+            json => {
+                error => 'Missing token_id or tool_id',
+                success => 0,
+            });
+    } else {
+        my $thing = $c->model('AccessDB::Tool')->find({ id => $tool_id });
+        if(!$thing) {
+            $c->stash(
+                json => {
+                    error => 'Missing token_id or tool_id',
+                    success => 0,
+                });
+        } else {
+            my $persons = $c->model('AccessDB::Person')->search(
+                {
+                    'tokens.id' => $token_id,
+                },
+                {
+                    prefetch => ['vehicles'],
+                    join => ['tokens'],
+                });
+            my $person = $persons->first;
+            if($persons->count > 1 || !$person) {
+                $c->stash(
+                    json => {
+                        error => 'Can\'t find member for token',
+                        success => 0,
+                    });
+            } else {
+                if(!$person->vehicles->count) {
+                    # No vehicles that's fine:
+                    $c->stash(
+                        json => {
+                            message => 'Parked 0 vehicles',
+                            success => 1,
+                        });
+                } else {
+                    # Park (some?) vehicles:
+                    # Most recent ones first:
+                    my $success = 0;
+                    foreach my $vehicle (sort { $b->added_on->iso8601() cmp $b->added_on->iso8601() } ($person->vehicles)) {
+                        my $resp = $c->model('HTTPApis')->park($vehicle->plate_reg);
+                        $success++ if $resp->{success};
+                        my $msg = $resp->{message} || $resp->{error};
+                        print STDERR "Auto-Parking response: $msg\n";
+                    }
+                    if($success) {
+                        $c->stash(
+                            json => {
+                                message => "Parked $success vehicles",
+                                success => 1,
+                            });
+                    } else {
+                        $c->stash(
+                            json => {
+                                notparked => "Failed to park your car!",
+                                success => 0,
+                            });
+                    }
+                }
+            }
+        }
+    }
+    $c->log->debug(Data::Dumper::Dumper($c->stash->{json}));
+    $c->forward('View::JSON');
+    $c->res->body($c->res->body() . "\n");
+    $c->res->content_length(length($c->res->body));
+}
+
 sub record_transaction: Chained('base'): PathPart('transaction'): Args(0) {
     my ($self, $c) = @_;
 
@@ -1139,7 +1216,6 @@ The Access System.
     $self->emailer->send($c->stash->{email});   
     $c->stash->{json} = $data;
     $c->forward('View::JSON');
-
 }
 
 sub verify_token {

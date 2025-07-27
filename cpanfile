@@ -4,6 +4,7 @@ requires 'RapidApp', '1.3102';
 requires 'Catalyst::View::TT', '';
 requires 'Catalyst::Plugin::ConfigLoader';
 requires 'Catalyst::View::Email';
+requires 'Catalyst::Model::Adaptor';
 requires 'Net::SMTP::SSL';
 requires 'DateTime';
 requires 'DBIx::Class::TimeStamp';
