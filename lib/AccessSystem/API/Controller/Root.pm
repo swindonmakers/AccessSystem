@@ -289,7 +289,7 @@ sub verify: Chained('base') :PathPart('verify') :Args(0) {
             $c->stash(
                 json => {
                     person => { name => $result->{person}->name },
-                    inductor => $result->{person}->get_column('trainer'),
+                    inductor => $result->{person}->allowed->first->is_admin,
                     access => 1,
                     cache => $result->{person}->tier->restrictions->{'times'} ? 0 : 1,
                     colour => $result->{person}->door_colour_to_code || 0x01,
@@ -498,6 +498,69 @@ sub induct: Chained('base'): PathPart('induct'): Args() {
 
     ## can't fwd to our own View::JSON, this one somehow takes over
     ## and fucks it up!
+    $c->forward('View::JSON');
+}
+
+sub assign: Chained('base'): PathPart('assign'): Args(0) {
+    my ($self, $c) = @_;
+
+    ## Missing a string for the tag description..
+    ## Is the "thing" required? not sure we need to tie this to a device:
+    ## but if we don't, we can't check if allowed? do we just add an
+    ## assigned_by field?
+    ## Or let the logger stuff keep track of it..
+    if($c->req->params->{admin_token} && $c->req->params->{person_id} && $c->req->params->{thing} && $c->req->params->{token_id}) {
+        # Does the admin token exist, and are they allowed to use the tag assigner
+        my $person_thing = $c->model('AccessDB::Person')->allowed_to_thing($c->req->params->{admin_token}, $c->req->params->{thing});
+        if($person_thing->{person}) {
+            # check new token isnt already in use:
+            if(!$c->model('AccessDB::AccessToken')->find({id => $c->req->params->{token_id}})) {
+                # my $p_id = $c->req->params->{person_id}+0;
+                my $person = $c->model('AccessDB::Person')->find(
+                    {id => $c->req->params->{person_id}});
+                if($person) {
+                    $c->model('AccessDB::AccessToken')->create({
+                        id => $c->req->params->{token_id},
+                        person_id => $person->id,
+                        type => $c->req->params->{desc} || 'Added by TagAssigner',
+                    });
+                    my $tok_count = $person->tokens_rs->count;
+                    my $name = $person->name;
+                    $c->stash(
+                        json => {
+                            tokens => $tok_count,
+                            message => "Done. $name has $tok_count tokens.",
+                        });
+                } else {
+                    $c->stash(
+                        json => {
+                            tokens => 0,
+                            error => 'Nope. Can\'t find that person id.',
+                        });
+                }
+            } else {
+                $c->stash(
+                    json => {
+                        tokens => 0,
+                        error => 'Nope. That token is already in use!',
+                   });
+            }
+        } else {
+            $c->stash(
+                json => {
+                    tokens => 0,
+                    error => $person_thing->{error},
+                   });
+        }
+        # Does the member/person id exist
+    } else {
+        $c->stash(
+            json => {
+                tokens => 0,
+                error => 'Missing parameter(s)',
+            });
+    }
+    $c->log->debug(Data::Dumper::Dumper($c->stash->{json}));
     $c->forward('View::JSON');
 }
 

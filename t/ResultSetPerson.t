@@ -40,13 +40,18 @@ like($no_allowed->{error}, qr/not inducted/, 'Person cannot use the thing');
 $test9->create_related('allowed', { tool => $thing, is_admin => 0 });
 
 my $no_pay = $schema->resultset('Person')->allowed_to_thing('12345678', $thing->id);
-like($no_pay->{error}, qr/Membership expired/, 'Member hasnt paid');
+like($no_pay->{error}, qr/Pay up please/, 'Member hasnt paid');
 
 $test9->create_related('payments', { paid_on_date => DateTime->now, expires_on_date => DateTime->now->add(months => 1, days => 14), amount_p => $test9->dues });
 
-my $good = $schema->resultset('Person')->allowed_to_thing('12345678', $thing->id);
-ok(!$good->{error}, 'Access to thing allowed when valid + connected to it');
+my $no_confirm = $schema->resultset('Person')->allowed_to_thing('12345678', $thing->id);
+like($no_confirm->{error}, qr/Induction not confirmed/, 'Member hasnt confirmed induction');
 
+my $allowed = $test9->allowed->find({tool_id => $thing->id });
+$allowed->update({ pending_acceptance => 'false' });
+
+my $good = $schema->resultset('Person')->allowed_to_thing('12345678', $thing->id);
+ok(!$good->{error}, 'Allowed to use thing now');
 
 unlink($testdb);
 
