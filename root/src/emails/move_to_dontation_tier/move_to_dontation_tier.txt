@@ -1,0 +1,22 @@
+Dear [% member.name %],
+
+Your membership has been moved to the donation tier.
+This is because our current membership fees have changed and you have not updated your payments to reflect this.
+This donation tier does not have access to the space
+
+To resolve this and return to your active membership please send the difference of the new membership against your previous payments and update your standing order
+
+Difference to pay: [% member.oldtier.dues - member.last-payment  / 100 | format('%.2f') %]
+
+Incase you have fogotten our the payment details are
+ Monthly fee: &pound;[% member.oldtier.dues / 100 | format('%.2f') %]/month
+ To: Swindon Makerspace CIC
+ Bank: Barclays
+ Sort Code: 20-84-58
+ Account: 83789160
+ Ref: [% member.bank_ref %]
+
+Any issues please contact us either on Telegram or email us at info@swindon-makerspace.org 
+Regards,
+
+Swindon Makerspace
