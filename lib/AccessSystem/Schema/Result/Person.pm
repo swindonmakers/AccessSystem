@@ -248,6 +248,8 @@ sub update {
 
 sub is_valid {
     my ($self, $date) = @_;
+    return 0 if($self->tier->name =~ /donation/i);
+
     $date = DateTime->now();
 
     my $dtf = $self->result_source->schema->storage->datetime_parser;
@@ -297,6 +299,10 @@ sub normal_dues {
 
     return 0 if $self->parent;
 
+    if ($self->tier->name =~ /donation/i) {
+        return 0;
+    }
+ 
     my $dues = $self->tier ? $self->tier->price : 2500;
 
     if($self->tier && $self->tier->concessions_allowed && $self->concessionary_rate) {
@@ -488,13 +494,13 @@ sub create_payment {
     # if no valid date yet, but we now make a payment (first ever),
     # email member to notify them
 
+    my $now = DateTime->now;
     my $valid_date = $self->valid_until;
-    if($valid_date && $valid_date->clone->subtract(days => $OVERLAP_DAYS) > DateTime->now) {
+    if($valid_date && $valid_date->clone->subtract(days => $OVERLAP_DAYS) > $now) {
         warn "Member " . $self->bank_ref . " not about to expire.\n";
         return 1;
     }
 
-    my $now = DateTime->now;
     # Figure out what sort of payment this is, if valid_until is
     # empty, then its a first payment or renewal payment - use the
     # payment date.
@@ -505,15 +511,72 @@ sub create_payment {
         # first payment ever
         # this is the start of their voucher
         if($self->voucher_code) {
-            $self->update({ voucher_start => DateTime->now()});
+            $self->update({ voucher_start => $now});
         }
     }
     # work this out after voucher setting cos it changes the dues
-    if($self->balance_p < $self->dues) {
+
+    # And so does this bit!
+    # If Donor tier and balance is now enough and only donor-ified after 1 month ago - revert
+    # (one month else they'll keep flipping in/out of donor)
+    if($self->is_donor) {
+        my $old_data = $self->confirmations->find({ token => 'old_tier'});
+        my $when = $dt_parser->parse_datetime($old_data->storage->{changed_on});
+        my $old_tier = $old_data->storage->{tier_id};
+        my $one_month_ago = $now->clone->subtract(months => 1);
+        if($when > $one_month_ago) {
+            if($current_bal >= $schema->resultset('Person')->get_dummy_dues(
+                   $old_tier,
+                   $self->dob(),
+                   $self->concessionary_rate_override(),
+                   $old_data->storage->{fees}
+               )) {
+                # Topped up, undo donorification:
+                $self->update({ tier_id => $old_tier });
+                # set payment amount to min tier fee:
+                $self->update({ payment_override => $self->normal_dues });
+            }
+        }
+    }
+
+    if($current_bal < $self->dues) {
+        # Expanded for fees update 2025:
+        # If previously valid, and payment (intention) is less than dues (which have changed!)
+        # and actually expired (mid overlap), convert to donor-tier, fees to 0, store old tier/fees
+        # this should happens before the reminder_email (which is not sent to donors)
+        if($valid_date
+           && $valid_date->clone()->subtract(days => int($OVERLAP_DAYS / 2)) < $now
+           && $current_bal > 0
+           && $self->payment_override < $self->normal_dues
+           && !$self->is_donor) {
+            my $old_tier_id = $self->tier_id;
+            my $old_fees = $self->payment_override;
+            my $min_dues = $self->dues;
+            my $token = 'old_tier'; # findable!
+            $schema->txn_do(sub {
+                my $confirm = $self->confirmations->create({
+                    token => $token,
+                    storage => {
+                        tier_id => $old_tier_id,
+                        fees => $old_fees,
+                        changed_on => $dt_parser->format_datetime($now),
+                    }
+                });
+                $self->update({
+                    tier_id => 6,
+                    payment_override => 0,
+                });
+                # Send an email (force renew):
+                $self->create_communication('Your Swindon Makerspace membership is now Donor Only', 'move_to_donation_tier', { current_balance => $current_bal, min_dues => $min_dues}, 1);
+            });
+            warn "Member " . $self->bank_ref . " not covered fees, converted to Donor Tier";
+            return;
+        }
+        # Normal fail - intended to pay enough for tier but.. didnt? (Presumably stopped paying)
         warn "Member " . $self->bank_ref . " balance not enough for another month.\n";
         # Remind when actually expired, 5 days into the overlap
-        if($valid_date &&
-           $valid_date->clone()->subtract(days => 5) < $now
+        if($valid_date && !$self->is_donor
+           && $valid_date->clone()->subtract(days => 5) < $now
             && $valid_date >= $now->clone()->subtract(months => 1)) {
             # has (or is about to) expire
             # this will only send once!
@@ -551,6 +614,10 @@ sub create_payment {
         my $r_email = $self->communications_rs->find({type => 'reminder_email'});
         $r_email->delete if $r_email;
     }
+
+    # Donor tier members should not make "payments"
+    return if $self->is_donor;
+    
     # Only add $OVERLAP  extra days if a first or renewal payment - these
     # ensure member remains valid if standing order is not an
     # exact month due to weekends and bank holidays
@@ -706,6 +773,19 @@ sub create_induction_email {
     );
 
     return ($comm, $confirm);
+}
+
+sub send_membership_fee_warning {
+    my ($self) = @_;
+
+    my $last_payment = $self->last_payment;
+    if ($last_payment && $last_payment->amount_p < $self->dues) {
+        my $last_warning = $self->create_communication('Makerspace Membership Fee changed, please update your payment', 'membership_fees_change', { last_pay => $last_payment });
+        if($last_warning->created_on > DateTime->now->subtract(minutes => 10)) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 sub create_communication {

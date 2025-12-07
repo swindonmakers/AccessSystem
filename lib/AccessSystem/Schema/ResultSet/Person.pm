@@ -148,12 +148,29 @@ sub allowed_to_thing {
                 }
             }
             if($deps_ok) {
+                # Jan 2025 - new membrership fees - email if underpaying
+                my $beep = 0;
+                if ($person->send_membership_fee_warning()) {
+                    $beep = 1;
+                }
                 return {
-                    person => $person,
-                    thing => $person->allowed->first->tool,
+                    person  => $person,
+                    beep    => $beep,
+                    message => 'Fees have changed. Check email.',
+                    thing   => $person->allowed->first->tool,
                 };
             }
         } else {
+            if ($person->is_donor) {
+                # Fetch stored old-tier info
+                # force send ?
+                $person->create_communication('Makerspace upgrade Donor Tier to Membership', 'donation_access_denied', {}, 1);
+                return {
+                    person => $person,
+                    error => "No access for donors",
+                    colour => 0x22,
+                };
+            }
             return {
                 error => "Membership expired/unpaid",
                 colour => 0x22,
