@@ -475,6 +475,7 @@ sub induct: Chained('base'): PathPart('induct'): Args() {
             $c->req->params->{token_t}, $c->req->params->{token_s}
             );
         if($result && !$result->{error}) {
+            $c->forward('/send_induction_acceptance', [ $c->req->params->{thing}, $result->{person}->id ]);
             $c->stash(
                 json => {
                     allowed => 1,
