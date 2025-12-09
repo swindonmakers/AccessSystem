@@ -107,6 +107,13 @@ sub authorize ($self, $message, @tags) {
     my $member = $self->member($message);
     my %tags = map {$_ => 1} @tags;
 
+    # Strangely, this comes out "private" on the test bot and a false value on the production one?
+    if ($tags{private} and $message->chat->type and $message->chat->type ne 'private') {
+        say STDERR "authorize private, type is ", $message->chat->type;
+        $message->reply("To preserve privacy, please send me a private message.  Tap/click on my 'picture', and then message.");
+        return undef;
+    }
+
     if (!$member && !$tags{dontwarn}) {
         $message->reply("I don't know who you are.  Please use /identify <your email address> and then try again.");
         return undef;
@@ -128,13 +135,6 @@ sub authorize ($self, $message, @tags) {
             $message->reply("This command is limited to directors.");
             return undef;
         }
-    }
-
-    # Strangely, this comes out "private" on the test bot and a false value on the production one?
-    if ($tags{private} and $message->chat->type and $message->chat->type ne 'private') {
-        say STDERR "authorize private, type is ", $message->chat->type;
-        $message->reply("This command should be done in a private chat");
-        return undef;
     }
 
     return $member;
@@ -182,7 +182,7 @@ sub find_tool ($self, $name, $method, $args = undef) {
 sub read_message ($self, $message) {
     my %methods = (
         memberstats   => {
-            match => qr{^/memberstats},
+            match => qr{^/member[_ ]?stats},
             help  => '/memberstats',
         },
         identify      => {
@@ -190,11 +190,11 @@ sub read_message ($self, $message) {
             help  => '/identify <your email address>',
         },
         doorcode      => {
-            match => qr{^/doorcode},
+            match => qr{^/door[_ ]?code},
             help  => '/doorcode',
         },
         bankinfo      => {
-            match => qr{^/bankinfo},
+            match => qr{^/bank[_ ]?info},
             help  => '/bankinfo',
         },
         tools         => {
@@ -202,15 +202,15 @@ sub read_message ($self, $message) {
             help  => '/tools',
         },
         add_tool      => {
-            match => qr{^/add_tool},
+            match => qr{^/add[_ ]?tool},
             help  => '/add_tool <tool>',
         },
         tool_ctrl     => {
-            match => qr{^/tool_ctrl\b},
+            match => qr{^/tool[_ ]?ctrl\b},
             help  => '/tool_ctrl <name> [<status>]',
         },
         find_member => {
-            match => qr{^/whois\b},,
+            match => qr{^/who[_ ]?is\b},,
             help  => '/whois <name>',
         },
         induct_member => {
@@ -218,7 +218,7 @@ sub read_message ($self, $message) {
             help  => '/induct <name> on <tool>',
         },
         inducted_on   => {
-            match => qr{^/inducted_on\b},
+            match => qr{^/inducted[_ ]?on\b},
             help  => '/inducted_on <tool>',
         },
         inductions    => {
@@ -226,7 +226,7 @@ sub read_message ($self, $message) {
             help  => '/inductions <member name>',
         },
         make_inductor => {
-            match => qr{^/make_inductor\b},
+            match => qr{^/make[_ ]?inductor\b},
             help  => '/make_inductor <member name> on <tool name>',
         },
         balance       => {
@@ -242,11 +242,11 @@ sub read_message ($self, $message) {
             help  => '/pay',
         },
         add_vehicle   => {
-            match => qr{^/add_vehicle\b},
+            match => qr{^/add[_ ]?vehicle\b},
             help => '/add_vehicle ab74cde'
         },
         remove_vehicle   => {
-            match => qr{^/remove_vehicle\b},
+            match => qr{^/remove[_ ]?vehicle\b},
             help => '/remove_vehicle ab74cde'
         },
         park => {
@@ -254,17 +254,22 @@ sub read_message ($self, $message) {
             help => '/park <optional plate reg>',
         },
         resend_inductions => {
-            match => qr{^/resend_inductions\b},
+            match => qr{^/resend[_ ]?inductions\b},
             help => '"/resend_inductions" (for yourself) or "/resend_inductions Fred Bloggs"'
         },
         door_log      => {
-            match => qr{^/door_log\b},
+            match => qr{^/door[_ ]?log\b},
             help => '/door_log -- Display the last 10 users of the door (directors-only).'
         },
         check_valid_members => {
-            match => qr{^/check_valid_members\b},
+            match => qr{^/check[_ ]?valid[_ ]?members\b},
             help => '/check_valid_members -- Check if current group members are valid'
-        });
+        },
+        who_am_i => {
+            match => qr{^/who[_ ]?am[_ ]?i\b},
+            help => '/whoami -- private chat only, tells you what the space knows about you.  Like /whois and /bankinfo, but even more info.'
+        }
+        );
 
     if (ref($message) eq 'Telegram::Bot::Object::Message' && $message->text) {
         print STDERR $message->text, "\n" if ($message->text =~ q{^/});
@@ -513,6 +518,73 @@ sub park ($self, $text, $message, $args = undef) {
             });
     }
     return $message->reply("Try /park <reg plate> or /help");
+}
+
+sub who_am_i ($self, $text, $message) {
+    return unless $self->authorize($message, 'private', 'invalid_ok');
+
+    my $member = $self->member($message);
+
+    my $out = "name: ". $member->name. "\n";
+    $out .= "email: ". $member->email. "\n";
+    # We don't actually use these
+    # $out .= "opted in to non-space emails: ". ($member->opt_in ? "yes" : "no"). "\n";
+    # $out .= "opted in to name in analytics: "
+    # This will show as the 28th, fixme?
+    $out .= "DOB (badly rounded to end of month): ". $member->dob. "\n";
+    $out .= "Address: ". $member->address. "\n";
+    $out .= "github username: ". ($member->github_user // "none") . "\n";
+    $out .= "google id: ". ($member->google_id // "none"). "\n";
+
+    if ($member->concessionary_rate) {
+        $out .= "You get a 50% concessionary discount\n";
+        if ($member->concessionary_rate_override) {
+            $out .= '...because "'.$member->concessionary_rate_override.qq<'\n>;
+            $out .= "(Please contact a director immediately if this is incorrect.)\n";
+        } else {
+            $out .= "...because you are over 65.\n";
+        }
+    }
+
+    if ($member->payment_override && $member->payment_override > $member->normal_dues) {
+        $out .= sprintf("You are choosing to pay %.2f GBP/month (thanks!)\n", $member->payment_override/100);
+    }
+
+    if ($member->door_colour && $member->door_colour ne 'green') {
+        $out .= sprintf("The door will turn %s for you (oooh, fancy!)\n", $member->door_colour);
+    }
+
+    if ($member->voucher_code) {
+        $out .= sprintf(qq<You signed up with a voucher "%s", starting on %s.\n>, $member->voucher_code, $member->voucher_start);
+    }
+
+    if ($member->end_date) {
+        $out .= sprintf(qq<You stopped being a member on %s.\n>, $member->end_date);
+    }
+
+    if ($member->is_valid) {
+        $out .= "You are currently a valid member.\n";
+    } else {
+        $out .= "You are not currently a valid member of the company.\n";
+    }
+
+    my $last_payment = $member->last_payment;
+    if (!$last_payment) {
+        $out .= "You have never paid?\n";
+    } else {
+        $out .= sprintf(<<"END", $last_payment->paid_on_date, $last_payment->expires_on_date, $last_payment->added_on, $last_payment->amount_p/100);
+Your most recent payment details:
+ - paid on: %s
+ - expires on: %s
+ - added on: %s
+ - amount: %.2f GBP
+END
+    }
+
+    $out .= sprintf("Bank reference: %s\n", $member->bank_ref);
+
+
+    $message->reply($out);
 }
 
 sub bankinfo ($self, $text, $message) {

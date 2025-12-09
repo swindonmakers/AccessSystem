@@ -33,3 +33,4 @@ script/fetch_sumup.pl
 script/oauth_test.pl
 script/test.pl
 script/update_valid_until.pl
+.vscode
