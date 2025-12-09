@@ -1,6 +1,5 @@
-
-FROM debian:bookworm
-# FROM mcr.microsoft.com/devcontainers/base:buster
+# Use the official Dev Container base image for Debian Bookworm
+FROM mcr.microsoft.com/devcontainers/base:bookworm
 
 # =5.28.1-6+deb10u1 \
         # libparse-debianchangelog-perl \
