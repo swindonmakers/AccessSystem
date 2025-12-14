@@ -245,10 +245,18 @@ sub update {
     return $self->next::method(@_);
 }
 
+sub is_donor {
+    my ($self) = @_;
+
+    if ($self->tier && $self->tier->name =~ /donation/i) {
+        return 1;
+    }
+}
+
 
 sub is_valid {
     my ($self, $date) = @_;
-    return 0 if($self->tier->name =~ /donation/i);
+    return 0 if($self->is_donor);
 
     $date = DateTime->now();
 
@@ -299,7 +307,7 @@ sub normal_dues {
 
     return 0 if $self->parent;
 
-    if ($self->tier->name =~ /donation/i) {
+    if ($self->is_donor) {
         return 0;
     }
  
@@ -485,6 +493,7 @@ If the balance is >= 12*$monthly*0.1, then make a year payment.
 sub create_payment {
     my ($self, $OVERLAP_DAYS) = @_;
     my $schema = $self->result_source->schema;
+    my $dt_parser = $schema->storage->datetime_parser;
 
     ## minor(?) side effects:
 
@@ -514,6 +523,7 @@ sub create_payment {
             $self->update({ voucher_start => $now});
         }
     }
+    my $current_bal = $self->balance_p;
     # work this out after voucher setting cos it changes the dues
 
     # And so does this bit!
@@ -607,8 +617,8 @@ sub create_payment {
     }
 
     if($valid_date && $valid_date < $now) {
-        # renewed payments
-        $self->create_communication('Your Swindon Makerspace membership has restarted', 'rejoin_payment');
+        # renewed payments - force this one, should happen everytime
+        $self->create_communication('Your Swindon Makerspace membership has restarted', 'rejoin_payment', {}, 1);
         # rejoined, so remove any "reminder" email, so that if they
         # subsequently stop paying again, they get a new reminder (!)
         my $r_email = $self->communications_rs->find({type => 'reminder_email'});
@@ -630,7 +640,7 @@ sub create_payment {
     my $payment_size = $self->dues;
     $self->update_door_access();
     my $expires_on = $valid_date->clone->add(months => 1, %extra_days);
-    if($self->balance_p >= $self->dues * 12 * 0.9) {
+    if($current_bal >= $self->dues * 12 * 0.9) {
         # Special case, they paid for a year in advance (we assume!)
         $expires_on = $valid_date->clone->add(years => 1, %extra_days);
         $payment_size = $self->dues * 12 * 0.9;

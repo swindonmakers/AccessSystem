@@ -129,6 +129,7 @@ sub allowed_to_thing {
                 }
                 if (!$r_allow) {
                     return {
+                        person => $person,
                         error => 'No access for Weekend Member',
                         colour => 0x21,
                     };
@@ -172,6 +173,7 @@ sub allowed_to_thing {
                 };
             }
             return {
+                person => $person,
                 error => "Membership expired/unpaid",
                 colour => 0x22,
             };
@@ -211,7 +213,7 @@ sub allowed_to_thing {
         }
     } else {
         return {
-            error => sprintf("%s not accepted. See email", $thing_rs->first->name),
+            error => sprintf("%s not accepted/inducted. See email", $thing_rs->first->name),
             person => $person,
             thing => $thing_rs->first,
             colour => 0x24,
@@ -294,6 +296,18 @@ sub update_member_register {
             # Not valid, previously ended - all done
         }
     }
+}
+
+sub get_dummy_dues {
+    my ($self, $tier_id, $dob, $conc, $fee_override) = @_;
+    
+    my $new_person = $self->new_result({});
+    $new_person->tier_id($tier_id);
+    $new_person->dob($dob) if $dob;
+    $new_person->concessionary_rate_override($conc);
+    $new_person->payment_override($fee_override) if $fee_override;
+
+    return $new_person->dues;
 }
 
 sub get_person_from_hash {

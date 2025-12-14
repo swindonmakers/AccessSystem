@@ -1,0 +1,30 @@
+@startuml
+
+:Download latest OFX file;
+:Rename OFX file to today's date;
+:Copy OFX file to Access Server;
+:Find date of most recent DB Transaction;
+:Subtract 2 days just in case;
+:Find all OFX files newer than date picked;
+:Load each file;
+while(Get payment from file)
+  if (Amount is > 0) then (check name)
+     if (Name contains sm) then (find member)
+        if (Numerical id is a Person id) then (import)
+           if (Already imported - \nmatch on date/amount/person?) then (no)
+              :Insert new transaction into DB;
+           else (yes)
+              stop
+           endif
+        else (no)
+           stop
+        endif
+     else (no)
+        stop
+     endif
+  else (no)
+     stop
+  endif
+endwhile
+stop
+@enduml

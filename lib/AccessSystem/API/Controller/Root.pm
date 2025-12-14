@@ -291,11 +291,13 @@ sub verify: Chained('base') :PathPart('verify') :Args(0) {
                     person => { name => $result->{person}->name },
                     inductor => $result->{person}->allowed->first->is_admin,
                     access => 1,
+                    beep => $result->{beep} || 0,
                     cache => $result->{person}->tier->restrictions->{'times'} ? 0 : 1,
                     colour => $result->{person}->door_colour_to_code || 0x01,
                 }
             );
         } elsif($result) {
+            # Found Tool and Person but not allowed in some way:
             $c->stash(
                 json => {
                     access => 0,
@@ -943,14 +945,15 @@ sub get_dues: Chained('base'): PathPart('get_dues'): Args(0) {
     my $tier = $c->req->params->{tier} || 3;
 
     $c->log->debug(Data::Dumper::Dumper($c->req->params));
+    my $dummy_dues = $c->model('AccessDB::Person')->get_dummy_dues($tier, $dob, $concession);
 #    $c->log->debug("Vals: $dob $concession $other_hackspace Result: ", $new_person->dues);
-    my $new_person = $c->model('AccessDB::Person')->new_result({});
-    $new_person->tier_id($tier);
-    $new_person->dob($dob) if $dob;
-    $new_person->concessionary_rate_override($concession);
+    # my $new_person = $c->model('AccessDB::Person')->new_result({});
+    # $new_person->tier_id($tier);
+    # $new_person->dob($dob) if $dob;
+    # $new_person->concessionary_rate_override($concession);
 
-    $c->log->debug("Vals: $dob $concession Result: ", $new_person->dues);
-    $c->response->body($new_person->dues / 100);
+    $c->log->debug("Vals: $dob $concession Result: ", $dummy_dues);
+    $c->response->body($dummy_dues / 100);
 }
 
 sub register: Chained('base'): PathPart('register'): Args(0) {
