@@ -53,6 +53,7 @@ jobs:
           runnumber=${{ github.run_id }}
           sha=${{ github.sha }}
           ref=${{ github.ref }}
+          org.opencontainers.image.description="Development Container for Swindon Makerspace Access System"
 
     - name: 🔐 Log in to GitHub Container Registry
       uses: docker/login-action@v3
