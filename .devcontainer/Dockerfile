@@ -1,8 +1,11 @@
 # Use the official Dev Container base image for Debian Bookworm
-FROM mcr.microsoft.com/devcontainers/base:bookworm
+# We use this instead of plain Debian to get a better development experience out of the box
+# as it includes common tools and configurations for development.
+FROM mcr.microsoft.com/devcontainers/base:bookworm AS base
 
-# =5.28.1-6+deb10u1 \
-        # libparse-debianchangelog-perl \
+LABEL org.opencontainers.image.description="Development Container for Swindon Makerspace Access System"
+
+# libparse-debianchangelog-perl \
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
         perl \ 
