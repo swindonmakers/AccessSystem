@@ -1,6 +1,6 @@
 *~
 *.bak
-*.png
+/*.png
 
 .plx/
 .vscode/perl-lang/
