@@ -2,17 +2,16 @@
 <p>Dear [% member.name %],</p>
 
 <p>Your membership has been moved to the donation tier.\n
-This is because our current membership fees have changed and you have not updated your payments to reflect this.\n
+This is because our current membership fees have changed and you have not updated your payments to reflect this.<br/>
 This donation tier does not have access to the space</p>
-
 
 <p>To resolve this and return to your active membership please send the difference of the new membership against your previous payments and update your standing order</p>
 
-<p>Difference to pay: [% member.oldtier.dues - member.last-payment  / 100 | format('%.2f') %]</p>
+<p>Difference to pay: [% (current_balance - min_dues )  / 100 | format('%.2f') %]</p>
 
 <p>Incase you have fogotten our the payment details are
 <ul>
- <li>Monthly fee: &pound;[% member.oldtier.dues / 100 | format('%.2f') %]/month</li>
+ <li>Monthly fee: &pound;[% min_dues / 100 | format('%.2f') %]/month</li>
  <li>To: Swindon Makerspace CIC</li>
  <li>Bank: Barclays</li>
  <li>Sort Code: 20-84-58</li>
@@ -26,3 +25,4 @@ This donation tier does not have access to the space</p>
 
 <p>Swindon Makerspace</p>
 
+[% END %]
