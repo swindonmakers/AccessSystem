@@ -37,13 +37,8 @@ my $schema = AccessSystem::Schema->connect("dbi:SQLite:$testdb");
     like($no_token->{error}, qr/not recognised/, 'No such member with that token');
     $test9->create_related('tokens', { id => '12345678', type => 'test token' });
 
-<<<<<<< HEAD
     my $no_thing = $schema->resultset('Person')->allowed_to_thing('12345678', 'blahblahblah');
     like($no_thing->{error}, qr/not recognised/, 'No such missing thing');
-=======
-my $no_allowed = $schema->resultset('Person')->allowed_to_thing('12345678', $thing->id);
-like($no_allowed->{error}, qr{accepted/inducted}, 'Person cannot use the thing');
->>>>>>> 60aad4e (Verify and payments checking for new fees / donor tier)
 
     my $thing = $schema->resultset('Tool')->create({ name => 'test thing', assigned_ip => '10.0.0.1', requires_induction => 1, team => 'Who knows' });
 
@@ -55,12 +50,7 @@ like($no_allowed->{error}, qr{accepted/inducted}, 'Person cannot use the thing')
     my $no_pay = $schema->resultset('Person')->allowed_to_thing('12345678', $thing->id);
     like($no_pay->{error}, qr/Pay up please/, 'Member hasnt paid');
 
-<<<<<<< HEAD
     $test9->create_related('payments', { paid_on_date => DateTime->now, expires_on_date => DateTime->now->add(months => 1, days => 14), amount_p => $test9->dues });
-=======
-my $allowed = $test9->allowed->find({tool_id => $thing->id });
-$allowed->update({ pending_acceptance => 0 });
->>>>>>> 60aad4e (Verify and payments checking for new fees / donor tier)
 
     my $no_confirm = $schema->resultset('Person')->allowed_to_thing('12345678', $thing->id);
     like($no_confirm->{error}, qr/Induction not confirmed/, 'Member hasnt confirmed induction');
