@@ -479,6 +479,13 @@ sub import_transaction {
 
 =head2 create_payment
 
+OVERLAP_DAYS is set to 14: That is any new-member or returning member
+is given one month +14 days as the length of their initial
+access. They are "valid" as members/door + tool users, for this
+time. Subsequent payments made while still valid add a further months
+worth of access. The intention of this is to keep access over bank
+holidays or payment issues.
+
 Check if we are nearing the end of this member's paid membership,
 return true if not.
 
@@ -487,6 +494,32 @@ for another month, if so, create a payment row. Return undef if we
 can't find one.
 
 If the balance is >= 12*$monthly*0.1, then make a year payment.
+
+Fees change 2025!
+
+If the member is nearing the end of their overlap period (2 days or
+fewer to go), and was at some point a paidup member (previously made a
+payment), and does not have enough balance to pay their dues (max
+value between payment_override + tier minimum amount), they are
+converted to a "donor only" tier member.
+
+If the balance is enough to pay their dues (as above) and was made a
+donor member less than a month ago, they've presumably topped up/fixed
+their amount, we convert them back to their old tier.
+
+Emails are sent for:
+
+=over
+
+=item New member payment received
+
+=item Returning member payment received
+
+=item Converted to donor member
+
+=item Reminder when within 5 days of expiry and no payment yet received.
+
+=back
 
 =cut
 

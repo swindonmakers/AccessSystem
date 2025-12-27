@@ -81,6 +81,13 @@ or
 
     { error => 'Membership expired/unpaid', colour => 0x22 }
 
+Fees change 2025!
+
+If member is being allowed access, check whether their most recent
+payment matches their dues (maximum between the payment_override and
+current tier price), if not beep, email and output a message on
+screen.
+
 =cut
 
 sub allowed_to_thing {
