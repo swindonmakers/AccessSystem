@@ -146,7 +146,35 @@ has_field email => field_add_defaults {
         required => 'Please enter an email we can use to contact you',
     },
     unique_message => "That email address is already registered, did you do submit twice?",
-    help_string => 'An email address we can contact you on. Your membership payment details will be sent to it.',
+    help_string => 'An email address we can contact you on. Your membership/donor payment details will be sent to it.',
+};
+
+has_field address => field_add_defaults {
+    type => 'TextArea',
+    label => 'Address *',
+    required => 1,
+    rows => 6,
+    maxlength => 1024,
+    wrapper_attr => { id => 'field-address', },
+    tags         => { no_errors => 1 },
+    messages => {
+        required => 'Please enter your full street address',
+    },
+    help_string => 'As it would appear on an envelope, required by the gov for the membership register.',
+};
+
+# Display 3 tier choices as big buttons?
+has_field tier => field_add_defaults {
+    type => 'Select',
+    required => 1,
+    active_column => 'in_use',
+    label_column => 'display_name_and_price',
+    widget => 'RadioGroup',
+    messages => {
+        required => 'Please choose a payment tier',
+    },
+    wrapper_attr => { id => 'field-tier', class => 'payment'  },
+    help_string => 'Not resident in Swindon, and a member of a space elsewhere?<br/>Access weekends and Wednesday nights only<br/>Access 24/7 365 days a year<br/>Full access, sponsoring member<br/>Send donations only, not a member of the company',
 };
 
 has_field opt_in => field_add_defaults {
@@ -175,7 +203,7 @@ has_field dob => field_add_defaults {
     end_date => DateTime->now->clone()->subtract(years => 17)->ymd,
     start_date => DateTime->now->clone()->subtract(years => 120)->ymd,
     required => 1,
-    wrapper_attr => { id => 'field-dob', class => 'payment' },
+    wrapper_attr => { id => 'field-dob', class => 'payment donor_hide' },
     tags         => { no_errors => 1 },
     messages => {
         required => 'Please enter your date of birth',
@@ -184,39 +212,19 @@ has_field dob => field_add_defaults {
     help_string => 'YYYY-MM, only Year/Month accuracy is required. We use this to ensure that you are old enough to be an adult member, or if you are eligible for senior (65) concessions.',
 };
 
-has_field address => field_add_defaults {
-    type => 'TextArea',
-    label => 'Address *',
-    required => 1,
-    rows => 6,
-    maxlength => 1024,
-    wrapper_attr => { id => 'field-address', },
-    tags         => { no_errors => 1 },
-    messages => {
-        required => 'Please enter your full street address',
-    },
-    help_string => 'As it would appear on an envelope, for the membership register.',
-};
-
-# has_field 'vehicles' => field_add_defaults {
-#     type => 'Repeatable',
-# };
-
 # has_field 'vehicles.plate_reg' => field_add_defaults {
 has_field 'plate_reg' => field_add_defaults {
     type => 'Text',
     label => 'Car Reg Plate',
     required => 0,
     maxlength => 7,
-    wrapper_attr => { id => 'field-plate-reg', },
+    wrapper_attr => { id => 'field-plate-reg', class => 'donor_hide'},
     tags         => { no_errors => 1 },
     messages => {
         required => 'Please enter your car licence plate string (max 7 chars)',
     },
-    help_string => 'The car park has number plate recognition, enter your plate for us to automatically add you to the system. If not entered you will need to manually check in every visit.',
+    help_string => '(Optional) Car park has no parking rules but this may change (again).',
 };
-# has_field 'vehicles.person'    => ( type => 'Hidden' );
-# has_field 'vehicles.person_id' => ( type => 'PrimaryKey' );
 
 has_field how_found_us => field_add_defaults {
     type => 'Select',
@@ -240,6 +248,7 @@ has_field associated_button => (
     type => 'Button',
     value => 'Change/Show Associated Accounts',
     label => '',
+    wrapper_attr => { class => 'donor_hide' },
     element_attr => { style => 'background-color: #eabf83;' },
     );
 
@@ -255,17 +264,17 @@ has_field github_user => field_add_defaults {
     help_string => '(Optional) A github username, this will allow us to give you access to our code repositories and wiki.',
 };
 
-has_field telegram_username => field_add_defaults {
-    type => 'Text',
-    required => 0,
-    maxlength => 255,
-    wrapper_attr => { id => 'field-telegram-username', class => 'associated associated_hide', style => "display:none"},
-    tags         => { no_errors => 1 },
-    messages => {
-        required => 'Please enter a telegram screen name',
-    },
-    help_string => '(Optional) Your Telegram username, used to tag you by a bot (for inductions etc)',
-};
+# has_field telegram_username => field_add_defaults {
+#     type => 'Text',
+#     required => 0,
+#     maxlength => 255,
+#     wrapper_attr => { id => 'field-telegram-username', class => 'associated associated_hide', style => "display:none"},
+#     tags         => { no_errors => 1 },
+#     messages => {
+#         required => 'Please enter a telegram screen name',
+#     },
+#     help_string => '(Optional) Your Telegram username, used to tag you by a bot (for inductions etc)',
+# };
 
 has_field google_id => field_add_defaults {
     type => 'Text',
@@ -279,24 +288,11 @@ has_field google_id => field_add_defaults {
     help_string => '(Optional) Your google account email address, (even if the same as your usual email address) - this will be used for access to our Google Drive documents.',
 };
 
-# Display 3 tier choices as big buttons?
-has_field tier => field_add_defaults {
-    type => 'Select',
-    required => 1,
-    active_column => 'in_use',
-    label_column => 'display_name_and_price',
-    widget => 'RadioGroup',
-    messages => {
-        required => 'Please choose a payment tier',
-    },
-    wrapper_attr => { id => 'field-tier', class => 'payment'  },
-    help_string => 'Not resident in Swindon, and a member of a space elsewhere?<br/>Access weekends and Wednesday nights only<br/>Access 24/7 365 days a year<br/>Full access, sponsoring member',
-};
-
 has_field payment_button => (
     type => 'Button',
     value => 'Change/Show More Payment Options',
     label => '',
+    wrapper_attr => { class => 'donor_hide' },
     element_attr => { style => 'background-color: #eabf83;' },
     );
 
@@ -321,15 +317,6 @@ has_field concessionary_rate_override => field_add_defaults {
     help_string => 'Do you qualify for our reduced payment rate? Choose what best matches your situation, please show documentation to a director to prove your status.',
 };
 
-# has_field member_of_other_hackspace => field_add_defaults {
-#     type => 'Checkbox',
-#     required => 0,
-#     wrapper_attr => { id => 'field-member-of-other-hackspace', class => 'payment payment_hide', style => "display:none" },
-#     tags => { no_errors => 1},
-#     label => 'I am mainly a member of another hackspace/makerspace',
-#     help_string => 'Just visiting or only in Swindon part of the year? If you are a member of another hackspace somewhere, you can join us for only &pound;5/month.',
-# };
-
 has_field payment_override => field_add_defaults {
     type => 'Money',
 #    currency_symbol => '&pound;',
@@ -348,6 +335,7 @@ has_field door_colour => field_add_defaults {
     required => 0,
     label => 'Entry Colour',
     default => 'green',
+    wrapper_attr => { class => 'donor_hide' },
     options => [
         { value => 'green', label => 'Green', attributes => { class => 'door_colour' }, checked => 1 },
         { value => 'white', label => 'White', attributes => { class => 'door_colour' } },
@@ -364,6 +352,7 @@ has_field door_colour => field_add_defaults {
 has_field voucher_code => field_add_defaults {
     type => 'Text',
     required => 0,
+    wrapper_attr => { class => 'donor_hide' },
     label => 'Voucher Code',
     wrapper_attr => { id => 'field-voucher-code', class => 'payment_hide', style => "display:none" },
     help_string => 'If you have a voucher, enter the code, or location you got it, here.',
@@ -374,7 +363,7 @@ has_field membership_guide => field_add_defaults {
     type => 'Checkbox',
     required => 1,
     label => 'I have read and agree to comply with the Membership Guide *',
-    wrapper_attr => { id => 'field-membership-guide', },
+    wrapper_attr => { id => 'field-membership-guide', class => 'donor_hide'},
     tags         => { no_errors => 1 },
     messages => {
        required => 'Please read and agree to the Membership Guide',
@@ -386,7 +375,7 @@ has_field health_and_safety => field_add_defaults {
     type => 'Checkbox',
     required => 1,
     label => 'I have read and agree to comply with the Health & Safety Policy *',
-    wrapper_attr => { id => 'field-health-safety', },
+    wrapper_attr => { id => 'field-health-safety', class => 'donor_hide' },
     tags         => { no_errors => 1 },
     messages => {
        required => 'Please read and agree to the Health & Safety Policy',
