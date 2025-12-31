@@ -1,0 +1,23 @@
+Dear [% member.name %],
+
+Our membership rates have recently changed. Hopefully you have seen this in recent emails, this is due to increase in rent and similar bills
+While you have access to the end of your current months membership, you will need to update your standing order to the new rate for your membership to continue
+Payment details are the same below just incase along with the new monthly fees rate
+
+
+ 
+ Monthly fee: &pound;[% member.dues / 100 | format('%.2f') %]/month
+ To: Swindon Makerspace CIC
+ Bank: Barclays
+ Sort Code: 20-84-58
+ Account: 83789160
+ Ref: [% member.bank_ref %]
+ 
+
+Please update your membership fees, failure to do so will move you to a donor tier which does not have access to the Makerspace 
+If you have already paid your old amount this month, you can pay the difference to top up, this will restore your account to your chosen tier if done within a month.
+
+Any issues please contact us either on Telegram or email us at info@swindon-makerspace.org 
+Regards,
+
+Swindon Makerspace

@@ -1,0 +1,63 @@
+@startuml
+skinparam ConditionEndStyle hline
+
+start
+while (Get Member from DB)
+   :Find current expiry date if any;
+   if (Expiry date exists and\nIs in the next $OVERLAP days) then (yes)
+      if (Expiry date) then (no)
+         if (Voucher code) then (yes)
+            :Set voucher start-date to now;
+         endif
+         ->continue;
+      endif
+      ->continue;
+      :Get current balance (sum of all Transactions);
+      if ((NEW) Member is donor) then (yes)
+         :Load previous tier information;
+         if (Made Donor less than 1 month ago and\nCurrent balance enough for old tier) then (yes)
+            :Reset tier to old tier;            
+         endif
+      endif
+      if (Current balance < fees) then (yes)
+         if ((NEW) Has previously paid anything and\nActually expired and\nBalance is > 0 and\nNot donor tier and\nChosen amount less than default tier fee) then (yes)
+            :Store current tier and payment amount;
+            :Switch tier to donor and payment amount to 0;
+            :Send email announcing donor switch;
+            break
+         else (no)
+            :Log "balance not enough";
+            break
+         endif
+         if (Expiry date and\nExpired between 5 days ago and 1 month ago) then (yes)
+            :Send "reminder_email" email;
+         endif
+      endif
+      if (Expiry date) then (no)
+         :Send email "first_payment";
+      endif
+      ->continue;
+      if (Expiry date and\nExpiry date is before now) then (yes)
+         :Force send email "rejoin_payment";
+         :Delete any previous "reminder_email" communication;
+      endif
+      if (No Expiry date or\n Expiry date is before now) then (yes)
+         :Set Expiry date to today
+         :Extra days is $overlap days;
+      endif            
+      ->continue;
+      :Enable Door access (in case of returning pre-covid member);
+      :Transaction Amount = membership fees
+      :Calculate new Expiry date (old one + 1 month + overlap days);
+      if (Current balance > fee * 12 * 0.9) then (yes)
+         :Recalulcate new Expiry date (old one + 12 months + overlap days);
+         :Transaction Amount = membership fees * 12 * 0.9;
+      endif
+      ->no;
+      :Create negative Transaction for Transaction Amount;
+      :Create Dues entry (Amount, paid on, expiry date);
+   endif
+endwhile   
+:Repeat if more members;
+stop
+@enduml

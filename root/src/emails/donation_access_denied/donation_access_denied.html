@@ -1,0 +1,23 @@
+[% WRAPPER layout.html.tt %]
+
+<p>Dear [% member.name %],</p>
+
+<p>You recently tried to access the Makerspace however your membership is currently set to donation which does not have access</p>
+<p>This is likely due to our membership fees changing and you have not updated your standing order to reflect this</p>
+
+<p>To activate your membership again and gain access to the Makerspace please make sure your payments are as follows</p>
+<p>
+<ul>
+ <li>Monthly fee: &pound;[% member.oldtier.dues / 100 | format('%.2f') %]/month</li>
+ <li>To: Swindon Makerspace CIC</li>
+ <li>Bank: Barclays</li>
+ <li>Sort Code: 20-84-58</li>
+ <li>Account: 83789160</li>
+ <li>Ref: [% member.bank_ref %]</li>
+</ul>
+</p>
+
+<p>Any issues please contact us either on Telegram or email us at info@swindon-makerspace.org </p>
+<p>Regards,</p>
+
+<p>Swindon Makerspace</p>

@@ -34,6 +34,11 @@
       if (jQuery('#tier\\.3').is(':checked')) {
         jQuery('.door_colour').prop('disabled', false);
       } else {
+        if (jQuery('#tier\\.6').is(':checked')) {
+          jQuery('.donor_hide').hide();
+        } else {
+          jQuery('.donor_hide').show();
+        }
         jQuery('.door_colour').prop('checked', false);
         jQuery('#door_colour\\.0').prop('checked', true);
         jQuery('.door_colour').prop('disabled', true);

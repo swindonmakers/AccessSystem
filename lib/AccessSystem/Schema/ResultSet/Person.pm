@@ -81,6 +81,13 @@ or
 
     { error => 'Membership expired/unpaid', colour => 0x22 }
 
+Fees change 2025!
+
+If member is being allowed access, check whether their most recent
+payment matches their dues (maximum between the payment_override and
+current tier price), if not beep, email and output a message on
+screen.
+
 =cut
 
 sub allowed_to_thing {
@@ -129,6 +136,7 @@ sub allowed_to_thing {
                 }
                 if (!$r_allow) {
                     return {
+                        person => $person,
                         error => 'No access for Weekend Member',
                         colour => 0x21,
                     };
@@ -148,13 +156,31 @@ sub allowed_to_thing {
                 }
             }
             if($deps_ok) {
+                # Jan 2025 - new membrership fees - email if underpaying
+                my $beep = 0;
+                if ($person->send_membership_fee_warning()) {
+                    $beep = 1;
+                }
                 return {
-                    person => $person,
-                    thing => $person->allowed->first->tool,
+                    person  => $person,
+                    beep    => $beep,
+                    message => 'Fees have changed. Check email.',
+                    thing   => $person->allowed->first->tool,
                 };
             }
         } else {
+            if ($person->is_donor) {
+                # Fetch stored old-tier info
+                # force send ?
+                $person->create_communication('Makerspace upgrade Donor Tier to Membership', 'donation_access_denied', {}, 1);
+                return {
+                    person => $person,
+                    error => "No access for donors",
+                    colour => 0x22,
+                };
+            }
             return {
+                person => $person,
                 error => "Membership expired/unpaid",
                 colour => 0x22,
             };
@@ -194,7 +220,7 @@ sub allowed_to_thing {
         }
     } else {
         return {
-            error => sprintf("%s not accepted. See email", $thing_rs->first->name),
+            error => sprintf("%s not accepted/inducted. See email", $thing_rs->first->name),
             person => $person,
             thing => $thing_rs->first,
             colour => 0x24,
@@ -277,6 +303,18 @@ sub update_member_register {
             # Not valid, previously ended - all done
         }
     }
+}
+
+sub get_dummy_dues {
+    my ($self, $tier_id, $dob, $conc, $fee_override) = @_;
+    
+    my $new_person = $self->new_result({});
+    $new_person->tier_id($tier_id);
+    $new_person->dob($dob) if $dob;
+    $new_person->concessionary_rate_override($conc);
+    $new_person->payment_override($fee_override) if $fee_override;
+
+    return $new_person->dues;
 }
 
 sub get_person_from_hash {

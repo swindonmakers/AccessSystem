@@ -1,19 +1,19 @@
 [% WRAPPER wrapper.tt %]
   [% IF !parent %]
-  <h2>Sign up as a Swindon Makerspace member</h2>
+  <h2>Sign up as a Swindon Makerspace member or donor</h2>
   [% ELSE %]
   <h2>Add child for [% parent.name %]</h2>
   [% END %]
   <p>
-  Swindon Makerspace members pay a monthly fee (concessions available) to access the Makerspace facility 24 hours a day, 7 days a week. Only paid-up members may use the regulated equipment (after a short induction).
+  Swindon Makerspace members pay a monthly fee (concessions available) to access the Makerspace facility 24 hours a day, 7 days a week. Only paid-up members may use the regulated equipment (after a short induction). Donors (Donation Only) are explicitly not members, they do not get a vote or access to the facility.
   </p>
   <p>
-  Paying Members must be adults (18+), adults may bring supervised children at no further cost.
+  Paying Members/Donors must be adults (18+), adults may bring supervised children at no further cost.
   <p>
   Consult our <a href="https://www.swindon-makerspace.org/privacy-policy" target="_blank">Privacy Policy</a> for further detail on how your data is used.
   </p>
   </p>
-  <p>Full details available in the <a href="https://docs.google.com/document/d/1ruqYeKe7kMMnNzKh_LLo2aeoFufMfQsdX987iU6zgCI/edit?usp=sharing">Membership Guide</a>
+  <p>Full details of Membership available in the <a href="https://docs.google.com/document/d/1ruqYeKe7kMMnNzKh_LLo2aeoFufMfQsdX987iU6zgCI/edit?usp=sharing">Membership Guide</a>
   </p>
   [% form.render() %]
 [% END %]

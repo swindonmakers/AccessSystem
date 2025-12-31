@@ -5,7 +5,7 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-__PACKAGE__->load_components(qw/InflateColumn::DateTime TimeStamp UUIDColumns/);
+__PACKAGE__->load_components(qw/InflateColumn::DateTime TimeStamp UUIDColumns InflateColumn::Boolean/);
 
 __PACKAGE__->table('allowed');
 
@@ -28,6 +28,7 @@ __PACKAGE__->add_columns(
     pending_acceptance => {
         data_type => 'boolean',
         default_value => 'true',
+        is_boolean => 1,
     },
     accepted_on => {
         data_type => 'datetime',
