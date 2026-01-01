@@ -164,7 +164,7 @@ sub allowed_to_thing {
                 return {
                     person  => $person,
                     beep    => $beep,
-                    message => 'Fees have changed. Check email.',
+                    message => 'Fees have changed.  Check email.',
                     thing   => $person->allowed->first->tool,
                 };
             }

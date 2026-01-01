@@ -286,11 +286,19 @@ sub verify: Chained('base') :PathPart('verify') :Args(0) {
         my $result = $c->model('AccessDB::Person')->allowed_to_thing
            ($c->req->params->{token}, $c->req->params->{thing});
         if($result && !$result->{error}) {
+            if($result->{beep}) {
+                # Send email now (else next automated one)
+                my $comm = $result->{person}->communications_rs->find({type => 'membership_fees_change'});
+                if ($comm) {
+                    $self->emailer->send($comm);
+                }
+            }
             $c->stash(
                 json => {
                     person => { name => $result->{person}->name },
                     inductor => $result->{person}->allowed->first->is_admin,
                     access => 1,
+                    message => $result->{message} || '',
                     beep => $result->{beep} || 0,
                     cache => $result->{person}->tier->restrictions->{'times'} ? 0 : 1,
                     colour => $result->{person}->door_colour_to_code || 0x01,
