@@ -585,7 +585,7 @@ sub create_payment {
     if($current_bal < $self->dues) {
         # Expanded for fees update 2025:
         # If previously valid, and payment (intention) is less than dues (which have changed!)
-        # and actually expired (mid overlap), convert to donor-tier, fees to 0, store old tier/fees
+        # and actually expired (during overlap), convert to donor-tier, fees to 0, store old tier/fees
         # this should happens before the reminder_email (which is not sent to donors)
         if($valid_date
            && $valid_date->clone()->subtract(days => int($OVERLAP_DAYS / 2)) < $now
@@ -596,8 +596,9 @@ sub create_payment {
             my $old_fees = $self->payment_override;
             my $min_dues = $self->dues;
             my $token = 'old_tier'; # findable!
+            # find_or_create in case it crashes during payment run(!)
             $schema->txn_do(sub {
-                my $confirm = $self->confirmations->create({
+                my $confirm = $self->confirmations->find_or_create({
                     token => $token,
                     storage => {
                         tier_id => $old_tier_id,
@@ -610,7 +611,11 @@ sub create_payment {
                     payment_override => 0,
                 });
                 # Send an email (force renew):
-                $self->create_communication('Your Swindon Makerspace membership is now Donor Only', 'move_to_donation_tier', { current_balance => $current_bal, min_dues => $min_dues}, 1);
+                # But only if this is within a few months? if you have
+                # balance for years then.. sorry its a donation!
+                if ($valid_date > $now->clone->subtract(months => 2)) {
+                    $self->create_communication('Your Swindon Makerspace membership is now Donor Only', 'move_to_donation_tier', { current_balance => $current_bal, min_dues => $min_dues}, 1);
+                }
             });
             warn "Member " . $self->bank_ref . " not covered fees, converted to Donor Tier";
             return;
@@ -645,6 +650,10 @@ sub create_payment {
         }
         return;
     }
+
+    # Donor tier members should not make "payments"
+    return if $self->is_donor;
+
     if (!$valid_date) {
         $self->create_communication('Your Swindon Makerspace membership has started', 'first_payment');
     }
@@ -657,10 +666,7 @@ sub create_payment {
         my $r_email = $self->communications_rs->find({type => 'reminder_email'});
         $r_email->delete if $r_email;
     }
-
-    # Donor tier members should not make "payments"
-    return if $self->is_donor;
-    
+   
     # Only add $OVERLAP  extra days if a first or renewal payment - these
     # ensure member remains valid if standing order is not an
     # exact month due to weekends and bank holidays
