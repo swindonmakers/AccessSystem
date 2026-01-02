@@ -563,7 +563,7 @@ sub create_payment {
     # If Donor tier and balance is now enough and only donor-ified after 1 month ago - revert
     # (one month else they'll keep flipping in/out of donor)
     if($self->is_donor) {
-        my $old_data = $self->confirmations->find({ token => 'old_tier'});
+        my $old_data = $self->confirmations->find({ token => $self->id . '_old_tier'});
         my $when = $dt_parser->parse_datetime($old_data->storage->{changed_on});
         my $old_tier = $old_data->storage->{tier_id};
         my $one_month_ago = $now->clone->subtract(months => 1);
@@ -595,7 +595,7 @@ sub create_payment {
             my $old_tier_id = $self->tier_id;
             my $old_fees = $self->payment_override;
             my $min_dues = $self->dues;
-            my $token = 'old_tier'; # findable!
+            my $token = $self->id . '_old_tier'; # findable!
             # find_or_create in case it crashes during payment run(!)
             $schema->txn_do(sub {
                 my $confirm = $self->confirmations->find_or_create({
