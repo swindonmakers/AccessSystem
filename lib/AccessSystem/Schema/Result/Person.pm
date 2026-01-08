@@ -564,6 +564,10 @@ sub create_payment {
     # (one month else they'll keep flipping in/out of donor)
     if($self->is_donor) {
         my $old_data = $self->confirmations->find({ token => $self->id . '_old_tier'});
+        if (!$old_data) {
+            warn "Can't find pre-donor tier data\n!";
+            return;
+        }
         my $when = $dt_parser->parse_datetime($old_data->storage->{changed_on});
         my $old_tier = $old_data->storage->{tier_id};
         my $one_month_ago = $now->clone->subtract(months => 1);
@@ -613,7 +617,11 @@ sub create_payment {
                 # Send an email (force renew):
                 # But only if this is within a few months? if you have
                 # balance for years then.. sorry its a donation!
-                if ($valid_date > $now->clone->subtract(months => 2)) {
+                my $last_usage = $self->usage_by_date->search({}, { rows => 1 })->first;
+                if ($valid_date > $now->clone->subtract(months => 2)
+                    && $last_usage
+                    && $last_usage->accessed_date > $now->clone->subtract(months => 2)
+                ) {
                     $self->create_communication('Your Swindon Makerspace membership is now Donor Only', 'move_to_donation_tier', { current_balance => $current_bal, min_dues => $min_dues}, 1);
                 }
             });
