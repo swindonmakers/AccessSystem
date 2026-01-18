@@ -265,12 +265,16 @@ sub is_valid {
 
     my $is_paid;
 
-    if(!$self->parent) {
+    # Check parent_id column directly to avoid relationship resolution issues
+    # on newly created objects that haven't been stored yet
+    my $parent_id = $self->get_column('parent_id');
+    if(!$parent_id) {
         $is_paid = $self->payments_rs->search({
             paid_on_date => { '<=' => $date_str },
             expires_on_date => { '>=' => $date_str },
                                           })->count;
     } else {
+        # Only call parent relationship if we have a parent_id
         return $self->parent->is_valid;
     }
 
@@ -305,7 +309,8 @@ sub bank_ref {
 sub normal_dues {
     my ($self) = @_;
 
-    return 0 if $self->parent;
+    # Check parent_id column directly to avoid relationship resolution issues
+    return 0 if $self->get_column('parent_id');
 
     if ($self->is_donor) {
         return 0;
@@ -954,7 +959,8 @@ sub update_door_access {
 
     # This entry should exist, but covid policy may have removed it..
     my $door = $self->result_source->schema->the_door();
-    my $door_allowed = $self->allowed->find_or_create({ tool_id => $door->id });
+    # is_admin required: allowed.is_admin has a NOT NULL constraint
+    my $door_allowed = $self->allowed->find_or_create({ tool_id => $door->id, is_admin => 0 });
     $door_allowed->update({ pending_acceptance => 'false', accepted_on => DateTime->now()});
 }
 
