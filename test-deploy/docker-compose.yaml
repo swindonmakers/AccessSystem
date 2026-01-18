@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: access
+      POSTGRES_PASSWORD: accesstest
+      POSTGRES_DB: accesssystem
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U access -d accesssystem" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "3000:3000"
+    environment:
+      CATALYST_HOME: /app
+    volumes:
+      - ./config/accesssystem_api_local.conf:/app/accesssystem_api_local.conf:ro
+      - ../accesssystem_api.conf.example:/app/accesssystem_api.conf:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    command: [ "carton", "exec", "perl", "script/accesssystem_api_server.pl", "--port", "3000", "--host", "0.0.0.0" ]
+
+volumes:
+  postgres_data:

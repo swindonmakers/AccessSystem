@@ -1,0 +1,54 @@
+# Git
+.git/
+.gitignore
+.github/
+
+# Development files
+.devcontainer/
+.vscode/
+.idea/
+*.code-workspace
+
+# Database files (should not be in image)
+db/
+*.db
+*.db.bak
+rapidapp_coreschema.db
+
+# Documentation
+docs/
+*.md
+NOTES.txt
+Changes
+
+# Config backups and local configs (mount at runtime)
+config.bkp/
+accesssystem_api.conf
+accesssystem_api_local.conf
+accesssystem_dev.conf
+accesssystem.conf
+keys.conf
+
+# Keep example configs
+!*.conf.example
+
+# Build artifacts
+Makefile
+META.yml
+MYMETA.*
+pm_to_blib
+blib/
+inc/
+
+# Editor/OS files
+*~
+*.bak
+.DS_Store
+*.swp
+
+# OFX bank files
+ofx/
+*.ofx
+
+# Test output
+test_db.db
