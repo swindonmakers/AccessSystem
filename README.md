@@ -249,6 +249,27 @@ You can inspect the generated spec from the command line:
 
     carton exec perl script/generate_openapi.pl > openapi.yaml
 
+### Testing
+
+Run the automated test suite:
+
+    carton exec prove -lv t/
+
+Run OpenAPI validation tests specifically:
+
+    carton exec prove -lv t/openapi_validation.t
+
+**In Docker:**
+
+    # Build test image
+    docker build --target test -t accesssystem-test .
+    
+    # Run all tests
+    docker run --rm accesssystem-test
+    
+    # Run OpenAPI validation only
+    docker run --rm accesssystem-test carton exec prove -lv /app/t/openapi_validation.t
+
 Security & DPA
 --------------
 
