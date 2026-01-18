@@ -1,0 +1,1227 @@
+openapi: 3.0.3
+info:
+  title: Swindon Makerspace Access System API
+  description: |
+    A (semi-)automated access system for registering new members and giving them access to the physical space.
+    
+    It provides:
+    - A registration form for new members to sign up
+    - The ability to match RFID tokens to members
+    - An API for controllers (e.g., the Door) to verify if an RFID token is valid
+    
+    ## Security Note
+    
+    The database stores an expected IP for each Thing controller. These are assigned as fixed IPs 
+    to the controllers by the main network router. The API verifies that the IP of an incoming 
+    request matches the expected IP for the claimed thing controller ID.
+  version: 1.0.0
+  contact:
+    name: Swindon Makerspace
+    url: https://www.swindon-makerspace.org
+  license:
+    name: Perl Artistic License
+    url: https://opensource.org/licenses/Artistic-2.0
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://members.swindon-makerspace.org
+    description: Production server
+
+tags:
+  - name: Access Control
+    description: Endpoints for IoT devices and access controllers
+  - name: Member Registration
+    description: Endpoints for member registration and profile management
+  - name: Authentication
+    description: Login and logout endpoints
+  - name: Transactions
+    description: Member transaction/balance endpoints
+  - name: Admin
+    description: Administrative endpoints
+  - name: Telegram
+    description: Telegram bot integration endpoints
+
+paths:
+  /:
+    get:
+      summary: Root page
+      description: Returns a welcome message
+      operationId: index
+      responses:
+        '200':
+          description: Welcome message
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /verify:
+    get:
+      summary: Verify access token
+      description: |
+        Given an access token (RFID) and a thing (device) GUID, check whether the person 
+        owning the token is allowed to access the thing. Checks if payments are up-to-date 
+        and if the member has access rights to the specific thing.
+      operationId: verify
+      tags:
+        - Access Control
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: Access token ID (e.g., RFID card ID)
+          schema:
+            type: string
+        - name: thing
+          in: query
+          required: true
+          description: GUID of the thing/device being accessed
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Access verification result
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/VerifySuccessResponse'
+                  - $ref: '#/components/schemas/VerifyDeniedResponse'
+              examples:
+                accessGranted:
+                  summary: Access granted
+                  value:
+                    person:
+                      name: "John Doe"
+                    inductor: false
+                    access: 1
+                    beep: 0
+                    cache: 1
+                    colour: 1
+                accessDenied:
+                  summary: Access denied
+                  value:
+                    access: 0
+                    error: "Membership expired"
+                    colour: 35
+
+  /msglog:
+    get:
+      summary: Store a message log
+      description: |
+        Allows any Thing to store a message in the message_log table.
+        Used for device logging and debugging.
+      operationId: msg_log
+      tags:
+        - Access Control
+      parameters:
+        - name: thing
+          in: query
+          required: true
+          description: GUID of the thing controller
+          schema:
+            type: string
+            format: uuid
+        - name: msg
+          in: query
+          required: true
+          description: Text of the message to save
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Log result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogResponse'
+
+  /tool_access:
+    get:
+      summary: Update tool usage state
+      description: |
+        Update UsageLog/state for a tool. Called periodically by tool controllers 
+        to track active usage time.
+      operationId: tool_access
+      tags:
+        - Access Control
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: User's access token ID
+          schema:
+            type: string
+        - name: thing
+          in: query
+          required: true
+          description: GUID of the thing controller
+          schema:
+            type: string
+            format: uuid
+        - name: msg
+          in: query
+          required: false
+          description: Description of what's happening
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          description: 1 for on, 0 for off
+          schema:
+            type: integer
+            enum: [0, 1]
+        - name: active_time
+          in: query
+          required: true
+          description: Number of seconds the tool has been active
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Usage logged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogResponse'
+
+  /induct:
+    get:
+      summary: Record induction
+      description: |
+        Records that a trainer (token_t) has inducted a student (token_s) to use a specific thing.
+        The request must come from the correct IP address assigned to the thing.
+      operationId: induct
+      tags:
+        - Access Control
+      parameters:
+        - name: token_t
+          in: query
+          required: true
+          description: Trainer's access token ID
+          schema:
+            type: string
+        - name: token_s
+          in: query
+          required: true
+          description: Student's access token ID
+          schema:
+            type: string
+        - name: thing
+          in: query
+          required: true
+          description: GUID of the thing/tool
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Induction result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InductResponse'
+              examples:
+                success:
+                  summary: Induction successful
+                  value:
+                    allowed: 1
+                    person:
+                      name: "Jane Student"
+                failure:
+                  summary: Induction failed
+                  value:
+                    allowed: 0
+                    error: "Trainer not authorized"
+
+  /assign:
+    get:
+      summary: Assign access token to member
+      description: |
+        Assigns a new access token to a member. Requires admin privileges 
+        and must be called from the TagAssigner device.
+      operationId: assign
+      tags:
+        - Access Control
+      parameters:
+        - name: admin_token
+          in: query
+          required: true
+          description: Admin's access token ID
+          schema:
+            type: string
+        - name: person_id
+          in: query
+          required: true
+          description: ID of the person to assign the token to
+          schema:
+            type: integer
+        - name: thing
+          in: query
+          required: true
+          description: GUID of the TagAssigner device
+          schema:
+            type: string
+            format: uuid
+        - name: token_id
+          in: query
+          required: true
+          description: ID of the new token to assign
+          schema:
+            type: string
+        - name: desc
+          in: query
+          required: false
+          description: Description for the token
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Assignment result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    type: integer
+                    description: Number of tokens the member now has
+                  message:
+                    type: string
+                  error:
+                    type: string
+
+  /park:
+    get:
+      summary: Auto-park member's vehicles
+      description: |
+        Given a member's token and thing ID, automatically registers their 
+        vehicles for parking via the parking API.
+      operationId: park
+      tags:
+        - Access Control
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: Member's access token ID
+          schema:
+            type: string
+        - name: thing
+          in: query
+          required: true
+          description: GUID of the parking controller
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Parking result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /who:
+    get:
+      summary: Get person name from token
+      description: Returns the name of the person who owns the given token
+      operationId: who
+      tags:
+        - Access Control
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: Access token ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Person name
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "John Doe"
+
+  /register:
+    get:
+      summary: Display registration form
+      description: Displays the member registration form
+      operationId: register_get
+      tags:
+        - Member Registration
+      responses:
+        '200':
+          description: Registration form HTML
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      summary: Submit registration
+      description: Process new member registration
+      operationId: register_post
+      tags:
+        - Member Registration
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PersonRegistration'
+      responses:
+        '200':
+          description: Registration result or form with errors
+          content:
+            text/html:
+              schema:
+                type: string
+        '302':
+          description: Redirect to add child page if has_children is set
+
+  /add_child:
+    get:
+      summary: Display add child form
+      description: Form to add a child member (requires parent_id in session)
+      operationId: add_child_get
+      tags:
+        - Member Registration
+      responses:
+        '200':
+          description: Add child form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      summary: Submit child registration
+      description: Add a child member under a parent
+      operationId: add_child_post
+      tags:
+        - Member Registration
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChildRegistration'
+      responses:
+        '200':
+          description: Child added or form with errors
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /get_dues:
+    get:
+      summary: Calculate dues amount
+      description: |
+        Returns the amount of dues (in pence) that would be payable using the given 
+        parameters. Used by the registration page to live-update dues.
+      operationId: get_dues
+      tags:
+        - Member Registration
+      parameters:
+        - name: dob
+          in: query
+          required: false
+          description: Date of birth (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: concessionary_rate_override
+          in: query
+          required: false
+          description: Concession type (e.g., student, unemployed)
+          schema:
+            type: string
+        - name: tier
+          in: query
+          required: false
+          description: Membership tier (default 3)
+          schema:
+            type: integer
+            default: 3
+      responses:
+        '200':
+          description: Dues amount in pounds
+          content:
+            text/plain:
+              schema:
+                type: number
+                format: float
+                example: 25.00
+
+  /login:
+    get:
+      summary: Display login page
+      description: Shows the login page with social login options (GitHub, Google via OneAll)
+      operationId: login
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: Login form
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /logout:
+    get:
+      summary: Logout user
+      description: Removes the authentication cookie and redirects to login
+      operationId: logout
+      tags:
+        - Authentication
+      responses:
+        '302':
+          description: Redirect to login page
+
+  /oneall_login_callback:
+    post:
+      summary: OneAll login callback
+      description: Internal callback endpoint for OneAll social login
+      operationId: oneall_login_callback
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                connection_token:
+                  type: string
+      responses:
+        '302':
+          description: Redirect to profile on success, login on failure
+
+  /profile:
+    get:
+      summary: View member profile
+      description: Shows the logged-in member's profile including payment status
+      operationId: profile
+      tags:
+        - Member Registration
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Profile page
+          content:
+            text/html:
+              schema:
+                type: string
+        '302':
+          description: Redirect to login if not authenticated
+
+  /editme:
+    get:
+      summary: Edit profile form
+      description: Form to edit the logged-in member's details
+      operationId: editme_get
+      tags:
+        - Member Registration
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Edit form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      summary: Update profile
+      description: Update the logged-in member's details
+      operationId: editme_post
+      tags:
+        - Member Registration
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PersonUpdate'
+      responses:
+        '302':
+          description: Redirect to profile on success
+        '200':
+          description: Form with validation errors
+
+  /download:
+    get:
+      summary: Download member data
+      description: Download all data associated with the logged-in member (GDPR export)
+      operationId: download_data
+      tags:
+        - Member Registration
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: JSON data export
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /deleteme:
+    get:
+      summary: Delete account confirmation
+      description: Shows account deletion confirmation page
+      operationId: delete_me_get
+      tags:
+        - Member Registration
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Confirmation page
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      summary: Delete account
+      description: Permanently deletes the member's account
+      operationId: delete_me_post
+      tags:
+        - Member Registration
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - reallyreally
+              properties:
+                reallyreally:
+                  type: string
+                  enum: ["yupyup"]
+      responses:
+        '302':
+          description: Redirect to login after deletion
+
+  /delete_token:
+    get:
+      summary: Delete access token
+      description: |
+        Removes an access token from the logged-in member. 
+        At least one token must remain.
+      operationId: delete_token
+      tags:
+        - Member Registration
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: Token ID to delete
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to profile
+
+  /delete_vehicle:
+    get:
+      summary: Delete vehicle
+      description: Removes a vehicle from the logged-in member's account
+      operationId: delete_vehicle
+      tags:
+        - Member Registration
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: vehicle
+          in: query
+          required: true
+          description: Vehicle plate registration to delete
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to profile
+
+  /transaction:
+    post:
+      summary: Record a transaction
+      description: |
+        Records a debit transaction for a member. Can be called either with 
+        a user hash (from app) or with a token and thing (from IoT device).
+      operationId: record_transaction
+      tags:
+        - Transactions
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              oneOf:
+                - type: object
+                  required: [hash, amount, reason]
+                  properties:
+                    hash:
+                      type: string
+                      description: User GUID hash
+                    amount:
+                      type: integer
+                      description: Amount in pence
+                    reason:
+                      type: string
+                      description: Transaction description
+                - type: object
+                  required: [token, thing, amount, reason]
+                  properties:
+                    token:
+                      type: string
+                      description: Access token ID
+                    thing:
+                      type: string
+                      format: uuid
+                      description: Thing GUID
+                    amount:
+                      type: integer
+                      description: Amount in pence
+                    reason:
+                      type: string
+                      description: Transaction description
+      responses:
+        '200':
+          description: Transaction result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: integer
+                    enum: [0, 1]
+                  error:
+                    type: string
+                  balance:
+                    type: integer
+                    description: Current balance in pence
+
+  /get_transactions/{count}/{user_hash}:
+    get:
+      summary: Get recent transactions
+      description: Returns the N most recent transactions for a member
+      operationId: get_transactions
+      tags:
+        - Transactions
+      parameters:
+        - name: count
+          in: path
+          required: true
+          description: Number of transactions to return
+          schema:
+            type: integer
+        - name: user_hash
+          in: path
+          required: true
+          description: User GUID hash
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Transaction list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        added_on:
+                          type: string
+                          format: date-time
+                        reason:
+                          type: string
+                        amount:
+                          type: integer
+                          description: Amount in pence
+                  balance:
+                    type: integer
+                    description: Current balance in pence
+
+  /user_guid_request:
+    get:
+      summary: Request user GUID email
+      description: |
+        Sends an email to the member containing their GUID for use in the phone app.
+      operationId: user_guid_request
+      tags:
+        - Member Registration
+      parameters:
+        - name: userid
+          in: query
+          required: true
+          description: Member ID (with or without SM prefix)
+          schema:
+            type: string
+            example: "SM0001"
+      responses:
+        '200':
+          description: Request result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /confirm_telegram:
+    get:
+      summary: Initiate Telegram confirmation
+      description: |
+        Called from the Telegram bot identify command. Sends an email to the 
+        member to confirm they wish to link their Telegram account.
+      operationId: confirm_telegram
+      tags:
+        - Telegram
+      parameters:
+        - name: email
+          in: query
+          required: true
+          description: Member's email address
+          schema:
+            type: string
+            format: email
+        - name: chatid
+          in: query
+          required: true
+          description: Telegram chat ID
+          schema:
+            type: string
+        - name: username
+          in: query
+          required: false
+          description: Telegram username
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Confirmation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /confirm_email:
+    get:
+      summary: Confirm email link
+      description: |
+        Processes the email confirmation link for Telegram account linking.
+        Stores the Telegram chat ID and username in the member's record.
+      operationId: confirm_email
+      tags:
+        - Telegram
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: Confirmation token from email
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '302':
+          description: Redirect to post_confirm page
+
+  /post_confirm:
+    get:
+      summary: Post-confirmation page
+      description: Shows a confirmation success page after email confirmation
+      operationId: post_confirm
+      tags:
+        - Telegram
+      parameters:
+        - name: type
+          in: query
+          required: false
+          description: Type of confirmation (telegram, induction)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Confirmation page
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /send_induction_acceptance:
+    get:
+      summary: Send induction acceptance email
+      description: Sends an email to a member to accept their tool induction
+      operationId: send_induction_acceptance
+      tags:
+        - Admin
+      parameters:
+        - name: tool
+          in: query
+          required: true
+          description: Tool GUID
+          schema:
+            type: string
+            format: uuid
+        - name: person
+          in: query
+          required: true
+          description: Person ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Send result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /confirm_induction:
+    get:
+      summary: Confirm induction acceptance
+      description: Processes the induction acceptance from the email link
+      operationId: confirm_induction
+      tags:
+        - Admin
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: Confirmation token from email
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '302':
+          description: Redirect to post_confirm page
+
+  /resendemail/{id}:
+    get:
+      summary: Resend membership email
+      description: Resends the membership confirmation/payment details email to a member
+      operationId: resend_email
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Member ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Send result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /nudge_member/{id}:
+    get:
+      summary: Send payment reminder
+      description: |
+        Sends an email to an expired member asking if they stopped paying on purpose.
+        Only works for expired members who haven't been marked as "ended".
+      operationId: nudge_member
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Member ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Reminder result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /box_reminder/{id}:
+    get:
+      summary: Send member box reminder
+      description: Sends a reminder email about member box storage to an expired member
+      operationId: box_reminder
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Member ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Reminder result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /membership_status_update:
+    get:
+      summary: Generate membership status report
+      description: |
+        Collects data about current membership numbers (paying, expired, ex, 
+        children, concessions, etc.) and emails it to the directors.
+      operationId: membership_status_update
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: Membership statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg_text:
+                    type: string
+                  recently:
+                    type: string
+                additionalProperties: true
+
+  /vehicles:
+    get:
+      summary: List valid member vehicles
+      description: |
+        Returns a plain-text list of vehicle registration plates for 
+        currently paid-up members, sorted alphabetically.
+      operationId: vehicles
+      tags:
+        - Admin
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Vehicle list
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "AB12CDE\r\nFG34HIJ\r\n"
+
+  /membership_register:
+    get:
+      summary: View membership register
+      description: Displays the membership register as of a given date
+      operationId: membership_register
+      tags:
+        - Admin
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: at_date
+          in: query
+          required: false
+          description: Date to view register for (YYYY-MM-DD), defaults to today
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Membership register page
+          content:
+            text/html:
+              schema:
+                type: string
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: accesssystem_cookie
+      description: Session cookie set after OneAll login
+
+  schemas:
+    VerifySuccessResponse:
+      type: object
+      required:
+        - access
+      properties:
+        person:
+          type: object
+          properties:
+            name:
+              type: string
+        inductor:
+          type: boolean
+          description: Whether the person is a trainer for this thing
+        access:
+          type: integer
+          enum: [1]
+        beep:
+          type: integer
+          enum: [0, 1]
+        cache:
+          type: integer
+          enum: [0, 1]
+          description: Whether access can be cached (0 if time-restricted)
+        colour:
+          type: integer
+          description: Door LED colour code
+
+    VerifyDeniedResponse:
+      type: object
+      required:
+        - access
+      properties:
+        access:
+          type: integer
+          enum: [0]
+        error:
+          type: string
+          description: Reason for denial
+        colour:
+          type: integer
+          description: Door LED colour code
+
+    LogResponse:
+      type: object
+      properties:
+        logged:
+          type: integer
+          enum: [0, 1]
+        error:
+          type: string
+
+    InductResponse:
+      type: object
+      properties:
+        allowed:
+          type: integer
+          enum: [0, 1]
+        person:
+          type: object
+          properties:
+            name:
+              type: string
+        error:
+          type: string
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: integer
+          enum: [0, 1]
+        message:
+          type: string
+        error:
+          type: string
+
+    PersonRegistration:
+      type: object
+      required:
+        - name
+        - email
+        - address
+        - membership_guide
+      properties:
+        name:
+          type: string
+          description: Full name
+        email:
+          type: string
+          format: email
+        address:
+          type: string
+          description: Full postal address
+        dob:
+          type: string
+          format: date
+          description: Date of birth
+        tier:
+          type: integer
+          description: Membership tier
+          default: 3
+        concessionary_rate_override:
+          type: string
+          description: Concession reason if applicable
+        payment_override:
+          type: integer
+          description: Custom payment amount in pence
+        door_colour:
+          type: string
+          description: LED colour preference
+          default: green
+        membership_guide:
+          type: boolean
+          description: Confirmed reading the membership guide
+        has_children:
+          type: boolean
+          description: Whether to add child members
+
+    ChildRegistration:
+      type: object
+      required:
+        - name
+        - dob
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        dob:
+          type: string
+          format: date
+        more_children:
+          type: boolean
+          description: Add another child after this one
+
+    PersonUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        address:
+          type: string
+        tier:
+          type: integer
+        concessionary_rate_override:
+          type: string
+        payment_override:
+          type: integer
+        door_colour:
+          type: string
