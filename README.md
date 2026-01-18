@@ -200,6 +200,55 @@ The GET `confirm_email` endpoint confirms+stores the telegram chatid/username in
 
 The GET `induction_acceptance` endpoint, given a `tool` id and a `person` id, sets "pending acceptance" to false, for that combination of tool and person, in the `allowed` table.
 
+API Documentation / OpenAPI
+---------------------------
+
+The system now supports automatic OpenAPI 3.1 specification generation.
+
+### OpenAPI Endpoints
+
+*   **Spec**: `GET /openapi` - Returns the JSON specification.
+*   **UI**: `GET /openapi/ui` - Interactive Swagger UI documentation.
+
+### Adding New Routes
+
+To document a new endpoint, add POD documentation above your controller subroutine. The system automatically parses `Tags`, `Methods`, and parameter lists.
+
+**Format:**
+
+```perl
+=head2 endpoint_name
+
+Description of what this endpoint does.
+
+Tags: Category Name
+Methods: GET, POST
+
+=over
+
+=item param_name (required, integer) - Description of parameter
+
+=item optional_param - Description
+
+=back
+
+=cut
+
+sub endpoint_name : Path(...) { ... }
+```
+
+**Supported Modifiers:** `required`, `uuid`, `email`, `integer`, `boolean`, `number`.
+
+### Automatic Detection
+
+If `Methods:` is omitted, the system analyzes the source code to detect if `POST` is used (e.g. usage of `body_params` or database writes). Otherwise it defaults to `GET`.
+
+### CLI Tool
+
+You can inspect the generated spec from the command line:
+
+    carton exec perl script/generate_openapi.pl > openapi.yaml
+
 Security & DPA
 --------------
 

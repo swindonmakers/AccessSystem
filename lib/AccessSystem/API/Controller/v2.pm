@@ -25,6 +25,22 @@ This one should have some sorta auth protection on it, and should log all uses.
 sub authenticated :Chained('/') :PathPart('v2') :CaptureArgs(0) {
 }
 
+=head2 remove_ex_member_inductions
+
+Remove inductions for ex-members.
+
+Tags: Admin
+
+Methods: GET
+
+=over
+
+=item num_months (required) - Number of months since leaving
+
+=back
+
+=cut
+
 sub remove_ex_member_inductions: Chained('authenticated'): PathPart('remove_ex_member_inductions'): Args(1) {
     my ($self, $c, $num_months) = @_;
 

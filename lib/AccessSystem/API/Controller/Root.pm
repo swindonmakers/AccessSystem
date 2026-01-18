@@ -10,6 +10,7 @@ use LWP::UserAgent;
 use MIME::Base64;
 use JSON;
 use Data::GUID;
+use AccessSystem::API::OpenAPI;
 
 BEGIN { extends 'Catalyst::Controller' }
 
@@ -70,6 +71,22 @@ sub default :Path {
 
 # insert into tools (id, name, assigned_ip) values ('D1CAE50C-0C2C-11E7-84F0-84242E34E104', 'oneall_login_callback', '192.168.1.70');
 
+=head2 oneall_login_callback
+
+Callback for OneAll social login.
+
+Tags: Authentication
+
+Methods: POST
+
+=over
+
+=item connection_token (required) - OneAll connection token
+
+=back
+
+=cut
+
 sub oneall_login_callback : Path('/oneall_login_callback') {
     my ($self, $c) = @_;
 
@@ -124,11 +141,31 @@ sub oneall_login_callback : Path('/oneall_login_callback') {
     }
 }
 
+=head2 login
+
+Login page.
+
+Tags: Authentication
+
+Methods: GET
+
+=cut
+
 sub login : Path('/login') {
     my ($self, $c) = @_;
 
     $c->stash(template => 'login.tt');
 }
+
+=head2 logout
+
+Logout action.
+
+Tags: Authentication
+
+Methods: GET
+
+=cut
 
 sub logout : Path('/logout') {
     my ($self, $c) = @_;
@@ -172,6 +209,16 @@ sub logged_in: Chained('base') :PathPart(''): CaptureArgs(0) {
     $c->stash->{person} = $person;
 }
 
+=head2 profile
+
+Member profile page.
+
+Tags: Member Registration
+
+Methods: GET
+
+=cut
+
 sub profile : Chained('logged_in') :PathPart('profile'): Args(0) {
     my ($self, $c) = @_;
 
@@ -186,6 +233,30 @@ sub profile : Chained('logged_in') :PathPart('profile'): Args(0) {
     $c->stash->{current_page} = 'profile';
     $c->stash->{template} = 'profile.tt';
 }
+
+=head2 editme
+
+Member profile edit form.
+
+Tags: Member Registration
+
+Methods: GET, POST
+
+=over
+
+=item name - Full name
+
+=item email - Email address
+
+=item address - Physical address
+
+=item postcode - Postcode
+
+=item opt_in - Marketing opt-in
+
+=back
+
+=cut
 
 sub editme : Chained('logged_in') :PathPart('editme'): Args(0) {
     my ($self, $c) = @_;
@@ -206,6 +277,16 @@ sub editme : Chained('logged_in') :PathPart('editme'): Args(0) {
     }
 }
 
+=head2 download_data
+
+Download member data as JSON.
+
+Tags: Member Registration
+
+Methods: GET
+
+=cut
+
 sub download_data: Chained('logged_in') :PathPart('download'): Args(0) {
     my ($self, $c) = @_;
 
@@ -223,6 +304,22 @@ sub download_data: Chained('logged_in') :PathPart('download'): Args(0) {
     
 }
 
+=head2 delete_me
+
+Delete member account.
+
+Tags: Member Registration
+
+Methods: GET, POST
+
+=over
+
+=item reallyreally (required) - Confirmation string "yupyup" to delete account
+
+=back
+
+=cut
+
 sub delete_me :Chained('logged_in'): PathPart('deleteme'): Args(0) {
     my ($self, $c) = @_;
 
@@ -234,6 +331,23 @@ sub delete_me :Chained('logged_in'): PathPart('deleteme'): Args(0) {
         $c->stash->{template} = 'deleteme.tt';
     }
 }
+
+=head2 delete_token
+
+Delete an access token.
+These are GET reqs (cos lazy, and its a link)
+
+Tags: Member Registration
+
+Methods: GET
+
+=over
+
+=item token (required) - Token ID to delete
+
+=back
+
+=cut
 
 sub delete_token :Chained('logged_in'): PathPart('delete_token'): Args(0) {
     my ($self, $c) = @_;
@@ -250,6 +364,23 @@ sub delete_token :Chained('logged_in'): PathPart('delete_token'): Args(0) {
     return $c->response->redirect($c->uri_for('profile'));
 }
 
+=head2 delete_vehicle
+
+Delete a vehicle.
+These are GET reqs (cos lazy, and its a link)
+
+Tags: Member Registration
+
+Methods: GET
+
+=over
+
+=item vehicle (required) - Vehicle registration to delete
+
+=back
+
+=cut
+
 sub delete_vehicle :Chained('logged_in'): PathPart('delete_vehicle'): Args(0) {
     my ($self, $c) = @_;
     my $vehicle = $c->req->params->{vehicle};
@@ -261,6 +392,22 @@ sub delete_vehicle :Chained('logged_in'): PathPart('delete_vehicle'): Args(0) {
     }
     return $c->response->redirect($c->uri_for('profile'));
 }
+
+=head2 who
+
+Identify a member by their token.
+
+Tags: Access Control
+
+Methods: GET
+
+=over
+
+=item token (required) - Access token ID
+
+=back
+
+=cut
 
 sub who : Chained('base') : PathPart('who') : Args(0)  {
     my ($self, $c) = @_;
@@ -277,6 +424,24 @@ sub who : Chained('base') : PathPart('who') : Args(0)  {
 ## Given an access token, eg RFID id or similar, and a "thing" guid,
 ## eg "the Main Door", check whether they both exist as ids, and
 ## whether a person owning said token is allowed to access said thing.
+
+=head2 verify
+
+Verify access for a token at a thing/controller.
+
+Tags: Access Control
+
+Methods: GET
+
+=over
+
+=item token (required) - Access token ID
+
+=item thing (required, uuid) - Controller GUID
+
+=back
+
+=cut
 
 sub verify: Chained('base') :PathPart('verify') :Args(0) {
     my ($self, $c) = @_;
@@ -343,15 +508,17 @@ sub verify: Chained('base') :PathPart('verify') :Args(0) {
     $c->res->content_length(length($c->res->body));
 }
 
-=head2 msglog
+=head2 msg_log
 
-Query Params:
+Logs a message from a thing controller.
+
+Tags: Access Control
 
 =over
 
-=item thing = GUID of the thing controller doing the checking
+=item thing (required, uuid) - GUID of the thing controller doing the checking
 
-=item msg = text of the message to save
+=item msg (required) - text of the message to save
 
 =back
 
@@ -382,21 +549,21 @@ sub msg_log: Chained('base'): PathPart('msglog'): Args() {
 
 =head2 tool_access
 
-Update UsageLog/state for a tool
+Update UsageLog/state for a tool.
 
-Query Params:
+Tags: Access Control
 
 =over
 
-=item token = user's access token id
+=item token (required) - User's access token ID
 
-=item thing = GUID of the thing controller doing the checking
+=item thing (required, uuid) - GUID of the thing controller
 
-=item msg = description of whats happening
+=item msg - Description of activity
 
-=item state = 1 (on), 0 (off)
+=item state - 1 (on) or 0 (off)
 
-=item active_time = number of seconds tool has been active
+=item active_time - Number of seconds tool has been active
 
 =back
 
@@ -447,6 +614,23 @@ sub tool_access: Chained('base'): PathPart('tool_access'): Args() {
 }
 
 ## Thing X (from correct IP Y) says person T inducts person S to use it:
+=head2 induct
+
+Record induction between two tokens/members.
+
+Tags: Access Control
+
+=over
+
+=item token_t (required) - Trainer token
+
+=item token_s (required) - Student token
+
+=item thing (required, uuid) - Tool GUID
+
+=back
+
+=cut
 
 sub induct: Chained('base'): PathPart('induct'): Args() {
     my ($self, $c) = @_;
@@ -504,6 +688,26 @@ sub induct: Chained('base'): PathPart('induct'): Args() {
     ## and fucks it up!
     $c->forward('View::JSON');
 }
+
+=head2 assign
+
+Assign a token to a member (Admin).
+
+Tags: Access Control
+
+=over
+
+=item admin_token (required) - Admin's token
+
+=item person_id (required) - Member ID to assign to
+
+=item token_id (required) - New Token ID
+
+=item thing (required) - Tag Assigner GUID
+
+=back
+
+=cut
 
 sub assign: Chained('base'): PathPart('assign'): Args(0) {
     my ($self, $c) = @_;
@@ -567,6 +771,22 @@ sub assign: Chained('base'): PathPart('assign'): Args(0) {
     $c->log->debug(Data::Dumper::Dumper($c->stash->{json}));
     $c->forward('View::JSON');
 }
+
+=head2 park
+
+Parks a vehicle for a member identified by their token.
+
+Tags: Access Control
+
+=over
+
+=item token (required) - Access token ID of the member
+
+=item thing (required, uuid) - GUID of the parking controller
+
+=back
+
+=cut
 
 sub park: Chained('base'): PathPart('park'): Args(0) {
     my ($self, $c) = @_;
@@ -644,6 +864,30 @@ sub park: Chained('base'): PathPart('park'): Args(0) {
     $c->res->body($c->res->body() . "\n");
     $c->res->content_length(length($c->res->body));
 }
+
+=head2 record_transaction
+
+Record a financial transaction.
+
+Tags: Transactions
+
+Methods: POST
+
+=over
+
+=item amount (required) - Amount in pence (negative for debit)
+
+=item reason (required) - Reason for transaction
+
+=item token - Member token ID (if using token)
+
+=item thing - Controller GUID (if using token)
+
+=item hash - Member Hash (if using hash)
+
+=back
+
+=cut
 
 sub record_transaction: Chained('base'): PathPart('transaction'): Args(0) {
     my ($self, $c) = @_;
@@ -725,7 +969,19 @@ sub record_transaction: Chained('base'): PathPart('transaction'): Args(0) {
 
 =head2 get_transactions
 
-Get most N recent transactions
+Get most N recent transactions.
+
+Tags: Transactions
+
+Methods: GET
+
+=over
+
+=item count (required) - Number of transactions to retrieve
+
+=item userhash (required) - User hash
+
+=back
 
 =cut
 
@@ -758,8 +1014,20 @@ sub get_transactions: Chained('base'): PathPart('get_transactions'): Args(2) {
 
 =head2 user_guid_request
 
+Request user GUID email for app login.
+
 Given a user id, send the member with that id an email, containing
 their guid. This is for putting into the phone app.
+
+Tags: Access Control
+
+Methods: GET
+
+=over
+
+=item userid (required) - Member Reference (e.g. SM00123)
+
+=back
 
 =cut
 
@@ -809,6 +1077,26 @@ sub user_guid_request: Chained('base'): PathPart('user_guid_request'): Args(0) {
     $c->forward($c->view('JSON'));
 }
 
+=head2 confirm_telegram
+
+Initiate Telegram confirmation.
+
+Tags: Telegram
+
+Methods: GET
+
+=over
+
+=item email (required) - Member email address
+
+=item chatid (required) - Telegram chat ID
+
+=item username - Telegram username
+
+=back
+
+=cut
+
 sub confirm_telegram: Chained('base'): PathPart('confirm_telegram'): Args(0) {
     my ($self, $c) = @_;
 
@@ -856,6 +1144,22 @@ sub confirm_telegram: Chained('base'): PathPart('confirm_telegram'): Args(0) {
     $c->forward($c->view('JSON'));
 }
 
+=head2 confirm_email
+
+Confirm email/telegram token.
+
+Tags: Telegram
+
+Methods: GET
+
+=over
+
+=item token (required) - Confirmation token
+
+=back
+
+=cut
+
 sub confirm_email: Chained('base'): PathPart('confirm_email'): Args(0) {
     my ($self, $c) = @_;
 
@@ -870,6 +1174,22 @@ sub confirm_email: Chained('base'): PathPart('confirm_email'): Args(0) {
     return $c->res->redirect($c->uri_for('post_confirm', { type => 'telegram' }));
 }
 
+=head2 post_confirm
+
+Confirmation success page.
+
+Tags: Telegram
+
+Methods: GET
+
+=over
+
+=item type (required) - Confirmation type (e.g. 'telegram')
+
+=back
+
+=cut
+
 sub post_confirm: Chained('base'): PathPart('post_confirm'): Arg(0) {
     my ($self, $c) = @_;
 
@@ -877,6 +1197,24 @@ sub post_confirm: Chained('base'): PathPart('post_confirm'): Arg(0) {
     $c->stash->{type} = $c->req->params->{type};
     $c->stash->{template} = 'post_confirm.tt';
 }
+
+=head2 send_induction_acceptance
+
+Send induction acceptance email.
+
+Tags: Admin
+
+Methods: GET
+
+=over
+
+=item tool (required) - Tool ID
+
+=item person (required) - Person ID
+
+=back
+
+=cut
 
 sub send_induction_acceptance: Chained('base'): PathPart('send_induction_acceptance'): Args(0) {
     my ($self, $c) = @_;
@@ -913,6 +1251,22 @@ sub send_induction_acceptance: Chained('base'): PathPart('send_induction_accepta
     my $token = $c->req->params->{token};
 }
 
+=head2 confirm_induction
+
+Confirm induction acceptance.
+
+Tags: Admin
+
+Methods: GET
+
+=over
+
+=item token (required) - Induction confirmation token
+
+=back
+
+=cut
+
 sub confirm_induction: Chained('base'): PathPart('confirm_induction'): Args(0) {
     my ($self, $c) = @_;
    
@@ -928,12 +1282,29 @@ sub confirm_induction: Chained('base'): PathPart('confirm_induction'): Args(0) {
 
 =head2 get_dues
 
+Calculate dues based on input parameters.
+
 Returns amount of dues, in pence, which would be payable using current
 input values of: date of birth (dob), concession rate
 (concessionary_rate_override), and tier (tier) chosen.
 
 Used by the L</register> page to live-update dues values when
 prospective members change rates/concession choices.
+
+
+Tags: Member Registration
+
+Methods: GET
+
+=over
+
+=item dob - Date of Birth
+
+=item concessionary_rate_override - Concession rate
+
+=item tier - Tier ID
+
+=back
 
 =cut
 
@@ -955,6 +1326,30 @@ sub get_dues: Chained('base'): PathPart('get_dues'): Args(0) {
     $c->log->debug("Vals: $dob $concession Result: ", $dummy_dues);
     $c->response->body($dummy_dues / 100);
 }
+
+=head2 register
+
+New member registration form.
+
+Tags: Member Registration
+
+Methods: GET, POST
+
+=over
+
+=item name (required) - Full Name
+
+=item email (required) - Email Address
+
+=item address (required) - Physical Address
+
+=item postcode (required) - Postcode
+
+=item dob - Date of Birth
+
+=back
+
+=cut
 
 sub register: Chained('base'): PathPart('register'): Args(0) {
     my ($self, $c) = @_;
@@ -989,6 +1384,24 @@ sub register: Chained('base'): PathPart('register'): Args(0) {
                   template => 'forms/person.tt');
     }
 }
+
+=head2 add_child
+
+Add child form for registration.
+
+Tags: Member Registration
+
+Methods: GET, POST
+
+=over
+
+=item name (required) - Child's Name
+
+=item dob (required) - Child's DOB
+
+=back
+
+=cut
 
 sub add_child: Chained('base') :PathPart('add_child') :Args(0) {
     my ($self, $c) = @_;
@@ -1065,6 +1478,22 @@ sub finish_new_member: Private {
 }
     
 
+=head2 resend_email
+
+Resend membership email.
+
+Tags: Admin
+
+Methods: GET
+
+=over
+
+=item id (required) - Member ID
+
+=back
+
+=cut
+
 sub resend_email: Chained('base'): PathPart('resendemail'): Args(1) {
     my ($self, $c, $id) = @_;
     my $member = $c->model('AccessDB::Person')->find({ id => $id });
@@ -1093,6 +1522,22 @@ sub send_membership_email: Private {
     );
     $self->emailer->send($comms);
 }
+
+=head2 nudge_member
+
+Send reminder email to member.
+
+Tags: Admin
+
+Methods: GET
+
+=over
+
+=item id (required) - Member ID
+
+=back
+
+=cut
 
 sub nudge_member: Chained('base'): PathPart('nudge_member'): Args(1) {
     my ($self, $c, $id) = @_;
@@ -1146,6 +1591,22 @@ sub send_reminder_email: Private {
     $self->emailer->send($comms);
 }
 
+=head2 box_reminder
+
+Send box reminder email to member.
+
+Tags: Admin
+
+Methods: GET
+
+=over
+
+=item id (required) - Member ID
+
+=back
+
+=cut
+
 sub box_reminder: Chained('base'): PathPart('box_reminder'): Args(1) {
     my ($self, $c, $id) = @_;
     my $member = $c->model('AccessDB::Person')->find({ id => $id });
@@ -1187,6 +1648,10 @@ sub send_box_reminder_email: Private {
 
 Collect and send out details about current membership to
 info@swindon-makerspace.org. No display!
+
+Tags: Admin
+
+Methods: GET
 
 =cut
 
@@ -1252,6 +1717,10 @@ sub verify_token {
 Plain-text list of vehicles, of currently paid-up members, sorted
 alphabetically.
 
+Tags: Admin
+
+Methods: GET
+
 =cut
 
 sub vehicles : Chained('logged_in') :PathPart('vehicles') {
@@ -1276,6 +1745,22 @@ sub vehicles : Chained('logged_in') :PathPart('vehicles') {
     $c->res->body($output_str);
 }
 
+=head2 membership_register
+
+View membership register.
+
+Tags: Admin
+
+Methods: GET
+
+=over
+
+=item at_date - Date to view register for (YYYY-MM-DD)
+
+=back
+
+=cut
+
 sub membership_register : Chained('logged_in') :PathPart('membership_register') {
     my ($self, $c) = @_;
 
@@ -1299,6 +1784,86 @@ sub end : ActionClass('RenderView') {
 
     $c->stash( current_view => 'TT');
 }
+
+
+=head2 openapi_spec
+
+Serves the OpenAPI 3.1 specification as JSON.
+
+Tags: Documentation
+
+Methods: GET
+
+=cut
+
+sub openapi_spec :Path('/openapi') :Args(0) {
+    my ($self, $c) = @_;
+    
+    my $spec = AccessSystem::API::OpenAPI->generate_spec($c);
+    
+    $c->response->content_type('application/json');
+    $c->response->body(encode_json($spec));
+}
+
+=head2 openapi_ui
+
+Serves Swagger UI for interactive API documentation.
+
+Tags: Documentation
+
+Methods: GET
+
+=cut
+
+sub openapi_ui :Path('/openapi/ui') :Args(0) {
+    my ($self, $c) = @_;
+    
+    my $spec_url = $c->uri_for('/openapi');
+    
+    my $html = <<"HTML";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swindon Makerspace API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist\@5/swagger-ui.css">
+    <style>
+        html { box-sizing: border-box; overflow-y: scroll; }
+        *, *:before, *:after { box-sizing: inherit; }
+        body { margin: 0; background: #fafafa; }
+        .swagger-ui .topbar { display: none; }
+    </style>
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist\@5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist\@5/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            SwaggerUIBundle({
+                url: "$spec_url",
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout"
+            });
+        };
+    </script>
+</body>
+</html>
+HTML
+    
+    $c->response->content_type('text/html; charset=utf-8');
+    $c->response->body($html);
+}
+
 
 =head1 AUTHOR
 
