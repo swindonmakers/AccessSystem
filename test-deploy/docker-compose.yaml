@@ -1,6 +1,3 @@
-# Temporary docker-compose for testing the production container
-# Usage: docker compose -f docker-compose.test.yaml up
-
 services:
   db:
     image: postgres:17
