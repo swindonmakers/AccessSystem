@@ -70,7 +70,7 @@ jobs:
       with:
         context: .
         file: .devcontainer/Dockerfile
-        target: base
+        target: deps
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
