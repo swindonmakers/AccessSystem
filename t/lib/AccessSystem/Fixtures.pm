@@ -90,11 +90,29 @@ sub create_tiers {
             in_use => 1,
             restrictions => '{}',
         },
+        {
+            id => 6,
+            name => 'Donation',
+            description => 'Donor only membership (no access)',
+            price => 0,
+            concessions_allowed => 0,
+            in_use => 1,
+            restrictions => '{}',
+        },
     );
     
     for my $tier_data (@tiers) {
         $schema->resultset('Tier')->update_or_create($tier_data);
     }
+
+    # Create 'The Door' tool - required by update_door_access()
+    $schema->resultset('Tool')->update_or_create({
+        id => 1,
+        name => 'The Door',
+        assigned_ip => '10.0.0.1',
+        requires_induction => 0,
+        team => 'Everyone',
+    });
     
     return;
 }
