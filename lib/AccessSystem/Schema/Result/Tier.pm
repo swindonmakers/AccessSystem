@@ -111,6 +111,11 @@ sub display_name_and_price {
 sub times_to_string {
     my ($self) = @_;
 
+    # Donor tier override
+    if ($self->tname && $self->name eq 'donor') {
+        return 'donor tier (no access)';
+    }
+
     my %days = (
         1=> 'Mon',
         2=> 'Tue',

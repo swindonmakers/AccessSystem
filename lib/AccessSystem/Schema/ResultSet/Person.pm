@@ -35,36 +35,73 @@ Returns an array: ($person | undef, $people | undef)
 sub find_person {
     my ($self, $input, $args) = @_;
 
-    $input =~ s/^\s+//;
-    $input =~ s/\s+$//;
-    my $person;
-    my $person_rs = $self->search_rs({ 'me.name' => $input }, $args);
-    if ($person_rs->count == 1) {
-        return $person_rs->first;
-    }
+    # normalize input
+    $input =~ s/^\s+|\s+$//g;
+    $input =~ s/\s+/ /g;
+
+    return unless length $input;
+
+    my @parts = split /\s+/, $input;
+
+    # 1) Exact full-name match
+    my $rs = $self->search_rs({ 'me.name' => $input }, $args);
+    return $rs->first if $rs->count == 1;
 
     my $people;
+
+    # 2) Partial full-string match (ILIKE if Pg)
     try {
-        # Pg syntax, but not other databases, sigh
-        my $pgpeople = $self->search_rs({ 'me.name' => { '-ilike' => "%$input%" }}, $args);
-        if ($pgpeople->count == 1) {
-            $person = $pgpeople->first;
-            return ($person, undef);
-        }
-        return (undef, $pgpeople) if $pgpeople && $pgpeople->count > 0;        
+        my $pg = $self->search_rs(
+            { 'me.name' => { -ilike => '%' . $input . '%' } },
+            $args
+        );
+
+        return $pg->first if $pg->count == 1;
+        $people = $pg if $pg->count > 0;
     } catch ($err) {
-        print "This is not Pg: $err\n";
+        # non-Pg, ignore
     }
 
-    $people = $self->search_rs({ 'me.name' => { '-like' => "$input%" }}, $args);
-    if ($people->count == 1) {
-        $person = $people->first;
+    # 3) Partial first/last name matching
+    if (@parts >= 2) {
+        my ($p1, $p2) = @parts[0,1];
+
+        $people = $self->search_rs(
+            {
+                -or => [
+                    {
+                        'me.name' => {
+                            -like => "%$p1% $p2%"
+                        }
+                    },
+                    {
+                        'me.name' => {
+                            -like => "%$p2% $p1%"
+                        }
+                    },
+                ],
+            },
+            $args
+        );
+
+        return $people->first if $people->count == 1;
+        return (undef, $people) if $people->count > 0;
     }
-    return ($person, undef) if $person;
-    
-    warn "Add more people-finding magic here: $input failed\n";
-    return (undef, $people);
+
+    # 4) Single-token partial match (first OR last name)
+    my $token = $parts[0];
+    $people = $self->search_rs(
+        { 'me.name' => { -like => "%$token%" } },
+        $args
+    );
+
+    return $people->first if $people->count == 1;
+    return (undef, $people) if $people->count > 0;
+
+    warn "find_person: no match for '$input'\n";
+    return (undef, undef);
 }
+
 
 =head2 allowed_to_thing
 

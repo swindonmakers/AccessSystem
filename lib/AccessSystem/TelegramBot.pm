@@ -213,6 +213,10 @@ sub read_message ($self, $message) {
             match => qr{^/whois\b},,
             help  => '/whois <name>',
         },
+        toomuchinfo => {
+            match => qr{^/tmi\b},,
+            help  => '/tmi <name>',
+        },
         induct_member => {
             match => qr{^/induct\b},,
             help  => '/induct <name> on <tool>',
@@ -260,6 +264,10 @@ sub read_message ($self, $message) {
         door_log      => {
             match => qr{^/door_log\b},
             help => '/door_log -- Display the last 10 users of the door (directors-only).'
+        },
+        tool_log      => {
+            match => qr{^/tool_log\b},
+            help => '/door_log <tool> -- Display the last 10 users of the tool (directors-only).'
         },
         check_valid_members => {
             match => qr{^/check_valid_members\b},
@@ -878,6 +886,69 @@ sub find_member ($self, $text, $message, $args = undef) {
     return $message->reply("Try /whois <person name>");
 }
 
+=head2 toomuchinfo (tmi)
+
+Lots of details about a member (directors only in private chat)
+
+=cut
+sub toomuchinfo {
+    return unless $self->authorize($message, 'director', 'private');
+
+    my ($self, $input, $args) = @_;
+
+    my ($person, $people) = $self->find_person($input, $args);
+
+    if (!$person && !$people_rs->count) {
+        return $message->reply("Didn't find a member with that name");
+    }
+    if (!$person && $people_rs->count > 1) {
+        my @people = map { $_->is_valid ? $_->name : () } ($people_rs->all);
+        return $message->reply("I found " . scalar @people . " members matching that\n" . join("\n",@people)."\n");
+    }
+
+    my @info;
+
+    # ID
+    push @info, 'ID: SM' . $person->id;
+
+    # Membership status
+    if ($person->is_valid) {
+        push @info, 'Membership: active';
+    } else {
+        push @info, 'Membership: inactive';
+    }
+
+    # Tier
+    push @info, 'Tier: ' . ($person->tier_name // 'unknown');
+
+    # Concession
+    if ($person->concessionary_rate) {
+        push @info, 'Concession: yes';
+    }
+
+    # Membership end date
+    if (my $end = $person->end_date) {
+        push @info, 'Ends: ' . $end;
+    }
+
+    # Telegram
+    if (my $tg = $person->telegram_username) {
+        push @info, 'Telegram: @' . $tg;
+    }
+
+    # Email
+    if (my $email = $person->email) {
+        push @info, 'Email: ' . $email;
+    }
+
+
+    return ($message, undef);
+}
+
+
+
+
+
 =head2 induct_member
 
 Create an "allowed" link between a member and a tool.
@@ -1375,6 +1446,55 @@ sub door_log ($self, $text, $message) {
     $out = "<pre>$out</pre>";
 
     return $message->reply($out, { parse_mode => 'html' } );
+}
+
+=head2 tool_log
+
+Get the log of the most recent N users of the the defined tool.
+
+=cut
+
+sub tool_log ($self, $text, $message) {
+    return unless $self->authorize($message, 'director', 'private');
+
+    my ($t, $tool);
+
+    # match tool name from command
+    if ($text =~ m{/tool_log ([\w\d\s]+)}) {
+        ($t, $tool) = $self->db->resultset('Tool')->find_tool($1, undef);
+    }
+
+    return $message->reply("Tool not found") unless $tool;
+
+    my $n = 10;
+
+    my $logs = $self->db->resultset('UsageLog')->search(
+        { tool_id => $tool->id },
+        {
+            order_by => { '-desc' => 'accessed_date' },
+            rows     => $n,
+            prefetch => ['person'],
+        }
+    );
+
+    my $out = sprintf("Tool: %s\n", $tool->name);
+    $out   .= "Date | Status | Token | Person\n";
+    $out   .= "-" x 60 . "\n";
+
+    while (my $row = $logs->next) {
+        my $name = $row->person ? $row->person->name : '---';
+        $out .= sprintf(
+            "%s | %8s | %s | %s\n",
+            $row->accessed_date,
+            $row->status,
+            $row->token_id,
+            $name
+        );
+    }
+
+    $out = "<pre>$out</pre>";
+
+    return $message->reply($out, { parse_mode => 'html' });
 }
 
 =head2 check_valid_members
