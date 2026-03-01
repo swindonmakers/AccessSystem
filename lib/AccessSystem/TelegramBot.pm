@@ -261,6 +261,10 @@ sub read_message ($self, $message) {
             match => qr{^/door_log\b},
             help => '/door_log -- Display the last 10 users of the door (directors-only).'
         },
+        tool_log      => {
+            match => qr{^/tool_log\b},
+            help => '/door_log <tool> -- Display the last 10 users of the tool (directors-only).'
+        },
         check_valid_members => {
             match => qr{^/check_valid_members\b},
             help => '/check_valid_members -- Check if current group members are valid'
@@ -1368,8 +1372,16 @@ sub door_log ($self, $text, $message) {
     my $out;
     while (my $row = $logs->next) {
         # status is 'started' / 'rejected'
-        my $name = $row->person ? $row->person->name : '---';
-        $out .= sprintf("%s | %8s | %s | %s\n", $row->accessed_date, $row->status, $row->token_id, $name);
+        my $name_or_t = $row->person ? $row->person->name : $row->token_id;
+        $out .= sprintf(
+            "%d %s %02d:%02d | %8s | %20s\n",
+            $row->accessed_date->day,
+            $row->accessed_date->month_abbr,
+            $row->accessed_date->hour,
+            $row->accessed_date->minute,
+            $row->status,
+            $name_or_t
+        );
     }
 
     $out = "<pre>$out</pre>";
@@ -1377,6 +1389,88 @@ sub door_log ($self, $text, $message) {
     return $message->reply($out, { parse_mode => 'html' } );
 }
 
+=head2 tool_log
+
+Get the log of the most recent N users of the the defined tool.
+
+=cut
+
+sub tool_log ($self, $text, $message, $args = undef) {
+    return unless $self->authorize($message, 'director', 'private');
+
+    my ($tool, $t_status, $tool_or_keyboard);
+    my $waiting = $self->waiting_on_response->{$message->from->id} || {};
+
+    # match tool name from command
+    if (!$args && $text =~ m{/tool_log ([\w\d\s]+)}) {
+        ($t_status, $tool_or_keyboard) = $self->find_tool($1, 'tool_log');
+
+        if($t_status eq 'success') {
+            # We found the unique tool, store it (else see keyboard below)
+            $tool = $tool_or_keyboard;
+        }
+    }
+
+    if ($args) {
+        if ($args->[1] eq 'tool') {
+            $tool = $self->db->resultset('Tool')->find({name => $args->[2]});
+            $waiting->{tool} = $tool;
+        }
+        $tool ||= $waiting->{tool};
+    }
+
+    if ($tool) {
+        my $n = 10;
+
+        my $logs = $self->db->resultset('UsageLog')->search(
+            { tool_id => $tool->id },
+            {
+                order_by => { '-desc' => 'accessed_date' },
+                rows     => $n,
+                prefetch => ['person'],
+            }
+        );
+
+        my $out = sprintf("Tool: %s\n", $tool->name);
+        $out   .= sprintf("%12s|%10s|%20s\n", "Date","Status","Name or Token");
+        $out   .= "\n";
+
+        while (my $row = $logs->next) {
+            my $name_or_t = $row->person ? $row->person->name : $row->token_id;
+            $out .= sprintf(
+                "%d %s %02d:%02d|%10s|%20s\n",
+                $row->accessed_date->day,
+                $row->accessed_date->month_abbr,
+                $row->accessed_date->hour,
+                $row->accessed_date->minute,
+                $row->status,
+                $name_or_t
+            );
+        }
+
+        $out = "<pre>$out</pre>";
+
+        return $message->reply($out, { parse_mode => 'html' });
+    }
+
+    if ($t_status eq 'keyboard') {
+        ## didnt find an exact match, user gets to pick:
+        $waiting->{action} = 'tool_log';
+        $waiting->{type} = 'tool';
+        $waiting->{text} = $text;
+        $self->waiting_on_response->{$message->from->id} = $waiting;
+
+        return $message->_brain->sendMessage(
+            {
+                chat_id => $message->chat->id,
+                text    => "No exact match for tool, pick one:",
+                reply_markup => Telegram::Bot::Object::InlineKeyboardMarkup->new(
+                    {
+                        inline_keyboard => $tool_or_keyboard,
+                    })
+            });
+    }
+}
 =head2 check_valid_members
 
 =cut
