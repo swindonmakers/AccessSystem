@@ -62,6 +62,9 @@ __PACKAGE__->config(
                  'Tool' => {
                      display_column => 'name',
                  },
+                 'Tier' => {
+                     display_column => 'name',
+                 },
              },
              virtual_columns => {
                  'Person' => {
@@ -75,6 +78,11 @@ __PACKAGE__->config(
                          is_nullable => 0,
                          sql => 'SELECT CASE WHEN max_valid >= CURRENT_TIMESTAMP THEN 1 ELSE 0 END FROM (SELECT max(dues.expires_on_date) as max_valid FROM dues WHERE dues.person_id=self.id) as valid',
                      },
+                         'last_payment' => {
+                             data_type => 'datetime',
+                             is_nullable => 1,
+                             sql => 'SELECT max(added_on) FROM transactions WHERE transactions.person_id = self.id AND transactions.amount_p > 0',
+                     },
                          
                  },
                  'MessageLog' => {
@@ -82,7 +90,14 @@ __PACKAGE__->config(
                      data_type => 'varchar',
                      sql => "SELECT substr(message, 24) as token FROM message_log WHERE message_log.tool_id = self.tool_id and message_log.written_date = self.written_date AND message like 'Permission granted to: %'",
                      }
-                  }
+                 },
+                     'Tier' => {
+                         'amount_last_30days' => {
+                             data_type => 'decimal',
+                             is_nullable => 1,
+                             sql => 'SELECT sum(amount_p)/100 FROM transactions WHERE transactions.person_id IN (SELECT id from people where people.tier_id = self.id) AND transactions.amount_p > 0 AND transactions.added_on > CURRENT_TIMESTAMP - interval \'30 days\'',
+                     },
+                 }
              }
            # ...
          }
