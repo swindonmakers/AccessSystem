@@ -265,16 +265,12 @@ sub is_valid {
 
     my $is_paid;
 
-    # Check parent_id column directly to avoid relationship resolution issues
-    # on newly created objects that haven't been stored yet
-    my $parent_id = $self->get_column('parent_id');
-    if(!$parent_id) {
+    if(!$self->parent) {
         $is_paid = $self->payments_rs->search({
             paid_on_date => { '<=' => $date_str },
             expires_on_date => { '>=' => $date_str },
                                           })->count;
     } else {
-        # Only call parent relationship if we have a parent_id
         return $self->parent->is_valid;
     }
 
@@ -309,8 +305,7 @@ sub bank_ref {
 sub normal_dues {
     my ($self) = @_;
 
-    # Check parent_id column directly to avoid relationship resolution issues
-    return 0 if $self->get_column('parent_id');
+    return 0 if $self->parent;
 
     if ($self->is_donor) {
         return 0;

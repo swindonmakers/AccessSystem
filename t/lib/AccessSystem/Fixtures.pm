@@ -144,6 +144,7 @@ sub create_person {
         dob => $args{dob} // '1980-01',
         address => $args{address} // '123 Test Street, Testville, TE5 7ST',
         tier_id => $args{tier_id} // 2,  # Default to Standard tier
+        parent_id => $args{parent_id},
     };
     
     # Handle concessionary rate override
