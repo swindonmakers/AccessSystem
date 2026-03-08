@@ -193,6 +193,7 @@ my $schema = AccessSystem::Schema->connect("dbi:SQLite:$testdb");
     $existing_payment->update({ expires_on_date => $now->clone->subtract(days => 1) });
     # and attempt to make a new payment with the lower balance:
     sleep 1;
+    $testee->create_related('usage', { tool_id => $thing->id, token_id => '12345678', status => 'finished', accessed_date => $now->clone->subtract(days => 2) });
     lives_ok( sub { $testee->create_payment($overlap_days); }, 'Run create payment with old payment, expired member, without dying');
     # still no payment:
     is($testee->balance_p, $payment_amount, 'Balance unused');
@@ -206,7 +207,7 @@ my $schema = AccessSystem::Schema->connect("dbi:SQLite:$testdb");
     $testee->discard_changes();
     isnt($testee->tier_id, $old_tier_id, 'Changed tier id');
     # should be in confirmations:
-    my $conf = $testee->confirmations->find({ token => 'old_tier' });
+    my $conf = $testee->confirmations->find({ token => $testee->id . '_old_tier' });
     ok($conf, 'Stored old tier settings');
 
     # top up missing amount
