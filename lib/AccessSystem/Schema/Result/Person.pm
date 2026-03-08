@@ -954,7 +954,8 @@ sub update_door_access {
 
     # This entry should exist, but covid policy may have removed it..
     my $door = $self->result_source->schema->the_door();
-    my $door_allowed = $self->allowed->find_or_create({ tool_id => $door->id });
+    # is_admin required: allowed.is_admin has a NOT NULL constraint
+    my $door_allowed = $self->allowed->find_or_create({ tool_id => $door->id, is_admin => 0 });
     $door_allowed->update({ pending_acceptance => 'false', accepted_on => DateTime->now()});
 }
 

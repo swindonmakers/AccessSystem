@@ -114,6 +114,15 @@ There are more scripts and tools, the main one you might want to work on is the 
 
 `BOT_HOME=$PWD carton exec perl script/access_telegram.pl &`
 
+TESTING
+-------
+
+You can run the test suite via Docker:
+
+`docker build --target test -t accesssystem-test:latest . && docker run --rm accesssystem-test:latest`
+
+For testing the production container locally with a full database, see [test-deploy/README.md](test-deploy/README.md).
+
 DATABASE
 --------
 
