@@ -82,8 +82,8 @@ my $schema = AccessSystem::Schema->connect("dbi:SQLite:$testdb");
     my $comms_count = 0;
     my $testee = AccessSystem::Fixtures::create_person($schema, payment => $payment_amount);
     $testee->create_related('tokens', { id => '12345678', type => 'test token' });
-    # The Door so that Result::Person::update_door_access works
-    my $thing = $schema->resultset('Tool')->create({ name => 'The Door', assigned_ip => '10.0.0.1', requires_induction => 1, team => 'Who knows' });
+    # The Door so that Result::Person::update_door_access works (fixtures may have already created it)
+    my $thing = $schema->resultset('Tool')->find_or_create({ name => 'The Door', assigned_ip => '10.0.0.1', requires_induction => 1, team => 'Who knows' });
     my $allowed = $testee->create_related('allowed', { tool => $thing, is_admin => 0});
     $allowed->discard_changes();
     $allowed->update({ pending_acceptance => 0 });
@@ -233,4 +233,3 @@ my $schema = AccessSystem::Schema->connect("dbi:SQLite:$testdb");
 
 
 done_testing;
-
