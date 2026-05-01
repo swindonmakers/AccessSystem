@@ -24,6 +24,7 @@ __PACKAGE__->add_columns(
     },
     is_admin => {
         data_type => 'boolean',
+        default_value => 'false',
     },
     pending_acceptance => {
         data_type => 'boolean',

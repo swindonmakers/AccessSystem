@@ -666,14 +666,7 @@ sub create_payment {
         $self->create_communication('Your Swindon Makerspace membership has started', 'first_payment');
     }
 
-    if($valid_date && $valid_date < $now) {
-        # renewed payments - force this one, should happen everytime
-        $self->create_communication('Your Swindon Makerspace membership has restarted', 'rejoin_payment', {}, 1);
-        # rejoined, so remove any "reminder" email, so that if they
-        # subsequently stop paying again, they get a new reminder (!)
-        my $r_email = $self->communications_rs->find({type => 'reminder_email'});
-        $r_email->delete if $r_email;
-    }
+    my $is_rejoining = $valid_date && $valid_date < $now ? 1 : 0;
    
     # Only add $OVERLAP  extra days if a first or renewal payment - these
     # ensure member remains valid if standing order is not an
@@ -705,7 +698,15 @@ sub create_payment {
             paid_on_date => $now,
             expires_on_date => $expires_on,
             amount_p => $payment_size,
-        });
+                              });
+        if ($is_rejoining) {
+            # renewed payments - force this one, should happen everytime
+            $self->create_communication('Your Swindon Makerspace membership has restarted', 'rejoin_payment', {}, 1);
+            # rejoined, so remove any "reminder" email, so that if they
+            # subsequently stop paying again, they get a new reminder (!)
+            my $r_email = $self->communications_rs->find({type => 'reminder_email'});
+            $r_email->delete if $r_email;
+        }
     });
     return 1;
 }
@@ -954,7 +955,7 @@ sub update_door_access {
 
     # This entry should exist, but covid policy may have removed it..
     my $door = $self->result_source->schema->the_door();
-    my $door_allowed = $self->allowed->find_or_create({ tool_id => $door->id });
+    my $door_allowed = $self->allowed->find_or_create({ tool_id => $door->id, is_admin => 0 });
     $door_allowed->update({ pending_acceptance => 'false', accepted_on => DateTime->now()});
 }
 
