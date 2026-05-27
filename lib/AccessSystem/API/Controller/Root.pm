@@ -574,6 +574,8 @@ sub assign: Chained('base'): PathPart('assign'): Args(0) {
     }
     $c->log->debug(Data::Dumper::Dumper($c->stash->{json}));
     $c->forward('View::JSON');
+    $c->res->body($c->res->body() . "\n");
+    $c->res->content_length(length($c->res->body));
 }
 
 sub park: Chained('base'): PathPart('park'): Args(0) {
