@@ -215,7 +215,8 @@ __PACKAGE__->has_many('tokens', 'AccessSystem::Schema::Result::AccessToken', 'pe
 __PACKAGE__->has_many('usage', 'AccessSystem::Schema::Result::UsageLog', 'person_id');
 __PACKAGE__->has_many('login_tokens', 'AccessSystem::Schema::Result::PersonLoginTokens', 'person_id');
 __PACKAGE__->has_many('children', 'AccessSystem::Schema::Result::Person', 'parent_id');
-__PACKAGE__->has_many('transactions', 'AccessSystem::Schema::Result::Transactions', 'person_id');
+__PACKAGE__->has_many('person_transactions', 'AccessSystem::Schema::Result::PersonTransactions', 'person_id');
+__PACKAGE__->many_to_many('transactions', 'person_transactions', 'transaction');
 __PACKAGE__->has_many('vehicles', 'AccessSystem::Schema::Result::Vehicle', 'person_id');
 __PACKAGE__->belongs_to('parent', 'AccessSystem::Schema::Result::Person', 'parent_id', { 'join_type' => 'left'} );
 __PACKAGE__->belongs_to('tier', 'AccessSystem::Schema::Result::Tier', 'tier_id');
@@ -453,13 +454,13 @@ Transaction consists of: dtposted => DateTime of the transaction, trnamt => $val
 =cut
 
 sub import_transaction {
-    my ($self, $transaction) = @_;
+    my ($self, $transaction, $db_trn) = @_;
     my $schema = $self->result_source->schema;
 
     # Have we imported this already?
     my $dt_parser = $schema->storage->datetime_parser;
-    warn "$transaction->{dtposted}\n";
-    my $trans_search = $self->search_related('transactions')->search(
+    print "$transaction->{dtposted}\n";
+    my $trans_search = $self->search_related('person_transactions')->search(
         { added_on => $dt_parser->format_datetime($transaction->{dtposted}),
         amount_p => $transaction->{trnamt} * 100 });
     if($trans_search->count) {
@@ -468,11 +469,12 @@ sub import_transaction {
     }
 
     warn "About to create transaction for ", $self->name, "\n";
-    $self->create_related('transactions',
+    $self->create_related('person_transactions',
                           {
                               added_on => $transaction->{dtposted},
                               reason   => "Imported from OFX/Barclays on " . DateTime->now->iso8601(),
                               amount_p => $transaction->{trnamt} * 100,
+                              transaction_id => $db_trn->id,
                           });
     return 1;
 }

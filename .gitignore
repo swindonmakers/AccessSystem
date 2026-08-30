@@ -2,6 +2,8 @@
 *.bak
 /*.png
 
+.vscode/
+
 .plx/
 .vscode/perl-lang/
 
@@ -20,7 +22,9 @@ inc/
 local/
 local-*/
 ofx/
+docs/
 db/
+metabase*
 20845883789160.ofx
 accesssystem.conf
 accesssystem_dev.conf

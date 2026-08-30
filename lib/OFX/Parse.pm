@@ -221,5 +221,6 @@ sub make_nice {
 #    -- BGC: bank giro credit
 #    -- BBP: bill payment
 #    -- BDC: bank debit card -- these come with an extra date, "<name> ON DD MMM BDC" (where DD and MMM are day/month).
+#    -- DDR: direct debit request
 #    -- TFR: Transfer
 

@@ -50,14 +50,14 @@ my $latest_transaction_rs = $schema->resultset('Transactions')->search(
     {},
     {
         rows => 1,
-        order_by => [{ '-desc' => 'added_on'}],
+        order_by => [{ '-desc' => 'posted_on'}],
     }
     );
 
 my $latest;
 if($latest_transaction_rs->count == 1) {
     # Do at least the last few days, in case we manually added some
-    $latest = $latest_transaction_rs->first->added_on->clone()->subtract(days => 2);
+    $latest = $latest_transaction_rs->first->posted_on->clone()->subtract(days => 2);
 } else {
     $latest = DateTime->now->subtract(days => 30);
 }
@@ -92,9 +92,10 @@ sub fiddle_payment {
     } elsif($trans->{name} =~ /C Hinton BGC/) {
         $trans->{name} = 'C Hinton BGC SM0416';
     }
-    $trans->{name} =~ s/o/0/gi;
     $trans->{name} =~ s/sm/SM/ig;
     $trans->{name} =~ s/SN/ SM/gi;
+    $trans->{name} =~ s/SMs+(\d+)/SM$1/gi;
+    $trans->{name} =~ s/SMo+/SM0/gi;
 
     print STDERR "Name now: " . $trans->{name} . "\n";
     return 0;
@@ -112,7 +113,21 @@ sub import_payments {
     # Parse file, find actual payments (SMXXXX)
     my $transactions = OFX::Parse::read_ofx($filename);
     foreach my $trn (@$transactions) {
-        next if(fiddle_payment($trn));
+        fiddle_payment($trn);
+        categorize($trn);
+        # next if(fiddle_payment($trn));
+        my $dt_parser = $schema->storage->datetime_parser;
+        my $posted = $dt_parser->format_datetime($trn->{dtposted});
+        my $db_transaction = $schema->resultset('Transactions')->find_or_create(
+            {
+                fitid => $trn->{fitid},
+                posted_on => $posted,
+                name => $trn->{name},
+                amount_p => $trn->{trnamt} * 100,
+                type => $trn->{trntype},
+                category => $trn->{category}
+            }, { key => 'trn'});
+
         next if($trn->{trnamt} <= 0);
         next if($trn->{name} !~ /SM\s?(\d+)/i);
 
@@ -124,9 +139,52 @@ sub import_payments {
             next;
         }
 
-        if(!$member->import_transaction($trn)) {
+        # Importing so therefore this is a member payment:
+        $trn->{category} = 'Member Payment';
+        if(!$member->import_transaction($trn, $db_transaction)) {
             warn "Import failed! See above\n";
         }
+    }        
+}
+
+sub categorize {
+    my ($tx) = @_;
+
+    if ($tx->{name} =~ s/ STO//) {
+        $tx->{trntype} = "standing order";
+    } elsif ($tx->{name} =~ s/ DDR//) {
+        $tx->{trntype} = "direct debit request";
+    } elsif ($tx->{name} =~ s/ CLP//) {
+        $tx->{trntype} = "contactless";
     }
-        
+
+    if ($tx->{trntype} eq 'directdep' and $tx->{name} =~ m/^SumUp Payments Acc/) {
+        $tx->{category} = 'Sumup Payment';
+    # } elsif ($tx->{name} =~ m/sm[O\d]+/i) {
+    #     $tx->{category} = 'Member Payment';
+    #     $tx->{name} = 'REDACTED';
+    } elsif ($tx->{name} =~ m/^CLIENTS DEPOSIT SwindonLottery/) {
+        $tx->{category} = 'Swindon Lottery';
+    } elsif ($tx->{name} =~ m/^INFORMATION COMMIS/) {
+        $tx->{category} = 'ICO';
+    } elsif ($tx->{name} =~ m/^BIZSPACE LIMITED SWIND010/) {
+        $tx->{category} = 'Rent + Electricity';
+    } elsif ($tx->{name} =~ m/^H3G /) {
+        $tx->{category} = 'Broadband';
+    } elsif ($tx->{name} =~ m/ BOOKER /) {
+        # Snacks & Drinks & Consumables (bin bags, blue roll etc)
+        $tx->{category} = 'Supplies';
+    } elsif ($tx->{name} =~ m/^ICELAND /) {
+        # Snacks & Drinks (cans)
+        $tx->{category} = 'Suuplies';
+    } elsif ($tx->{name} =~ m/^pledge /i) {
+        $tx->{category} = 'Donation (Pledges)';
+    } elsif ($tx->{trnamt} > 0 && $tx->{name} =~ m/^POST OFFICE RAMLEAZE DRIVE /) {
+        $tx->{category} = 'Cash paid in';
+    }
+
+    # INFORMATION COMMIS ZB167275 DDR, -47 GBP, ICO data controller payment.
+
+    $tx->{category} //= 'unknown';
+
 }
