@@ -524,7 +524,8 @@ Emails are sent for:
 =cut
 
 sub create_payment {
-    my ($self, $OVERLAP_DAYS) = @_;
+    my ($self, $OVERLAP_DAYS, $no_new_bank_data) = @_;
+    $no_new_bank_data ||= 0;
     my $schema = $self->result_source->schema;
     my $dt_parser = $schema->storage->datetime_parser;
 
@@ -586,7 +587,7 @@ sub create_payment {
         }
     }
 
-    if($current_bal < $self->dues) {
+    if($current_bal < $self->dues ) {
         # Expanded for fees update 2025:
         # If previously valid, and payment (intention) is less than dues (which have changed!)
         # and actually expired (during overlap), convert to donor-tier, fees to 0, store old tier/fees
@@ -628,6 +629,7 @@ sub create_payment {
             warn "Member " . $self->bank_ref . " not covered fees, converted to Donor Tier";
             return;
         }
+
         # Normal fail - intended to pay enough for tier but.. didnt? (Presumably stopped paying)
         warn "Member " . $self->bank_ref . " balance not enough for another month.\n";
         # Remind when actually expired, 5 days into the overlap
@@ -637,6 +639,14 @@ sub create_payment {
             # has (or is about to) expire
             # this will only send once!
             my $last = $self->last_payment;
+
+            if($no_new_bank_data) {
+                # can't determine fail because we didnt get any new bank data
+                # add a day to last payment expiry if close to expiry:
+                $last->update({ expires_on_date => $last->expires_on_date->add(days => 1)});
+                return;
+            }
+
             my $expiry = $self->real_expiry($OVERLAP_DAYS);
             my $paid_date = sprintf("%s, %d %s %d",
                                     $last->paid_on_date->day_abbr,
