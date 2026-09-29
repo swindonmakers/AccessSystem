@@ -7,6 +7,7 @@ use DateTime;
 use lib "$ENV{CATALYST_HOME}/lib";
 use AccessSystem::Schema;
 use OFX::Parse;
+use Getopt::Long;
 
 =head1 NAME membership_payments
 
@@ -63,6 +64,20 @@ if(!$ENV{CATALYST_HOME}) {
     die "Please set the CATALYST_HOME environment variable and try again\n";
 }
 
+=head2 --no_bank_transactions
+
+The script is called with this argument if we could not fetch new
+transactions from the bank, instead of emailing expir(ed|ing) members
+it should add them a day's grace to compensate for our lack of data.
+
+=cut
+
+my $no_bank_transactions = 0;
+GetOptions(
+    'no_bank_transactions'  => \$no_bank_transactions,
+    );
+
+
 my $OVERLAP_DAYS = 14;
 
 # Read config to get db connection info:
@@ -76,7 +91,7 @@ my $schema = AccessSystem::Schema->connect(
 my $people_rs = $schema->resultset('Person');
 while (my $person = $people_rs->next) {
     next if $person->parent_id;
-    $person->create_payment($OVERLAP_DAYS);
+    $person->create_payment($OVERLAP_DAYS, $no_bank_transactions);
 }
 
 # Update membership table, based on current validity of members:
