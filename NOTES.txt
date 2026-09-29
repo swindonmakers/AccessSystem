@@ -20,6 +20,7 @@ test /editme!
 
 carton exec perl -Ilib -MAccessSystem::Schema -le'AccessSystem::Schema->connect("dbi:SQLite:test.db")->create_ddl_dir(undef, undef, "sql/", "2.0")'
 
+
 emvtool -r 1 -p 8477 cap
 
 ssh pi@inside.swindon-makerspace.org -L 0.0.0.0:3001:localhost:3000 -L 0.0.0.0:3002:localhost:3001 -L 8080:192.168.1.1:80
@@ -364,3 +365,65 @@ TelegramBot, sendMessage reply_markup - ForceReply
 * /tools - if single item requested (eg /tools laser) - also show status/description
 ** buggy - with >1 status returns 2 lasers..
 ** need "most recent status".. 
+
+Feb 2026:
+
+Pg upgraded!
+
+Success. Please check that the upgraded cluster works. If it does,
+you can remove the old cluster with
+    pg_dropcluster 9.6 main
+
+Ver Cluster Port Status Owner    Data directory               Log file
+9.6 main    5433 down   postgres /var/lib/postgresql/9.6/main /var/log/postgresql/postgresql-9.6-main.log
+Ver Cluster Port Status Owner    Data directory              Log file
+17  main    5432 online postgres /var/lib/postgresql/17/main /var/log/postgresql/postgresql-17-main.log
+
+
+Aug 2026
+
+Transactions into DB (with categorisation)
+
+* Transactions table becomes "all transactions", existing table switches to person_transactions (map person_id to transaction_id) - with added_on (import date) and reason (existing reason)
+** how do we do negative transactions now..?
+
+Name now: Strange Tristan MATERIAL SMAC BGC
+DBIx::Class::Storage::DBI::_dbh_execute(): DBI Exception: DBD::Pg::st execute failed: ERROR:  value too long for type character varying(32) [for Statement "INSERT INTO transactions ( amount_p, category, fitid, name, posted_on, type) VALUES ( ?, ?, ?, ?, ?, ? ) RETURNING id" with ParamValues: 1='4000', 2='unknown', 3='+202409170000004', 4='Strange Tristan MATERIAL SMAC BGC', 5='2024-09-17 00:00:00+0000', 6='directdep'] at script/update_payments.pl line 129
+
+Sept 2026:
+
+Install piserver:
+* Revert database schema to match existing server
+* Import production data
+* Update transaction import scripts so that data goes into both systems
+** from_bank.pl: push ofx to .70, run remote imports
+** add "run push to piserver, run piserver imports"?
+** added update_piserver.pl
+** dont send email from piserver! comment out SMTP?
+** Import new members, inductions, etc? (cant assign transactions to non-existant members!)
+
+* Apply transaction table changes to piserver database
+** existing transactions moved to person_transactions, new transaction_id column default NULL
+** Should run its own code copy of transaction import so its doing categorisation on import
+** test/check new import code..
+** run/test crud
+** run/test access_telegram
+** test with a thingcontroller?
+
+** Run something that categorises/imports all the transactions?
+** do we map existing to person_transactions?
+
+* 1. backup access server pg_db
+* 2. reset (drop all tables?)
+* 3. import backup (running..done)
+* 4. fix from_bank.pl .. done (in no_bank_data branch cos not merged yet..)
+* 5. created update_piserver.pl (push ofx to piserver, run imports)
+* 6. comment out SMTP details from accesssystem_api.conf (on piserver!) done
+* ...
+
+* Future point (after all above verified):
+** migrate non-transaction data (new members, inductions, telegram user assignments etc?)
+** shutdown running VM accessserver + crud
+** assign .70 IP to piserver
+** restart piserver, verify all the systems come back up + are accessible !
+** api, crud, inside., metabase etc

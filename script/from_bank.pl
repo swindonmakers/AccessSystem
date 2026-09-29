@@ -11,7 +11,7 @@ if(-e '20845883789160.ofx') {
         = stat('20845883789160.ofx');
     my $dt = DateTime->from_epoch(epoch => $atime);
     if($dt->add(days => 1) < DateTime->now()) {
-        system('rm 20845883789160.ofx');
+        system('mv 20845883789160.ofx 20845883789160.ofx.last');
     }
 }
 chdir($ENV{BARCLAYSCRAPE});
@@ -22,6 +22,7 @@ if(-e '20845883789160.ofx') {
     system("scp -P 2222 $ENV{ACCESS_HOME}/ofx/$today.ofx castaway\@inside.swindon-makerspace.org:/opt/AccessSystem/ofx/");
     system('ssh -p 2222 castaway@inside.swindon-makerspace.org "cd /opt/AccessSystem; CATALYST_HOME=/opt/AccessSystem carton exec perl -Ilib /opt/AccessSystem/script/update_payments.pl"');
     system('ssh -p 2222 castaway@inside.swindon-makerspace.org "cd /opt/AccessSystem; CATALYST_HOME=/opt/AccessSystem carton exec perl -Ilib /opt/AccessSystem/script/membership_payments.pl"');
+    system('ssh -p 2222 castaway@inside.swindon-makerspace.org "cd /opt/AccessSystem; CATALYST_HOME=/opt/AccessSystem carton exec perl -Ilib /opt/AccessSystem/script/update_piserver.pl"');
 } else {
     print "NO NEW BANK DATA!\n";
     system('ssh -p 2222 castaway@inside.swindon-makerspace.org "cd /opt/AccessSystem; CATALYST_HOME=/opt/AccessSystem carton exec perl -Ilib /opt/AccessSystem/script/membership_payments.pl --no_bank_transactions"');
