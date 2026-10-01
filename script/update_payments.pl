@@ -34,6 +34,8 @@ transaction row for those instances where we know they are incorrect.
 
 =cut
 
+my $import_days = shift || 7;
+
 if(!$ENV{CATALYST_HOME}) {
     die "Please set the CATALYST_HOME environment variable and try again\n";
 }
@@ -57,9 +59,10 @@ my $latest_transaction_rs = $schema->resultset('Transactions')->search(
 my $latest;
 if($latest_transaction_rs->count == 1) {
     # Do at least the last few days, in case we manually added some
-    $latest = $latest_transaction_rs->first->posted_on->clone()->subtract(days => 2);
+    $latest = $latest_transaction_rs->first->posted_on->clone()->subtract(days => $import_days);
 } else {
-    $latest = DateTime->now->subtract(days => 30);
+    my $days = $import_days > 30 ? $import_days : 30;
+    $latest = DateTime->now->subtract(days => $days);
 }
 
 print "Last run was at: $latest\n";
@@ -69,6 +72,9 @@ my @allfiles = glob("$ENV{CATALYST_HOME}/ofx/*.ofx");
 foreach my $file (@allfiles) {
     my @stat = stat($file);
     next if $stat[10] <= $latest->epoch;
+    my ($y,$m,$d) = $file =~ /(\d{4})-(\d{2})-(\d{2})\./;
+    my $file_dt = DateTime->new(year => $y, month => $m, day => $d);
+    next if $file_dt <= $latest;
     import_payments($schema, $file);
 }
 

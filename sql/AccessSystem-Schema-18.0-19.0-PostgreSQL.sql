@@ -12,7 +12,7 @@ CREATE TABLE transactions (
   posted_on timestamp NOT NULL,
   name character varying(32) NOT NULL,
   amount_p integer NOT NULL,
-  type character varying(10) NOT NULL,
+  type character varying(50) NOT NULL,
   category character varying(1024) NOT NULL,
   PRIMARY KEY (id),
   CONSTRAINT trn UNIQUE (fitid)
@@ -21,7 +21,7 @@ CREATE TABLE transactions (
 ALTER TABLE "person_transactions" ADD CONSTRAINT "person_transactions_fk_transaction_id" FOREIGN KEY ("transaction_id")
   REFERENCES "transactions" ("id") DEFERRABLE;
 
-ALTER TABLE allowed ALTER COLUMN is_admin SET DEFAULT false;
+ALTER TABLE allowed ALTER COLUMN is_admin SET DEFAULT 0;
 
 COMMIT;
 

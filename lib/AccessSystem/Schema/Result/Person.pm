@@ -440,7 +440,7 @@ sub payments_by_date {
 sub transactions_by_date {
     my ($self) = @_;
 
-    return $self->transactions_rs->search({ }, { order_by => {'-desc' => 'added_on' } } );
+    return $self->person_transactions_rs->search({ }, { order_by => {'-desc' => 'added_on' } } );
 }
 
 =head2 import_transaction
@@ -691,7 +691,7 @@ sub create_payment {
     die "Expires date is before now!? (for " .  $self->bank_ref if $expires_on < $now;
     warn "About to create add payment on: $now for " . $self->bank_ref, ", expiring: $expires_on.\n";
     $schema->txn_do( sub {
-        $self->create_related('transactions', {
+        $self->create_related('person_transactions', {
             added_on => $now,
             reason => "Membership payment for " . $now->month_name . " " . $now->year,
             amount_p => -1*$payment_size,
@@ -722,7 +722,7 @@ Total of all member's transactions, in pence.
 sub balance_p {
     my ($self) = @_;
 
-    return $self->transactions_rs->get_column('amount_p')->sum() || 0;
+    return $self->person_transactions_rs->get_column('amount_p')->sum() || 0;
 }
 
 =head2 add_debit
@@ -742,7 +742,7 @@ sub add_debit {
     } elsif($self->balance_p + 400 < $amount) {
         return (0, 'Not enough money for that transaction');
     } else {
-        my $tr = $self->create_related('transactions', {
+        my $tr = $self->create_related('person_transactions', {
             reason   => $reason,
             amount_p => -1*$amount,
         });
@@ -755,7 +755,7 @@ sub recent_transactions {
     my ($self, $count) = @_;
     $count ||= 10;
 
-    return $self->transactions_rs->search(
+    return $self->person_transactions_rs->search(
         {},
         {
             rows => $count,

@@ -81,7 +81,7 @@ __PACKAGE__->config(
                          'last_payment' => {
                              data_type => 'datetime',
                              is_nullable => 1,
-                             sql => 'SELECT max(added_on) FROM transactions WHERE transactions.person_id = self.id AND transactions.amount_p > 0',
+                             sql => 'SELECT max(added_on) FROM person_transactions WHERE person_transactions.person_id = self.id AND person_transactions.amount_p > 0',
                      },
                          
                  },
@@ -95,7 +95,7 @@ __PACKAGE__->config(
                          'amount_last_30days' => {
                              data_type => 'decimal',
                              is_nullable => 1,
-                             sql => 'SELECT sum(amount_p)/100 FROM transactions WHERE transactions.person_id IN (SELECT id from people where people.tier_id = self.id) AND transactions.amount_p > 0 AND transactions.added_on > CURRENT_TIMESTAMP - interval \'30 days\'',
+                             sql => 'SELECT sum(amount_p)/100 FROM person_transactions WHERE person_transactions.person_id IN (SELECT id from people where people.tier_id = self.id) AND person_transactions.amount_p > 0 AND person_transactions.added_on > CURRENT_TIMESTAMP - interval \'30 days\'',
                      },
                  }
              }
