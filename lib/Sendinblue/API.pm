@@ -105,8 +105,168 @@ sub add_contact {
     } else {
         warn "Post $uri failed: " . $response->status_line;
         return {};
+    }   
+}
+
+# manage lists:
+sub delete_from_list {
+    my ($self, $list_id, $emails) = @_;
+
+    return if !$emails || !@$emails;
+
+    my $uri = $self->_construct_uri("contacts/lists/$list_id/contacts/remove");
+    my @elist = @$emails;
+    my @sublist = ();
+    my $response;
+    if (scalar @$emails > 100) {
+        my $total = scalar @$emails;
+        while (@elist) {
+            @sublist = splice(@elist, 0, 99);
+            $response = $self->ua->post(
+                $uri,
+                Content => encode_json(
+                    {
+                        emails => \@sublist,
+                    }),
+                %{ $self->headers },
+                );
+            sleep 1;
+        }
+    } else {
+        $response = $self->ua->post(
+            $uri,
+            Content => encode_json(
+                {
+                    emails => $emails,
+                }),
+            %{ $self->headers },
+            );
     }
-    
+    if($response->is_success) {
+        if ($response->code == 201) {
+            return 1;
+        } else {
+            return decode_json $response->decoded_content;
+        }
+    } else {
+        warn "Post $uri failed: " . $response->status_line;
+        return {};
+    }
+}
+
+sub add_to_list {
+    my ($self, $list_id, $emails) = @_;
+
+    return if !$emails || !@$emails;
+
+    my $uri = $self->_construct_uri("contacts/lists/$list_id/contacts/add");
+    my @elist = @$emails;
+    my @sublist = ();
+    my $response;
+    if (scalar @$emails > 100) {
+        my $total = scalar @$emails;
+        while (@elist) {
+            @sublist = splice(@elist, 0, 99);
+            $response = $self->ua->post(
+                $uri,
+                Content => encode_json(
+                    {
+                        emails => \@sublist,
+                    }),
+                %{ $self->headers },
+                );
+            sleep 1;
+        }
+    } else {
+        $response = $self->ua->post(
+            $uri,
+            Content => encode_json(
+                {
+                    emails => $emails,
+                }),
+            %{ $self->headers },
+            );
+    }
+
+    if($response->is_success) {
+        if ($response->code == 201) {
+            return 1;
+        } else {
+            return decode_json $response->decoded_content;
+        }
+    } else {
+        warn "Post $uri failed: " . $response->status_line;
+        return {};
+    }
+}
+
+# New API replaces bulk/batch update?
+# One call per set of ListIds? (cant attach listids to contacts, its now
+# list of contacts for.. set of listids
+# Cant do unlinkListIds, that only seems to be available on individual contact
+# update now.. :(
+# https://developers.brevo.com/reference/import-contacts
+
+sub import_contacts {
+    my ($self, $contacts, $list_ids) = @_;
+
+    return if !@$contacts;
+    # no modifiedAt / createdAt
+    # only one of email/id/sms
+    foreach my $c (@$contacts) {
+        delete $c->{modifiedAt};
+        delete $c->{createdAt};
+        # delete $c->{email};
+        delete $c->{sms};
+    }
+
+    my $uri = $self->_construct_uri('contacts/import');
+    print STDERR Dumper($contacts);
+
+    my @clist = @$contacts;
+    my @sublist = @$contacts;
+    my $response;
+    if (scalar @$contacts > 100) {
+        my $total = scalar @$contacts;
+        while (@clist) {
+            @sublist = splice(@clist, 0, 99);
+	
+            $response = $self->ua->post(
+                $uri,
+                Content => encode_json(
+                    {
+                        # updateExistingContacts => defaults to true
+                        # body, list of objs with email and attributes
+                        jsonBody => \@sublist,
+                        listIds => $list_ids, #lists to add to
+                    }),
+                %{ $self->headers },
+                );
+#            print STDERR "Update Contacts:", Dumper( $response);
+            sleep 1;
+        }
+    } else {
+        $response = $self->ua->post(
+            $uri,
+            Content => encode_json(
+                {
+                    jsonBody => $contacts,
+                    listIds => $list_ids, #lists to add to
+                }),
+            %{ $self->headers },
+            );
+#        print STDERR "Update Contacts:", Dumper( $response);
+    }
+    if($response->is_success) {
+        if ($response->code == 204) {
+            return 1;
+        } else {
+            return decode_json $response->decoded_content;
+        }
+    } else {
+        warn "Post $uri failed: " . $response->status_line;
+        return {};
+    }
 }
 
 sub update_contacts {
@@ -164,7 +324,7 @@ sub delete_contact {
 
     my $uri = $self->_construct_uri('contacts/' . $contact->{id});
     my $response = $self->ua->delete($uri, %{ $self->headers });
-    if ($response->is_sucess) {
+    if ($response->is_success) {
         return 1;
     } else {
         warn "Delete $uri failed: " . $response->status_line;
