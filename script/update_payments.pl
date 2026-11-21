@@ -92,9 +92,9 @@ sub fiddle_payment {
     } elsif($trans->{name} =~ /C Hinton BGC/) {
         $trans->{name} = 'C Hinton BGC SM0416';
     }
-    $trans->{name} =~ s/o/0/gi;
     $trans->{name} =~ s/sm/SM/ig;
-    $trans->{name} =~ s/SN/ SM/gi;
+    $trans->{name} =~ s/ SN/ SM/gi;
+    $trans->{name} =~ s/SMo/SM0/gi;
 
     print STDERR "Name now: " . $trans->{name} . "\n";
     return 0;

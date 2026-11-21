@@ -427,3 +427,23 @@ Install piserver:
 ** assign .70 IP to piserver
 ** restart piserver, verify all the systems come back up + are accessible !
 ** api, crud, inside., metabase etc
+
+Nov 2026:
+
+* Merge new: persons, inductions, ?? to PiServer?
+* Equals Money and friends? - no longer free - https://equalsmoney.com/faqs/is-there-a-fee-for-charities-and-non-profits
+** Expensify? Pleo?
+* API for Bank Payments (QuickFile/Zoho?)
+** Zoho: https://www.zoho.com/books/api/v3/bank-transactions/#overview
+** https://api-beta.quickfile.co.uk/api-docs/#/
+** https://support.quickfile.co.uk/t/rest-api-overview/64912
+** NB: IP restrictions (API token, options, IP Restrictions)
+** https://swindonmakerspace.quickfile.co.uk/developer - dev:
+** Token: XXX (see quickfile developer)
+** Own account so no need to Oauth.
+** lib/AccessSystem/QuickFile.pm, (REST::Client), scripts/quickfile.pl
+** NB: Can we also "tag" items via the API?
+
+
+** Bonus Q: Can quickfile (or zoho) submit the Makerspace confirmation/accounts/taxes?
+
