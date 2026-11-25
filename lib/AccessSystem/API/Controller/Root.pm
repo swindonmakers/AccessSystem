@@ -78,6 +78,7 @@ sub oneall_login_callback : Path('/oneall_login_callback') {
         $c->log->debug("oneall token: $conn_token");
         my $res = $self->verify_token($conn_token, $c->config->{OneAll});
         if(!$res) {
+            $c->log->debug("Login failed, return to start");
             return $c->res->redirect($c->uri_for('login'));
         }
         my $user_token = $res->{user}{user_token};
@@ -90,9 +91,11 @@ sub oneall_login_callback : Path('/oneall_login_callback') {
              'me.google_id' => { '-in' => \@emails },
             ],
             {
-                prefetch => ['login_tokens','usage', 'allowed','payments'],
+                prefetch => ['login_tokens'],
+                # prefetch => ['login_tokens','usage', 'allowed','payments'],
             }
             );
+        
         if($person->count > 1) {
             $person = $person->search({ parent_id => undef });
         }
@@ -1242,6 +1245,7 @@ sub verify_token {
     my $resp = $ua->get($user_token_uri,
                         'Authorization' => 'Basic ' . encode_base64($conf->{public_key} . ':' . $conf->{private_key}));
     if(!$resp->is_success) {
+        print STDERR "Verify failed: ", Dumper($resp);
         return 0;
     }
     my $ut_json = $resp->decoded_content;
