@@ -79,6 +79,7 @@ __PACKAGE__->has_many('allowed_people', 'AccessSystem::Schema::Result::Allowed',
 __PACKAGE__->has_many('logs', 'AccessSystem::Schema::Result::MessageLog', 'tool_id');
 __PACKAGE__->has_many('statuses', 'AccessSystem::Schema::Result::ToolStatus', 'tool_id');
 __PACKAGE__->has_many('required_dependencies', 'AccessSystem::Schema::Result::RequiredTool', 'tool_id');
+__PACKAGE__->has_many('usage_log', 'AccessSystem::Schema::Result::UsageLog', 'tool_id');
 
 sub current_status {
     my ($self) = @_;
@@ -92,6 +93,22 @@ sub current_status {
         })->single;
 
     return $last;
+}
+
+sub recent_usage {
+    my ($self, $entries) = @_;
+    $entries ||= 10;
+
+    my $logs = $self->usage_log->search(
+        {},
+        {
+            order_by => { '-desc' => 'accessed_date' },
+            rows     => $entries,
+            prefetch => ['person'],
+        }
+    );
+
+    return $logs;
 }
 
 sub induct_student {

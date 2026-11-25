@@ -609,7 +609,7 @@ sub tools ($self, $text, $message) {
     my $tool_str = join("\n",
                         map {
                             $_->name . ($_->requires_induction
-                                            ? " " . $self->teacher_icon
+                                        ? " " . $self->teacher_icon
                                         : '')
                                 . ($_->lone_working_allowed ? ''
                                    : " " . $self->lone_worker_icon )
@@ -621,10 +621,25 @@ sub tools ($self, $text, $message) {
     }
     if ($t) {
         my $ts = $t->current_status;
+        my $usage_rs = $t->recent_usage(1);
         if($ts) {
             $tool_str .= "\nStatus: " . $ts->status . "\nReason: " . $ts->description;
         } else {
             $tool_str .= " Status: Unknown";
+        }
+
+        if ($usage_rs->count == 1) {
+            my $row = $usage_rs->first;
+            $tool_str .= sprintf(
+                "\nLast Used: %d %s %04d %02d:%02d, Last Status: %s\n",
+                $row->accessed_date->day,
+                $row->accessed_date->month_abbr,
+                $row->accessed_date->year,
+                $row->accessed_date->hour,
+                $row->accessed_date->minute,
+                $row->status);
+        } else {
+            $tool_str .= " Last used: Unknown ";
         }
 
         my $inductors = join("\n", map {
@@ -1422,14 +1437,7 @@ sub tool_log ($self, $text, $message, $args = undef) {
     if ($tool) {
         my $n = 10;
 
-        my $logs = $self->db->resultset('UsageLog')->search(
-            { tool_id => $tool->id },
-            {
-                order_by => { '-desc' => 'accessed_date' },
-                rows     => $n,
-                prefetch => ['person'],
-            }
-        );
+        my $logs = $tool->recent_usage();
 
         my $out = sprintf("Tool: %s\n", $tool->name);
         $out   .= sprintf("%12s|%10s|%20s\n", "Date","Status","Name or Token");
