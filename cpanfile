@@ -47,3 +47,4 @@ requires 'Date::Holidays::GB';
 requires 'Test::More';
 requires 'Test::Exception';
 requires 'DBIx::Class::InflateColumn::Boolean';
+requires 'REST::Client';
